@@ -1,38 +1,44 @@
 {
   "expo": {
-    "name": "my-expo-app",
-    "slug": "my-expo-app",
+    "name": "Housely",
+    "slug": "housely",
     "version": "1.0.0",
+    "scheme": "housely",
 
     "web": {
       "favicon": "./assets/favicon.png"
     },
 
     "experiments": {
-      "tsconfigPaths": true
+      "tsconfigPaths": true,
+      "typedRoutes": true
     },
 
-    "plugins": [],
+    "plugins": [
+      "expo-router"
+    ],
 
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/images/Logo.png",
 
     "userInterfaceStyle": "light",
 
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.housely.app"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.housely.app"
     }
   }
 }
