@@ -46,7 +46,7 @@ const index = () => {
   }, []);
 
   return (
-    <View className="flex-1 bg-primary items-center justify-center px-6">
+    <View className="flex-1 bg-white items-center justify-center px-6">
       <Animated.View
         style={{
           opacity: fadeAnim,
@@ -59,10 +59,10 @@ const index = () => {
           className="w-80 h-80 mb-8"
           resizeMode="contain"
         />
-        <Text className="text-4xl font-bold text-white text-center mb-4">
-          Housely
+        <Text className="text-4xl font-bold text-black text-center mb-4">
+          HOUSELY
         </Text>
-        <Text className="text-lg text-white/80 text-center mb-2">
+        <Text className="text-lg text-black/80 text-center mb-2">
           Your Digital Real Estate Assistant
         </Text>
       </Animated.View>
