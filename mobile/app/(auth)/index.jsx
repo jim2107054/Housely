@@ -143,7 +143,7 @@ const index = () => {
               />
               <Text className="text-gray-700 font-semibold">Remember me</Text>
             </TouchableOpacity>
-            <Link href="/(auth)/successReset">
+            <Link href="/(auth)/changePassword">
               <Text className="text-secondary">Forgot Password?</Text>
             </Link>
           </View>
