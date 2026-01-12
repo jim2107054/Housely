@@ -25,7 +25,7 @@ const successReset = () => {
       </View>
       <TouchableOpacity
         className="mt-28 bg-secondary rounded-lg py-4 w-full items-center"
-        onPress={() => router.push("/(auth)")}
+        onPress={() => router.replace("/(tabs)/profile")}
       >
         <Text className="text-white text-lg font-semibold">Continue</Text>
       </TouchableOpacity>
