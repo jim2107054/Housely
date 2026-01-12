@@ -82,7 +82,10 @@ const Profile = () => {
           paddingHorizontal: 16
         }}>
           {/* Profile Image with Edit Icon */}
-          <View style={{ position: 'relative', marginBottom: 16 }}>
+          <TouchableOpacity 
+            onPress={() => router.push('/(tabs)/editProfile')}
+            style={{ position: 'relative', marginBottom: 16 }}
+          >
             <Image
               source={require('../../assets/images/profileImage.png')}
               style={{
@@ -106,7 +109,7 @@ const Profile = () => {
             }}>
               <Ionicons name="camera" size={16} color={COLORS.white} />
             </View>
-          </View>
+          </TouchableOpacity>
 
           {/* User Info */}
           <Text style={{

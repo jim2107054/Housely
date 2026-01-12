@@ -53,6 +53,12 @@ const TabLayout = () => {
               ),
             }}
           />
+          <Tabs.Screen
+            name="editProfile"
+            options={{
+              href: null,
+            }}
+          />
         </Tabs>
       </SafeScreen>
     </SafeAreaProvider>
