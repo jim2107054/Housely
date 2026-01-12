@@ -2,6 +2,12 @@ import { Stack } from 'expo-router'
 
 export default function OnboardingLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false }} />
+    <Stack 
+      screenOptions={{ 
+        headerShown: false,
+        animation: 'simple_push',
+        animationDuration: 300,
+      }} 
+    />
   )
 }
