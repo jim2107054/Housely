@@ -2,7 +2,7 @@ import { View, Text, Image, TouchableOpacity, TextInput, ScrollView } from 'reac
 import React, { useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { router } from 'expo-router'
+import { useRouter } from 'expo-router'
 import CalendarIcon from '../../assets/images/profile-icons/Calendar.svg'
 import COLORS from '../../constants/colors'
 
@@ -14,10 +14,12 @@ const EditProfile = () => {
     dateOfBirth: 'November/21/1992'
   })
 
+  const router = useRouter()
+
   const handleSaveChanges = () => {
     console.log('Save changes:', formData)
     // Add save logic here
-    router.back()
+    // router.back()
   }
 
   const handleDatePress = () => {
