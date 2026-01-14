@@ -28,65 +28,30 @@ const EditProfile = () => {
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.white }}>
+    <SafeAreaView className="flex-1 bg-white">
       {/* Header */}
-      <View style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        position: 'relative'
-      }}>
+      <View className="flex-row items-center justify-center px-4 py-3 relative">
         <TouchableOpacity
           onPress={() => router.back()}
-          style={{
-            position: 'absolute',
-            left: 16,
-            padding: 8
-          }}
+          className="absolute left-4 p-2"
         >
           <Ionicons name="arrow-back" size={24} color={COLORS.black} />
         </TouchableOpacity>
-        <Text style={{
-          fontSize: 18,
-          fontWeight: '600',
-          color: COLORS.black
-        }}>
+        <Text className="text-lg font-semibold text-black">
           Edit Profile
         </Text>
       </View>
 
-      <ScrollView style={{ flex: 1 }}>
+      <ScrollView className="flex-1">
         {/* Profile Image Section */}
-        <View style={{
-          alignItems: 'center',
-          paddingVertical: 32,
-          paddingHorizontal: 16
-        }}>
-          <View style={{ position: 'relative' }}>
+        <View className="items-center py-8 px-4">
+          <View className="relative">
             <Image
               source={require('../../assets/images/profileImage.png')}
-              style={{
-                width: 100,
-                height: 100,
-                borderRadius: 50
-              }}
+              className="w-[100px] h-[100px] rounded-full"
             />
             <TouchableOpacity
-              style={{
-                position: 'absolute',
-                bottom: 0,
-                right: 0,
-                backgroundColor: '#6C5CE7',
-                borderRadius: 15,
-                width: 30,
-                height: 30,
-                justifyContent: 'center',
-                alignItems: 'center',
-                borderWidth: 2,
-                borderColor: COLORS.white
-              }}
+              className="absolute bottom-0 right-0 bg-[#6C5CE7] rounded-[15px] w-[30px] h-[30px] justify-center items-center border-2 border-white"
               onPress={() => console.log('Change profile picture')}
             >
               <Ionicons name="camera" size={16} color={COLORS.white} />
@@ -95,85 +60,43 @@ const EditProfile = () => {
         </View>
 
         {/* Form Section */}
-        <View style={{ paddingHorizontal: 16 }}>
+        <View className="px-4">
           {/* Full Name */}
-          <View style={{ marginBottom: 20 }}>
-            <Text style={{
-              fontSize: 14,
-              fontWeight: '500',
-              color: COLORS.black,
-              marginBottom: 8
-            }}>
+          <View className="mb-5">
+            <Text className="text-sm font-medium text-black mb-2">
               Text Form
             </Text>
             <TextInput
               value={formData.fullName}
               onChangeText={(text) => setFormData({ ...formData, fullName: text })}
-              style={{
-                backgroundColor: COLORS.white,
-                borderWidth: 1,
-                borderColor: '#E0E0E0',
-                borderRadius: 8,
-                paddingHorizontal: 16,
-                paddingVertical: 14,
-                fontSize: 16,
-                color: COLORS.black
-              }}
+              className="bg-white border border-gray-300 rounded-lg px-4 py-3.5 text-base text-black"
               placeholder="Enter your name"
             />
           </View>
 
           {/* Username */}
-          <View style={{ marginBottom: 20 }}>
-            <Text style={{
-              fontSize: 14,
-              fontWeight: '500',
-              color: COLORS.black,
-              marginBottom: 8
-            }}>
+          <View className="mb-5">
+            <Text className="text-sm font-medium text-black mb-2">
               Username
             </Text>
             <TextInput
               value={formData.username}
               onChangeText={(text) => setFormData({ ...formData, username: text })}
-              style={{
-                backgroundColor: COLORS.white,
-                borderWidth: 1,
-                borderColor: '#E0E0E0',
-                borderRadius: 8,
-                paddingHorizontal: 16,
-                paddingVertical: 14,
-                fontSize: 16,
-                color: COLORS.black
-              }}
+              className="bg-white border border-gray-300 rounded-lg px-4 py-3.5 text-base text-black"
               placeholder="Enter your username"
               autoCapitalize="none"
             />
           </View>
 
           {/* Email */}
-          <View style={{ marginBottom: 20 }}>
-            <Text style={{
-              fontSize: 14,
-              fontWeight: '500',
-              color: COLORS.black,
-              marginBottom: 8
-            }}>
+          <View className="mb-5">
+            <Text className="text-sm font-medium text-black mb-2">
               Email
             </Text>
             <TextInput
               value={formData.email}
               onChangeText={(text) => setFormData({ ...formData, email: text })}
-              style={{
-                backgroundColor: COLORS.white,
-                borderWidth: 1,
-                borderColor: '#E0E0E0',
-                borderRadius: 8,
-                paddingHorizontal: 16,
-                paddingVertical: 14,
-                fontSize: 16,
-                color: COLORS.black
-              }}
+              className="bg-white border border-gray-300 rounded-lg px-4 py-3.5 text-base text-black"
               placeholder="Enter your email"
               keyboardType="email-address"
               autoCapitalize="none"
@@ -181,33 +104,15 @@ const EditProfile = () => {
           </View>
 
           {/* Date of Birth */}
-          <View style={{ marginBottom: 32 }}>
-            <Text style={{
-              fontSize: 14,
-              fontWeight: '500',
-              color: COLORS.black,
-              marginBottom: 8
-            }}>
+          <View className="mb-8">
+            <Text className="text-sm font-medium text-black mb-2">
               Date of birth
             </Text>
             <TouchableOpacity
               onPress={handleDatePress}
-              style={{
-                backgroundColor: COLORS.white,
-                borderWidth: 1,
-                borderColor: '#E0E0E0',
-                borderRadius: 8,
-                paddingHorizontal: 16,
-                paddingVertical: 14,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between'
-              }}
+              className="bg-white border border-gray-300 rounded-lg px-4 py-3.5 flex-row items-center justify-between"
             >
-              <Text style={{
-                fontSize: 16,
-                color: COLORS.black
-              }}>
+              <Text className="text-base text-black">
                 {formData.dateOfBirth}
               </Text>
               <CalendarIcon width={24} height={24} />
@@ -217,19 +122,9 @@ const EditProfile = () => {
           {/* Save Button */}
           <TouchableOpacity
             onPress={handleSaveChanges}
-            style={{
-              backgroundColor: '#6C5CE7',
-              borderRadius: 8,
-              paddingVertical: 16,
-              alignItems: 'center',
-              marginBottom: 32
-            }}
+            className="bg-[#6C5CE7] rounded-lg py-4 items-center mb-8"
           >
-            <Text style={{
-              fontSize: 16,
-              fontWeight: '600',
-              color: COLORS.white
-            }}>
+            <Text className="text-base font-semibold text-white">
               Save Change
             </Text>
           </TouchableOpacity>
