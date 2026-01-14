@@ -1,8 +1,9 @@
-import { View, Text, Image, TouchableOpacity, TextInput, ScrollView } from 'react-native'
+import { View, Text, Image, TouchableOpacity, TextInput, ScrollView, Platform } from 'react-native'
 import React, { useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
+import DateTimePicker from '@react-native-community/datetimepicker'
 import CalendarIcon from '../../assets/images/profile-icons/Calendar.svg'
 import COLORS from '../../constants/colors'
 
@@ -11,8 +12,9 @@ const EditProfile = () => {
     fullName: 'Brooklyn Simmons',
     username: 'Brooklynsim',
     email: 'brooklynsim@gmail.com',
-    dateOfBirth: 'November/21/1992'
+    dateOfBirth: new Date(1992, 10, 21) // November 21, 1992
   })
+  const [showDatePicker, setShowDatePicker] = useState(false)
 
   const router = useRouter()
 
@@ -23,8 +25,23 @@ const EditProfile = () => {
   }
 
   const handleDatePress = () => {
-    console.log('Open date picker')
-    // Add date picker logic here
+    setShowDatePicker(true)
+  }
+
+  const handleDateChange = (event, selectedDate) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false)
+    }
+    
+    if (selectedDate) {
+      setFormData({ ...formData, dateOfBirth: selectedDate })
+    }
+  }
+
+  const formatDate = (date) => {
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+                    'July', 'August', 'September', 'October', 'November', 'December']
+    return `${months[date.getMonth()]}/${date.getDate()}/${date.getFullYear()}`
   }
 
   return (
@@ -113,11 +130,33 @@ const EditProfile = () => {
               className="bg-white border border-gray-300 rounded-lg px-4 py-3.5 flex-row items-center justify-between"
             >
               <Text className="text-base text-black">
-                {formData.dateOfBirth}
+                {formatDate(formData.dateOfBirth)}
               </Text>
               <CalendarIcon width={24} height={24} />
             </TouchableOpacity>
           </View>
+
+          {/* Date Picker */}
+          {showDatePicker && (
+            <DateTimePicker
+              value={formData.dateOfBirth}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={handleDateChange}
+              maximumDate={new Date()}
+              onTouchCancel={() => setShowDatePicker(false)}
+            />
+          )}
+          {Platform.OS === 'ios' && showDatePicker && (
+            <View className="flex-row justify-end mb-4">
+              <TouchableOpacity
+                onPress={() => setShowDatePicker(false)}
+                className="bg-[#6C5CE7] rounded-lg px-6 py-2"
+              >
+                <Text className="text-white font-semibold">Done</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           {/* Save Button */}
           <TouchableOpacity
