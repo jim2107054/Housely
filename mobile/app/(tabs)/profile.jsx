@@ -3,7 +3,6 @@ import React from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
-import COLORS from '../../constants/colors'
 
 const Profile = () => {
   const menuItems = [
@@ -52,7 +51,7 @@ const Profile = () => {
           onPress={() => router.back()}
           className="absolute left-4 p-2"
         >
-          <Ionicons name="arrow-back" size={24} color={COLORS.black} />
+          <Ionicons name="arrow-back" size={24} color="#000000" />
         </TouchableOpacity>
         <Text className="text-lg font-semibold text-black">
           Profile
@@ -72,7 +71,7 @@ const Profile = () => {
               className="w-[100px] h-[100px] rounded-full"
             />
             <View className="absolute bottom-0 right-0 bg-[#6C5CE7] rounded-[15px] w-[30px] h-[30px] justify-center items-center border-2 border-white">
-              <Ionicons name="camera" size={16} color={COLORS.white} />
+              <Ionicons name="camera" size={16} color="#FFFFFF" />
             </View>
           </TouchableOpacity>
 

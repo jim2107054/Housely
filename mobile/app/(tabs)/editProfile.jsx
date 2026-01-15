@@ -3,7 +3,6 @@ import React, { useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
-import COLORS from '../../constants/colors'
 
 const EditProfile = () => {
   const [formData, setFormData] = useState({
@@ -34,7 +33,7 @@ const EditProfile = () => {
           onPress={() => router.back()}
           className="absolute left-4 p-2"
         >
-          <Ionicons name="arrow-back" size={24} color={COLORS.black} />
+          <Ionicons name="arrow-back" size={24} color="#000000" />
         </TouchableOpacity>
         <Text className="text-lg font-semibold text-black">
           Edit Profile
@@ -53,7 +52,7 @@ const EditProfile = () => {
               className="absolute bottom-0 right-0 bg-[#6C5CE7] rounded-[15px] w-[30px] h-[30px] justify-center items-center border-2 border-white"
               onPress={() => console.log('Change profile picture')}
             >
-              <Ionicons name="camera" size={16} color={COLORS.white} />
+              <Ionicons name="camera" size={16} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
         </View>
