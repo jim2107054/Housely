@@ -3,7 +3,6 @@ import React, { useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
-import CalendarIcon from '../../assets/images/profile-icons/Calendar.svg'
 import COLORS from '../../constants/colors'
 
 const EditProfile = () => {
@@ -208,7 +207,7 @@ const EditProfile = () => {
               }}>
                 {formData.dateOfBirth}
               </Text>
-              <CalendarIcon width={24} height={24} />
+              <Ionicons name="calendar-outline" size={24} color="#6C5CE7" />
             </TouchableOpacity>
           </View>
 

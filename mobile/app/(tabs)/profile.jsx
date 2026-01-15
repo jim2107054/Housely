@@ -83,7 +83,7 @@ const Profile = () => {
         }}>
           {/* Profile Image with Edit Icon */}
           <TouchableOpacity 
-            onPress={() => router.push('/(tabs)/editProfile')}
+            onPress={() => router.push("/editProfile")}
             style={{ position: 'relative', marginBottom: 16 }}
           >
             <Image
