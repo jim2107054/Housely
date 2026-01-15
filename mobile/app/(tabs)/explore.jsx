@@ -15,7 +15,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
-import useAuthStore from "./../../store/authStore";
+import useAuthStore from "../../store/authStore";
 import axios from "axios";
 import { API_URL } from "../../config";
 
