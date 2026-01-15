@@ -1,47 +1,28 @@
-import { View, Text, Image, TouchableOpacity, TextInput, ScrollView, Platform } from 'react-native'
+import { View, Text, Image, TouchableOpacity, TextInput, ScrollView } from 'react-native'
 import React, { useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
-import DateTimePicker from '@react-native-community/datetimepicker'
-import CalendarIcon from '../../assets/images/profile-icons/Calendar.svg'
-import COLORS from '../../constants/colors'
 
 const EditProfile = () => {
   const [formData, setFormData] = useState({
     fullName: 'Brooklyn Simmons',
     username: 'Brooklynsim',
     email: 'brooklynsim@gmail.com',
-    dateOfBirth: new Date(1992, 10, 21) // November 21, 1992
+    dateOfBirth: 'November/21/1992'
   })
-  const [showDatePicker, setShowDatePicker] = useState(false)
 
   const router = useRouter()
 
   const handleSaveChanges = () => {
     console.log('Save changes:', formData)
     // Add save logic here
-    // router.back()
+    router.back()
   }
 
   const handleDatePress = () => {
-    setShowDatePicker(true)
-  }
-
-  const handleDateChange = (event, selectedDate) => {
-    if (Platform.OS === 'android') {
-      setShowDatePicker(false)
-    }
-    
-    if (selectedDate) {
-      setFormData({ ...formData, dateOfBirth: selectedDate })
-    }
-  }
-
-  const formatDate = (date) => {
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 
-                    'July', 'August', 'September', 'October', 'November', 'December']
-    return `${months[date.getMonth()]}/${date.getDate()}/${date.getFullYear()}`
+    console.log('Open date picker')
+    // Add date picker logic here
   }
 
   return (
@@ -52,7 +33,7 @@ const EditProfile = () => {
           onPress={() => router.back()}
           className="absolute left-4 p-2"
         >
-          <Ionicons name="arrow-back" size={24} color={COLORS.black} />
+          <Ionicons name="arrow-back" size={24} color="#000000" />
         </TouchableOpacity>
         <Text className="text-lg font-semibold text-black">
           Edit Profile
@@ -71,7 +52,7 @@ const EditProfile = () => {
               className="absolute bottom-0 right-0 bg-[#6C5CE7] rounded-[15px] w-[30px] h-[30px] justify-center items-center border-2 border-white"
               onPress={() => console.log('Change profile picture')}
             >
-              <Ionicons name="camera" size={16} color={COLORS.white} />
+              <Ionicons name="camera" size={16} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
         </View>
@@ -86,7 +67,7 @@ const EditProfile = () => {
             <TextInput
               value={formData.fullName}
               onChangeText={(text) => setFormData({ ...formData, fullName: text })}
-              className="bg-white border border-gray-300 rounded-lg px-4 py-3.5 text-base text-black"
+              className="bg-white border border-[#E0E0E0] rounded-lg px-4 py-3.5 text-base text-black"
               placeholder="Enter your name"
             />
           </View>
@@ -99,7 +80,7 @@ const EditProfile = () => {
             <TextInput
               value={formData.username}
               onChangeText={(text) => setFormData({ ...formData, username: text })}
-              className="bg-white border border-gray-300 rounded-lg px-4 py-3.5 text-base text-black"
+              className="bg-white border border-[#E0E0E0] rounded-lg px-4 py-3.5 text-base text-black"
               placeholder="Enter your username"
               autoCapitalize="none"
             />
@@ -113,7 +94,7 @@ const EditProfile = () => {
             <TextInput
               value={formData.email}
               onChangeText={(text) => setFormData({ ...formData, email: text })}
-              className="bg-white border border-gray-300 rounded-lg px-4 py-3.5 text-base text-black"
+              className="bg-white border border-[#E0E0E0] rounded-lg px-4 py-3.5 text-base text-black"
               placeholder="Enter your email"
               keyboardType="email-address"
               autoCapitalize="none"
@@ -127,36 +108,14 @@ const EditProfile = () => {
             </Text>
             <TouchableOpacity
               onPress={handleDatePress}
-              className="bg-white border border-gray-300 rounded-lg px-4 py-3.5 flex-row items-center justify-between"
+              className="bg-white border border-[#E0E0E0] rounded-lg px-4 py-3.5 flex-row items-center justify-between"
             >
               <Text className="text-base text-black">
-                {formatDate(formData.dateOfBirth)}
+                {formData.dateOfBirth}
               </Text>
-              <CalendarIcon width={24} height={24} />
+              <Ionicons name="calendar-outline" size={24} color="#6C5CE7" />
             </TouchableOpacity>
           </View>
-
-          {/* Date Picker */}
-          {showDatePicker && (
-            <DateTimePicker
-              value={formData.dateOfBirth}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={handleDateChange}
-              maximumDate={new Date()}
-              onTouchCancel={() => setShowDatePicker(false)}
-            />
-          )}
-          {Platform.OS === 'ios' && showDatePicker && (
-            <View className="flex-row justify-end mb-4">
-              <TouchableOpacity
-                onPress={() => setShowDatePicker(false)}
-                className="bg-[#6C5CE7] rounded-lg px-6 py-2"
-              >
-                <Text className="text-white font-semibold">Done</Text>
-              </TouchableOpacity>
-            </View>
-          )}
 
           {/* Save Button */}
           <TouchableOpacity

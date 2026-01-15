@@ -3,7 +3,6 @@ import React from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
-import COLORS from '../../constants/colors'
 
 const Profile = () => {
   const menuItems = [
@@ -52,7 +51,7 @@ const Profile = () => {
           onPress={() => router.back()}
           className="absolute left-4 p-2"
         >
-          <Ionicons name="arrow-back" size={24} color={COLORS.black} />
+          <Ionicons name="arrow-back" size={24} color="#000000" />
         </TouchableOpacity>
         <Text className="text-lg font-semibold text-black">
           Profile
@@ -64,7 +63,7 @@ const Profile = () => {
         <View className="items-center py-8 px-4">
           {/* Profile Image with Edit Icon */}
           <TouchableOpacity 
-            onPress={() => router.push('/(tabs)/editProfile')}
+            onPress={() => router.push("(tabs)/editProfile")}
             className="relative mb-4"
           >
             <Image
@@ -72,7 +71,7 @@ const Profile = () => {
               className="w-[100px] h-[100px] rounded-full"
             />
             <View className="absolute bottom-0 right-0 bg-[#6C5CE7] rounded-[15px] w-[30px] h-[30px] justify-center items-center border-2 border-white">
-              <Ionicons name="camera" size={16} color={COLORS.white} />
+              <Ionicons name="camera" size={16} color="#FFFFFF" />
             </View>
           </TouchableOpacity>
 
@@ -80,13 +79,13 @@ const Profile = () => {
           <Text className="text-lg font-semibold text-black mb-1">
             Brooklyn Simmons
           </Text>
-          <Text className="text-sm text-gray-500 mb-2">
+          <Text className="text-sm text-[#888] mb-2">
             brooklynsim@gmail.com
           </Text>
         </View>
 
         {/* Divider */}
-        <View className="h-2 bg-gray-100" />
+        <View className="h-2 bg-[#F5F5F5]" />
 
         {/* Menu Items */}
         <View className="px-4 py-2">
@@ -94,7 +93,7 @@ const Profile = () => {
             <TouchableOpacity
               key={item.id}
               onPress={item.onPress}
-              className={`flex-row items-center py-4 ${index < menuItems.length - 1 ? 'border-b border-gray-100' : ''}`}
+              className={`flex-row items-center py-4 ${index < menuItems.length - 1 ? 'border-b border-[#F0F0F0]' : ''}`}
             >
               <View className="w-10 h-10 justify-center items-center">
                 <Ionicons name={item.iconName} size={24} color="#6C5CE7" />
@@ -112,7 +111,7 @@ const Profile = () => {
           onPress={handleSignOut}
           className="items-center py-6 mt-4"
         >
-          <Text className="text-base font-medium text-red-500">
+          <Text className="text-base font-medium text-[#FF5252]">
             Sign Out
           </Text>
         </TouchableOpacity>
