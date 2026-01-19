@@ -63,11 +63,70 @@ const nearbyProperties = [
   {
     id: "2",
     name: "Apartement land...",
-    location: "Kemang, Jakarta",
-    price: 280,
-    rating: 4.8,
+    location: "Jl. Tentara Pelajar...",
+    price: 320,
+    rating: 4.7,
     image: "https://images.unsplash.com/photo-1600607687644-c7171b42498f?w=200",
     image2: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=200",
+  },
+];
+
+// Sample data for top locations
+const topLocations = [
+  {
+    id: "1",
+    name: "Malang",
+    image: require("../../assets/images/home-icons/Rectangle 14.png"),
+  },
+  {
+    id: "2",
+    name: "Bali",
+    image: require("../../assets/images/home-icons/Rectangle 15.png"),
+    isActive: true,
+  },
+  {
+    id: "3",
+    name: "Yogyakarta",
+    image: require("../../assets/images/home-icons/Rectangle 16.png"),
+  },
+  {
+    id: "4",
+    name: "Jakarta",
+    image: require("../../assets/images/home-icons/Rectangle 14.png"),
+  },
+];
+
+// Sample data for popular properties
+const popularProperties = [
+  {
+    id: "1",
+    name: "Takatea Homestay",
+    location: "Jl. Tentara Pelajar No.47, RW.001",
+    price: 120,
+    priceType: "night",
+    rating: 4.5,
+    image: require("../../assets/images/home-icons/Rectangle 27.png"),
+    isFavorite: false,
+  },
+  {
+    id: "2",
+    name: "Maharani Villa Yogyakarta",
+    location: "Benhil, Jl. Bendungan Hilir Karet...",
+    price: 320,
+    priceType: "month",
+    rating: 4.5,
+    image: require("../../assets/images/home-icons/Rectangle 28.png"),
+    isFavorite: true,
+  },
+  {
+    id: "3",
+    name: "Bali Komang Guest",
+    location: "Nusa Penida, Bali",
+    price: 280,
+    priceType: "month",
+    rating: 4.8,
+    image: require("../../assets/images/home-icons/Rectangle 29.png"),
+    isFavorite: false,
   },
 ];
 
@@ -75,9 +134,17 @@ const Home = () => {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [favorites, setFavorites] = useState(["1"]);
+  const [popularFavorites, setPopularFavorites] = useState(["2"]);
+  const [activeLocation, setActiveLocation] = useState("2");
 
   const toggleFavorite = (id) => {
     setFavorites((prev) =>
+      prev.includes(id) ? prev.filter((fId) => fId !== id) : [...prev, id]
+    );
+  };
+
+  const togglePopularFavorite = (id) => {
+    setPopularFavorites((prev) =>
       prev.includes(id) ? prev.filter((fId) => fId !== id) : [...prev, id]
     );
   };
@@ -245,6 +312,75 @@ const Home = () => {
     </View>
   );
 
+  // Top Location Chip Component
+  const LocationChip = ({ item }) => {
+    const isActive = activeLocation === item.id;
+    return (
+      <TouchableOpacity
+        onPress={() => setActiveLocation(item.id)}
+        className={`mr-3 rounded-full flex-row items-center px-1 py-1 pr-4 ${
+          isActive ? "bg-primary" : "bg-cardBackground border border-border"
+        }`}
+      >
+        <Image
+          source={item.image}
+          className="w-9 h-9 rounded-full"
+          resizeMode="cover"
+        />
+        <Text
+          className={`ml-2 font-poppins-medium text-sm ${
+            isActive ? "text-white" : "text-textPrimary"
+          }`}
+        >
+          {item.name}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
+  // Popular Card Component
+  const PopularCard = ({ item }) => (
+    <TouchableOpacity className="flex-row bg-white rounded-2xl p-3 mb-3 mx-5 border border-border">
+      <Image
+        source={item.image}
+        className="w-16 h-16 rounded-xl"
+        resizeMode="cover"
+      />
+      <View className="flex-1 ml-3 justify-center">
+        <Text className="text-textPrimary font-poppins-semibold text-sm" numberOfLines={1}>
+          {item.name}
+        </Text>
+        <View className="flex-row items-center mt-0.5">
+          <LocationIcon width={10} height={10} />
+          <Text className="text-textSecondary font-poppins text-xs ml-1" numberOfLines={1}>
+            {item.location}
+          </Text>
+        </View>
+        <View className="flex-row items-center mt-1">
+          <Text className="text-textPrimary font-poppins-semibold text-xs">
+            ${item.price}/{item.priceType}
+          </Text>
+          <View className="flex-row items-center ml-3">
+            <Ionicons name="star" size={12} color="#FFC42D" />
+            <Text className="text-textPrimary font-poppins-medium text-xs ml-1">
+              {item.rating}
+            </Text>
+          </View>
+        </View>
+      </View>
+      <TouchableOpacity
+        onPress={() => togglePopularFavorite(item.id)}
+        className="self-center ml-2"
+      >
+        <Ionicons
+          name={popularFavorites.includes(item.id) ? "heart" : "heart-outline"}
+          size={20}
+          color={popularFavorites.includes(item.id) ? "#FF6B6B" : "#DADADA"}
+        />
+      </TouchableOpacity>
+    </TouchableOpacity>
+  );
+
   return (
     <View className="flex-1 bg-white">
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -276,8 +412,34 @@ const Home = () => {
           <NearbyCard key={item.id} item={item} />
         ))}
 
+        {/* Top Locations Section */}
+        <View className="mt-3">
+          <SectionHeader
+            title="Top Locations"
+            onPress={() => console.log("See all locations")}
+          />
+          <FlatList
+            data={topLocations}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 20 }}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => <LocationChip item={item} />}
+            className="mb-6"
+          />
+        </View>
+
+        {/* Popular for you Section */}
+        <SectionHeader
+          title="Popular for you"
+          onPress={() => console.log("See all popular")}
+        />
+        {popularProperties.map((item) => (
+          <PopularCard key={item.id} item={item} />
+        ))}
+
         {/* Bottom spacing */}
-        <View className="h-6" />
+        <View className="h-24" />
       </ScrollView>
     </View>
   );
