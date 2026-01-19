@@ -432,7 +432,7 @@ const Home = () => {
         {/* Popular for you Section */}
         <SectionHeader
           title="Popular for you"
-          onPress={() => console.log("See all popular")}
+          onPress={() => router.push("/(tabs)/popular")}
         />
         {popularProperties.map((item) => (
           <PopularCard key={item.id} item={item} />
