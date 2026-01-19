@@ -1,16 +1,21 @@
-// FOREST
+// HOUSELY - Purple Theme
 const COLORS = {
-  primary: "#4CAF50",
-  textPrimary: "#2e5a2e",
-  textSecondary: "#688f68",
-  textDark: "#1b361b",
-  placeholderText: "#767676",
-  background: "#e8f5e9",
-  cardBackground: "#f1f8f2",
-  inputBackground: "#f4faf5",
-  border: "#c8e6c9",
+  primary: "#7F56D9",
+  secondary: "#7F56D9",
+  accent: "#F9A826",
+  textPrimary: "#252B5C",
+  textSecondary: "#53587A",
+  textDark: "#1F2544",
+  placeholderText: "#A1A5C1",
+  background: "#FFFFFF",
+  cardBackground: "#F5F4F8",
+  inputBackground: "#F5F4F8",
+  border: "#ECEDF3",
   white: "#ffffff",
   black: "#000000",
+  yellow: "#FFC42D",
+  purple: "#7F56D9",
+  darkBlue: "#252B5C",
 };
 
 // RETRO
