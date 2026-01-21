@@ -8,9 +8,10 @@ import {
   FlatList,
   Dimensions,
 } from "react-native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import useLocationStore from "../../store/locationStore";
 
 // Import SVG icons
 import LocationIcon from "../../assets/images/home-icons/Location.svg";
@@ -137,6 +138,14 @@ const Home = () => {
   const [popularFavorites, setPopularFavorites] = useState(["2"]);
   const [activeLocation, setActiveLocation] = useState("2");
 
+  // Location store - for displaying selected location in header
+  const { locationName, isLocationSet, loadLocation } = useLocationStore();
+
+  // Load saved location on mount
+  useEffect(() => {
+    loadLocation();
+  }, []);
+
   const toggleFavorite = (id) => {
     setFavorites((prev) =>
       prev.includes(id) ? prev.filter((fId) => fId !== id) : [...prev, id]
@@ -152,20 +161,24 @@ const Home = () => {
   // Header Component
   const Header = () => (
     <View className="flex-row items-center justify-between px-5 pt-2 pb-4">
-      <View>
-        <TouchableOpacity className="flex-row items-center gap-1">
+      <TouchableOpacity onPress={() => router.push("/(location)")}>
+        <View className="flex-row items-center gap-1">
           <Text className="text-xs text-textSecondary font-poppins">Location</Text>
           <Ionicons name="chevron-down" size={12} color="#53587A" />
-        </TouchableOpacity>
+        </View>
         <View className="flex-row items-center mt-1">
           <View className="w-5 h-5 rounded-full bg-primary items-center justify-center">
             <LocationIcon width={12} height={12} />
           </View>
-          <Text className="text-base font-poppins-semibold text-textPrimary ml-2">
-            Yogyakarta, Ind
+          <Text 
+            className="text-base font-poppins-semibold text-textPrimary ml-2"
+            numberOfLines={1}
+            style={{ maxWidth: 180 }}
+          >
+            {isLocationSet ? locationName : "Select Location"}
           </Text>
         </View>
-      </View>
+      </TouchableOpacity>
       <View className="flex-row items-center gap-2">
         <TouchableOpacity className="w-10 h-10 rounded-full bg-cardBackground items-center justify-center border border-border">
           <NotificationIcon width={20} height={20} />
