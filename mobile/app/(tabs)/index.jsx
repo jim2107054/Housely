@@ -221,6 +221,7 @@ const Home = () => {
     <TouchableOpacity
       className="mr-4 rounded-2xl overflow-hidden"
       style={{ width: CARD_WIDTH }}
+      onPress={() => router.push({ pathname: "/(tabs)/propertyDetails", params: { id: item.id } })}
     >
       <View className="relative">
         <Image
@@ -237,7 +238,10 @@ const Home = () => {
         </View>
         {/* Favorite Button */}
         <TouchableOpacity
-          onPress={() => toggleFavorite(item.id)}
+          onPress={(e) => {
+            e.stopPropagation();
+            toggleFavorite(item.id);
+          }}
           className="absolute bottom-3 right-3 w-8 h-8 rounded-full bg-white items-center justify-center"
         >
           <Ionicons
@@ -264,7 +268,10 @@ const Home = () => {
 
   // Nearby Card Component
   const NearbyCard = ({ item }) => (
-    <TouchableOpacity className="flex-row bg-white rounded-2xl p-3 mb-3 mx-5 border border-border">
+    <TouchableOpacity 
+      className="flex-row bg-white rounded-2xl p-3 mb-3 mx-5 border border-border"
+      onPress={() => router.push({ pathname: "/(tabs)/propertyDetails", params: { id: item.id } })}
+    >
       <Image
         source={{ uri: item.image }}
         className="w-20 h-20 rounded-xl"
@@ -340,7 +347,10 @@ const Home = () => {
 
   // Popular Card Component
   const PopularCard = ({ item }) => (
-    <TouchableOpacity className="flex-row bg-white rounded-2xl p-3 mb-3 mx-5 border border-border">
+    <TouchableOpacity 
+      className="flex-row bg-white rounded-2xl p-3 mb-3 mx-5 border border-border"
+      onPress={() => router.push({ pathname: "/(tabs)/propertyDetails", params: { id: item.id } })}
+    >
       <Image
         source={item.image}
         className="w-16 h-16 rounded-xl"
@@ -369,7 +379,10 @@ const Home = () => {
         </View>
       </View>
       <TouchableOpacity
-        onPress={() => togglePopularFavorite(item.id)}
+        onPress={(e) => {
+          e.stopPropagation();
+          togglePopularFavorite(item.id);
+        }}
         className="self-center ml-2"
       >
         <Ionicons

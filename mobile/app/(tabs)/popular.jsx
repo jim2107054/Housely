@@ -93,7 +93,10 @@ const Popular = () => {
 
   // Popular Card Component
   const PopularCard = ({ item }) => (
-    <TouchableOpacity className="flex-row items-center py-3 mx-5 border-b border-border">
+    <TouchableOpacity 
+      className="flex-row items-center py-3 mx-5 border-b border-border"
+      onPress={() => router.push({ pathname: "/(tabs)/propertyDetails", params: { id: item.id } })}
+    >
       <Image
         source={item.image}
         className="w-20 h-20 rounded-xl"
@@ -124,7 +127,10 @@ const Popular = () => {
         </View>
       </View>
       <TouchableOpacity
-        onPress={() => toggleFavorite(item.id)}
+        onPress={(e) => {
+          e.stopPropagation();
+          toggleFavorite(item.id);
+        }}
         className="p-2"
       >
         <Ionicons

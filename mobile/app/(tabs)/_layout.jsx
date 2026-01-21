@@ -116,6 +116,12 @@ const TabLayout = () => {
               href: null,
             }}
           />
+          <Tabs.Screen
+            name="propertyDetails"
+            options={{
+              href: null,
+            }}
+          />
         </Tabs>
       </SafeScreen>
     </SafeAreaProvider>
