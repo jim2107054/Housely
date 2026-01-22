@@ -12,8 +12,8 @@ import { useRouter } from "expo-router";
 // Import SVG icons
 import LocationIcon from "../../assets/images/home-icons/Location.svg";
 
-// Sample data for favorite properties
-const favoriteProperties = [
+// Sample data for popular properties
+const popularProperties = [
   {
     id: "1",
     name: "Takatea Homestay",
@@ -66,7 +66,7 @@ const favoriteProperties = [
   },
 ];
 
-const Favorite = () => {
+const Popular = () => {
   const router = useRouter();
   const [favorites, setFavorites] = useState(["2", "5"]);
 
@@ -86,13 +86,13 @@ const Favorite = () => {
         <Ionicons name="arrow-back" size={24} color="#252B5C" />
       </TouchableOpacity>
       <Text className="flex-1 text-center text-lg font-poppins-semibold text-textPrimary mr-10">
-        Favorite
+        Popular
       </Text>
     </View>
   );
 
-  // Favorite Card Component
-  const FavoriteCard = ({ item }) => (
+  // Popular Card Component
+  const PopularCard = ({ item }) => (
     <TouchableOpacity 
       className="flex-row items-center py-3 mx-5 border-b border-border"
       onPress={() => router.push({ pathname: "/(tabs)/propertyDetails", params: { id: item.id } })}
@@ -146,8 +146,8 @@ const Favorite = () => {
     <View className="flex-1 bg-white">
       <Header />
       <ScrollView showsVerticalScrollIndicator={false}>
-        {favoriteProperties.map((item) => (
-          <FavoriteCard key={item.id} item={item} />
+        {popularProperties.map((item) => (
+          <PopularCard key={item.id} item={item} />
         ))}
         {/* Bottom spacing */}
         <View className="h-24" />
@@ -156,4 +156,4 @@ const Favorite = () => {
   );
 };
 
-export default Favorite;
+export default Popular;
