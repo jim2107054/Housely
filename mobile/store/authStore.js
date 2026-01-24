@@ -8,13 +8,13 @@ const useAuthStore = create((set) => ({
   token: null,
   isLoading: false,
 
-  register: async (fullname, email, password) => {
+  register: async (username, email, password) => {
     set({ isLoading: true });
     try {
       const response = await axios.post(
         `${API_URL}/api/auth/register`,
         {
-          fullname,
+          username,
           email,
           password,
         },
