@@ -9,10 +9,16 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Routes
+import authRoutes from "./routes/authRoutes.js";
+
 // Middleware
 app.use(cors());
 app.use(express.json()); // for parsing application/json
 app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
+
+// Mount Routes
+app.use("/api/auth", authRoutes);
 
 // Database connection
 connectDB();
@@ -26,7 +32,12 @@ app.get("/health", (req, res) => {
   });
 });
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+// Start the server (only in non-serverless environment)
+if (process.env.NODE_ENV !== "production") {
+  app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+  });
+}
+
+// Export for Vercel serverless
+export default app;
