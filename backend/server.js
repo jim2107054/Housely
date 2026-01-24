@@ -9,10 +9,16 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Routes
+import authRoutes from "./routes/authRoutes.js";
+
 // Middleware
 app.use(cors());
 app.use(express.json()); // for parsing application/json
 app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
+
+// Mount Routes
+app.use("/api/auth", authRoutes);
 
 // Database connection
 connectDB();
