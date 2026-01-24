@@ -22,12 +22,12 @@ const signup = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isRemembered, setIsRemembered] = useState(false);
 
-  const { isLoading, login } = useAuthStore();
+  const { isLoading, register } = useAuthStore();
   const router = useRouter();
 
   const handleRegister = async () => {
-    // Implement login logic here
-    const result = await login(email, password);
+    // Implement register logic here
+    const result = await register(userName, email, password);
 
     if (!result.success) {
       Toast.show({
