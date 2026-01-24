@@ -3,8 +3,12 @@ import React from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
+import useAuthStore from '../../store/authStore'
+import Toast from 'react-native-toast-message'
 
 const Profile = () => {
+  const { user, logout } = useAuthStore();
+
   const menuItems = [
     {
       id: 1,
@@ -38,9 +42,28 @@ const Profile = () => {
     }
   ]
 
-  const handleSignOut = () => {
-    console.log('Sign out pressed')
-    // Add sign out logic here
+  const handleSignOut = async () => {
+    try {
+      await logout();
+      Toast.show({
+        type: 'success',
+        text1: 'Logged Out',
+        text2: 'You have been logged out successfully',
+        position: 'top',
+        visibilityTime: 2000,
+      });
+      setTimeout(() => {
+        router.replace('/(auth)');
+      }, 500);
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to logout. Please try again.',
+        position: 'top',
+        visibilityTime: 3000,
+      });
+    }
   }
 
   return (
@@ -77,10 +100,10 @@ const Profile = () => {
 
           {/* User Info */}
           <Text className="text-lg font-semibold text-black mb-1">
-            Brooklyn Simmons
+            {user?.username || 'Guest User'}
           </Text>
           <Text className="text-sm text-[#888] mb-2">
-            brooklynsim@gmail.com
+            {user?.email || 'No email'}
           </Text>
         </View>
 
