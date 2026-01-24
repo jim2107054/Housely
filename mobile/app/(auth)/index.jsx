@@ -15,7 +15,7 @@ import useAuthStore from "../../store/authStore";
 import { ActivityIndicator } from "react-native-paper";
 import { ArrowLeft } from "lucide-react-native";
 
-const index = () => {
+const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -25,6 +25,29 @@ const index = () => {
   const router = useRouter();
 
   const handleLogin = async () => {
+    // Validate inputs
+    if (!email || !password) {
+      Toast.show({
+        type: "error",
+        text1: "Validation Error",
+        text2: "Please enter both email and password",
+        position: "top",
+        visibilityTime: 3000,
+      });
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      Toast.show({
+        type: "error",
+        text1: "Invalid Email",
+        text2: "Please enter a valid email address",
+        position: "top",
+        visibilityTime: 3000,
+      });
+      return;
+    }
+
     // Implement login logic here
     const result = await login(email, password);
 
@@ -42,13 +65,13 @@ const index = () => {
         text1: "Success!",
         text2: "Logged in successfully",
         position: "top",
-        visibilityTime: 3000,
+        visibilityTime: 2000,
       });
-    }
-
-    // On successful login, you might want to navigate to the main app screen
-    if (result.success) {
-      router.replace("/(tabs)"); // Home screen after login
+      
+      // Navigate to main app screen
+      setTimeout(() => {
+        router.replace("/(tabs)");
+      }, 500);
     }
   };
 
@@ -202,4 +225,4 @@ const index = () => {
   );
 };
 
-export default index;
+export default Login;

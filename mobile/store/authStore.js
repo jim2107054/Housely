@@ -1,43 +1,38 @@
 import { create } from "zustand";
-import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API_URL } from "../config";
+import api from "../services/api";
 
 const useAuthStore = create((set) => ({
   user: null,
   token: null,
   isLoading: false,
+  error: null,
 
-  register: async (fullname, email, password) => {
-    set({ isLoading: true });
+  register: async (username, email, password) => {
+    set({ isLoading: true, error: null });
     try {
-      const response = await axios.post(
-        `${API_URL}/api/auth/register`,
-        {
-          fullname,
-          email,
-          password,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await api.post("/api/auth/register", {
+        username,
+        email,
+        password,
+      });
 
       const data = response.data;
       if (data.success) {
+        // Store token and user in AsyncStorage
+        await AsyncStorage.setItem("user", JSON.stringify(data.user));
+        await AsyncStorage.setItem("token", data.token);
+
+        // Update state
         set({ user: data.user, token: data.token, isLoading: false });
+        return { success: true, user: data.user, token: data.token };
       } else {
         set({ isLoading: false, error: data.message || "Registration failed" });
-        throw new Error(data.message || "Registration failed");
+        return {
+          success: false,
+          message: data.message || "Registration failed",
+        };
       }
-
-      await AsyncStorage.setItem("user", JSON.stringify(data.user));
-      await AsyncStorage.setItem("token", data.token);
-
-      set({ token: data.token, user: data.user, isLoading: false });
-      return { success: true, user: data.user, token: data.token };
     } catch (error) {
       console.error("Registration error:", error);
       const errorMessage =
@@ -52,39 +47,37 @@ const useAuthStore = create((set) => ({
       };
     }
   },
+
   login: async (email, password) => {
+    set({ isLoading: true, error: null });
     try {
-      set({ isLoading: true });
-      const response = await axios.post(
-        `${API_URL}/api/auth/login`,
-        { email, password },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await api.post("/api/auth/login", {
+        email,
+        password,
+      });
 
       const data = response.data;
       if (data.success) {
+        // Store token and user in AsyncStorage
+        await AsyncStorage.setItem("user", JSON.stringify(data.user));
+        await AsyncStorage.setItem("token", data.token);
+
+        // Update state
         set({ user: data.user, token: data.token, isLoading: false });
+        return {
+          success: true,
+          user: data.user,
+          token: data.token,
+        };
       } else {
         set({ isLoading: false, error: data.message || "Login failed" });
-        throw new Error(data.message || "Login failed");
+        return {
+          success: false,
+          message: data.message || "Login failed",
+        };
       }
-      // Store token and user in AsyncStorage
-      await AsyncStorage.setItem("user", JSON.stringify(data.user));
-      await AsyncStorage.setItem("token", data.token);
-
-      // Update state
-      set({ token: data.token, user: data.user, isLoading: false });
-      return {
-        success: true,
-        user: data.user,
-        token: data.token,
-      };
     } catch (error) {
-      console.log(error);
+      console.error("Login error:", error);
       const errorMessage =
         error.response?.data?.message ||
         error.response?.data?.error ||
