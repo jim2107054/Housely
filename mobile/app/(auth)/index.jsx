@@ -15,7 +15,7 @@ import useAuthStore from "../../store/authStore";
 import { ActivityIndicator } from "react-native-paper";
 import { ArrowLeft } from "lucide-react-native";
 
-const index = () => {
+const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -225,4 +225,4 @@ const index = () => {
   );
 };
 
-export default index;
+export default Login;

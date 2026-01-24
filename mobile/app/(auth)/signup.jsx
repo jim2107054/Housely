@@ -15,7 +15,7 @@ import useAuthStore from "../../store/authStore";
 import { ActivityIndicator } from "react-native-paper";
 import { ArrowLeft } from "lucide-react-native";
 
-const signup = () => {
+const Signup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [userName, setUserName] = useState("");
@@ -270,4 +270,4 @@ const signup = () => {
   );
 };
 
-export default signup;
+export default Signup;
