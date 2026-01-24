@@ -23,27 +23,27 @@ export default function RootLayout() {
     checkAuth();//! it will set the user and token if valid token found in async storage
   },[]); // only once on mount
 
-  // useEffect(()=>{
-  //   // Don't navigate until the navigation state is ready
-  //   if (!navigationState?.key) return;
+  useEffect(()=>{
+    // Don't navigate until the navigation state is ready
+    if (!navigationState?.key) return;
     
-  //   const inAuthScreen = segments[0] === "(auth)";
-  //   const isSignedIn = user && token;
+    const inAuthScreen = segments[0] === "(auth)";
+    const isSignedIn = user && token;
 
     // Use setTimeout to ensure navigation happens after render
-    // const timeout = setTimeout(() => {
-    //   //! if user is signed in and trying to access auth screens, redirect to main app
-    //   if(isSignedIn && inAuthScreen){
-    //     router.replace("/(tabs)");
-    //   }
-    //   //! if user is not signed in and trying to access main app screens, redirect to auth
-    //   else if(!isSignedIn && !inAuthScreen){
-    //     router.replace("/(auth)");
-    //   }
-    // }, 0);
+    const timeout = setTimeout(() => {
+      //! if user is signed in and trying to access auth screens, redirect to main app
+      if(isSignedIn && inAuthScreen){
+        router.replace("/(tabs)");
+      }
+      //! if user is not signed in and trying to access main app screens, redirect to auth
+      else if(!isSignedIn && !inAuthScreen && segments[0] !== "(onbording)" && segments[0] !== "index"){
+        router.replace("/(auth)");
+      }
+    }, 0);
 
-  //   return () => clearTimeout(timeout);
-  // },[user, token, segments, navigationState?.key]); //! whenever user or token or segments changes
+    return () => clearTimeout(timeout);
+  },[user, token, segments, navigationState?.key]); //! whenever user or token or segments changes
 
   return (
     <SafeAreaProvider>
