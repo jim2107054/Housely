@@ -26,14 +26,59 @@ const signup = () => {
   const router = useRouter();
 
   const handleRegister = async () => {
+    // Validate inputs
+    if (!userName || !email || !password) {
+      Toast.show({
+        type: "error",
+        text1: "Validation Error",
+        text2: "Please fill in all fields",
+        position: "top",
+        visibilityTime: 3000,
+      });
+      return;
+    }
+
+    if (userName.length < 3) {
+      Toast.show({
+        type: "error",
+        text1: "Invalid Username",
+        text2: "Username must be at least 3 characters",
+        position: "top",
+        visibilityTime: 3000,
+      });
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      Toast.show({
+        type: "error",
+        text1: "Invalid Email",
+        text2: "Please enter a valid email address",
+        position: "top",
+        visibilityTime: 3000,
+      });
+      return;
+    }
+
+    if (password.length < 6) {
+      Toast.show({
+        type: "error",
+        text1: "Weak Password",
+        text2: "Password must be at least 6 characters",
+        position: "top",
+        visibilityTime: 3000,
+      });
+      return;
+    }
+
     // Implement register logic here
     const result = await register(userName, email, password);
 
     if (!result.success) {
       Toast.show({
         type: "error",
-        text1: "Login Failed",
-        text2: result.message || "An error occurred during login",
+        text1: "Registration Failed",
+        text2: result.message || "An error occurred during registration",
         position: "top",
         visibilityTime: 4000,
       });
@@ -41,15 +86,15 @@ const signup = () => {
       Toast.show({
         type: "success",
         text1: "Success!",
-        text2: "Logged in successfully",
+        text2: "Account created successfully",
         position: "top",
-        visibilityTime: 3000,
+        visibilityTime: 2000,
       });
-    }
-
-    // On successful login, you might want to navigate to the main app screen
-    if (result.success) {
-      router.replace("/(tabs)"); // Home screen after login
+      
+      // Navigate to main app screen
+      setTimeout(() => {
+        router.replace("/(tabs)");
+      }, 500);
     }
   };
 
