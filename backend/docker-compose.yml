@@ -13,6 +13,25 @@ services:
       POSTGRES_DB: housely
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - housely-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: housely-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redisdata:/data
+    command: redis-server --appendonly yes
+    networks:
+      - housely-network
 
 volumes:
   pgdata:
+  redisdata:
+
+networks:
+  housely-network:
+    driver: bridge

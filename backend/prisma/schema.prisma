@@ -69,12 +69,20 @@ model User {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
-  savedLocations       SavedLocation[]
-  houses               House[]              @relation("AgentHouses")
-  houseViews           HouseView[]
-  favorites            Favorite[]
-  notificationSettings NotificationSettings?
-  payments             Payment[]
+  savedLocations        SavedLocation[]
+  houses                House[]              @relation("AgentHouses")
+  houseViews            HouseView[]
+  favorites             Favorite[]
+  notificationSettings  NotificationSettings?
+  payments              Payment[]
+  bookings              Booking[]            @relation("UserBookings")
+  agentBookings         Booking[]            @relation("AgentBookings")
+  reviews               Review[]
+  userConversations     Conversation[]       @relation("UserConversations")
+  agentConversations    Conversation[]       @relation("AgentConversations")
+  messages              Message[]
+  notifications         Notification[]
+  deviceTokens          DeviceToken[]
 }
 
 model SavedLocation {
@@ -124,6 +132,9 @@ model House {
   publicFacilities PublicFacility?
   views            HouseView[]
   favorites        Favorite[]
+  bookings         Booking[]
+  reviews          Review[]
+  conversations    Conversation[]
 
   @@index([agentId])
   @@index([city])
@@ -202,13 +213,159 @@ model NotificationSettings {
 model Payment {
   id            String        @id @default(cuid())
   userId        String
+  bookingId     String?
   amount        Float
   currency      String        @default("BDT")
   method        String?
   transactionId String?       @unique
+  gatewayResponse String?
   status        PaymentStatus @default(PENDING)
   description   String?
   createdAt     DateTime      @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  booking Booking? @relation(fields: [bookingId], references: [id])
+
+  @@index([userId])
+  @@index([bookingId])
+}
+
+// ─── Booking ────────────────────────────────────────────
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+model Booking {
+  id           String        @id @default(cuid())
+  userId       String
+  houseId      String
+  agentId      String
+  checkIn      DateTime
+  checkOut     DateTime
+  totalAmount  Float
+  status       BookingStatus @default(PENDING)
+  paymentStatus PaymentStatus @default(PENDING)
+  notes        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  user     User      @relation("UserBookings", fields: [userId], references: [id], onDelete: Cascade)
+  house    House     @relation(fields: [houseId], references: [id], onDelete: Cascade)
+  agent    User      @relation("AgentBookings", fields: [agentId], references: [id])
+  payments Payment[]
+  review   Review?
+
+  @@index([userId])
+  @@index([houseId])
+  @@index([agentId])
+  @@index([status])
+}
+
+// ─── Review ─────────────────────────────────────────────
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  houseId   String
+  bookingId String   @unique
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  house   House         @relation(fields: [houseId], references: [id], onDelete: Cascade)
+  booking Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  media   ReviewMedia[]
+
+  @@index([userId])
+  @@index([houseId])
+}
+
+model ReviewMedia {
+  id       String @id @default(cuid())
+  reviewId String
+  url      String
+  type     String @default("image") // image | video
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId])
+}
+
+// ─── Messaging ──────────────────────────────────────────
+
+model Conversation {
+  id        String    @id @default(cuid())
+  userId    String
+  agentId   String
+  houseId   String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user     User      @relation("UserConversations", fields: [userId], references: [id], onDelete: Cascade)
+  agent    User      @relation("AgentConversations", fields: [agentId], references: [id], onDelete: Cascade)
+  house    House?    @relation(fields: [houseId], references: [id])
+  messages Message[]
+
+  @@unique([userId, agentId])
+  @@index([userId])
+  @@index([agentId])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String
+  type           String   @default("text") // text | image | audio | video
+  isRead         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([senderId])
+}
+
+// ─── Notifications ──────────────────────────────────────
+
+enum NotificationType {
+  BOOKING_CONFIRMED
+  BOOKING_CANCELLED
+  PAYMENT_SUCCESS
+  NEW_MESSAGE
+  REVIEW_POSTED
+  GENERAL
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+model DeviceToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  platform  String   @default("android") // android | ios
+  createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

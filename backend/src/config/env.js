@@ -33,8 +33,17 @@ const env = {
   CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
 
+  // Firebase (FCM)
+  FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
+  FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY,
+  FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL,
+
   // App
   APP_URL: process.env.APP_URL || 'http://localhost:3000',
+  FRONTEND_DEEP_LINK_BASE: process.env.FRONTEND_DEEP_LINK_BASE || 'housely://house',
 };
+
+// Named exports for direct import
+export const { JWT_ACCESS_SECRET, JWT_REFRESH_SECRET } = env;
 
 export default env;
