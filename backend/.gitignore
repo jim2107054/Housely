@@ -1,2 +1,19 @@
+# Environment
 .env
+.env.local
+.env.development
+.env.production
+
+# Dependencies
 node_modules/
+
+# Prisma
+prisma/migrations/
+
+# Docker volumes
+pgdata/
+
+# IDE / OS
+.vscode/
+.DS_Store
+Thumbs.db

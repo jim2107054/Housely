@@ -1,0 +1,216 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ─── Enums ──────────────────────────────────────────────
+
+enum Role {
+  USER
+  AGENT
+  ADMIN
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+  FACEBOOK
+}
+
+enum HouseStatus {
+  AVAILABLE
+  UNAVAILABLE
+}
+
+enum ListingType {
+  RENT
+  SALE
+}
+
+enum PropertyType {
+  APARTMENT
+  PENTHOUSE
+  HOTEL
+  VILLA
+  STUDIO
+  DUPLEX
+  TOWNHOUSE
+  CONDO
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+// ─── Models ─────────────────────────────────────────────
+
+model User {
+  id           String       @id @default(cuid())
+  username     String       @unique
+  email        String       @unique
+  password     String?
+  phoneNumber  String?      @unique
+  name         String?
+  dateOfBirth  DateTime?
+  avatar       String?
+  role         Role         @default(USER)
+  authProvider AuthProvider @default(LOCAL)
+  googleId     String?      @unique
+  facebookId   String?      @unique
+  isVerified   Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  savedLocations       SavedLocation[]
+  houses               House[]              @relation("AgentHouses")
+  houseViews           HouseView[]
+  favorites            Favorite[]
+  notificationSettings NotificationSettings?
+  payments             Payment[]
+}
+
+model SavedLocation {
+  id        String   @id @default(cuid())
+  userId    String
+  label     String?
+  address   String
+  city      String?
+  area      String?
+  street    String?
+  latitude  Float
+  longitude Float
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model House {
+  id           String       @id @default(cuid())
+  name         String
+  description  String?
+  status       HouseStatus  @default(AVAILABLE)
+  rentPerMonth Float?
+  salePrice    Float?
+  listingType  ListingType
+  propertyType PropertyType
+  address      String
+  city         String
+  area         String?
+  latitude     Float?
+  longitude    Float?
+  bedrooms     Int          @default(1)
+  bathrooms    Int          @default(1)
+  sizeInSqft   Float?
+  buildYear    Int?
+  hasWifi      Boolean      @default(false)
+  hasWater     Boolean      @default(true)
+  agentId      String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  agent            User           @relation("AgentHouses", fields: [agentId], references: [id])
+  images           HouseImage[]
+  video            HouseVideo?
+  publicFacilities PublicFacility?
+  views            HouseView[]
+  favorites        Favorite[]
+
+  @@index([agentId])
+  @@index([city])
+  @@index([listingType])
+  @@index([propertyType])
+  @@index([status])
+}
+
+model HouseImage {
+  id      String @id @default(cuid())
+  houseId String
+  url     String
+  order   Int    @default(0)
+
+  house House @relation(fields: [houseId], references: [id], onDelete: Cascade)
+
+  @@index([houseId])
+}
+
+model HouseVideo {
+  id      String @id @default(cuid())
+  houseId String @unique
+  url     String
+
+  house House @relation(fields: [houseId], references: [id], onDelete: Cascade)
+}
+
+model PublicFacility {
+  id                   String @id @default(cuid())
+  houseId              String @unique
+  mosqueDistance        Float?
+  hospitalDistance      Float?
+  shoppingMallDistance  Float?
+  marketDistance        Float?
+
+  house House @relation(fields: [houseId], references: [id], onDelete: Cascade)
+}
+
+model HouseView {
+  id       String   @id @default(cuid())
+  userId   String
+  houseId  String
+  viewedAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  house House @relation(fields: [houseId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([houseId])
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  houseId   String
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  house House @relation(fields: [houseId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, houseId])
+}
+
+model NotificationSettings {
+  id             String  @id @default(cuid())
+  userId         String  @unique
+  pushEnabled    Boolean @default(true)
+  emailEnabled   Boolean @default(true)
+  smsEnabled     Boolean @default(false)
+  bookingUpdates Boolean @default(true)
+  promotions     Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  userId        String
+  amount        Float
+  currency      String        @default("BDT")
+  method        String?
+  transactionId String?       @unique
+  status        PaymentStatus @default(PENDING)
+  description   String?
+  createdAt     DateTime      @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
