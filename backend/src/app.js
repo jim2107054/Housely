@@ -7,6 +7,10 @@ import locationRoutes from './modules/location/location.routes.js';
 import userRoutes from './modules/user/user.routes.js';
 import houseRoutes from './modules/house/house.routes.js';
 import filterRoutes from './modules/filter/filter.routes.js';
+import bookingRoutes from './modules/booking/booking.routes.js';
+import reviewRoutes from './modules/review/review.routes.js';
+import messageRoutes from './modules/message/message.routes.js';
+import notificationRoutes from './modules/notification/notification.routes.js';
 
 // Middlewares
 import { errorHandler } from './middlewares/errorHandler.js';
@@ -48,6 +52,10 @@ app.use('/api/location', locationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/houses', houseRoutes);
 app.use('/api/filter', filterRoutes);
+app.use('/api/bookings', bookingRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/conversations', messageRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // ─── Error handler (must be last) ───
 app.use(errorHandler);
