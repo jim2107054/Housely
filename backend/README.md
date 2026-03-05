@@ -74,6 +74,23 @@ npm run dev
 
 Server runs at `http://localhost:3000`
 
+## 📚 API Documentation (Swagger)
+
+Interactive API documentation is available at:
+
+- **Swagger UI**: `http://localhost:3000/api/docs`
+- **OpenAPI JSON**: `http://localhost:3000/api/docs.json`
+
+## 🧪 Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run with coverage
+npm test -- --coverage
+```
+
 ## API Endpoints
 
 ### Auth

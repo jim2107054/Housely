@@ -1,6 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 
+// Swagger documentation
+import { setupSwagger } from './config/swagger.js';
+
 // Module routes
 import authRoutes from './modules/auth/auth.routes.js';
 import locationRoutes from './modules/location/location.routes.js';
@@ -21,6 +24,9 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// ─── Swagger Documentation ───
+setupSwagger(app);
 
 // ─── Health check ───
 app.get('/health', (req, res) => {

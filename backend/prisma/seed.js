@@ -280,8 +280,67 @@ async function main() {
     }
   }
 
+  // ─── Create sample bookings ───
+  const houses = await prisma.house.findMany({ 
+    select: { id: true, agentId: true },
+    take: 5 
+  });
+  
+  for (let i = 0; i < Math.min(3, houses.length); i++) {
+    const house = houses[i];
+    const existingBooking = await prisma.booking.findFirst({
+      where: { userId: user.id, houseId: house.id },
+    });
+    
+    if (!existingBooking) {
+      const checkIn = new Date();
+      checkIn.setDate(checkIn.getDate() + (i + 1) * 7);
+      const checkOut = new Date(checkIn);
+      checkOut.setDate(checkOut.getDate() + 7);
+      
+      await prisma.booking.create({
+        data: {
+          userId: user.id,
+          houseId: house.id,
+          agentId: house.agentId,
+          checkIn,
+          checkOut,
+          totalAmount: 50000 + (i * 10000),
+          status: ['PENDING', 'CONFIRMED', 'COMPLETED'][i] || 'PENDING',
+          paymentStatus: i === 2 ? 'COMPLETED' : 'PENDING',
+          notes: `Sample booking ${i + 1}`,
+        },
+      });
+    }
+  }
+  console.log('  ✅ Sample bookings created');
+
+  // ─── Create sample reviews ───
+  for (let i = 0; i < Math.min(4, houses.length); i++) {
+    const house = houses[i];
+    const existingReview = await prisma.review.findFirst({
+      where: { userId: user.id, houseId: house.id },
+    });
+    
+    if (!existingReview) {
+      await prisma.review.create({
+        data: {
+          userId: user.id,
+          houseId: house.id,
+          rating: Math.floor(Math.random() * 2) + 4, // 4 or 5 stars
+          comment: [
+            'Great place to stay! Very clean and well maintained.',
+            'Loved the location. Agent was very helpful.',
+            'Modern amenities and spacious rooms. Highly recommend!',
+            'Perfect for families. Kids loved the neighborhood.',
+          ][i],
+        },
+      });
+    }
+  }
+  console.log('  ✅ Sample reviews created');
+
   // ─── Create some views for popularity ───
-  const houses = await prisma.house.findMany({ select: { id: true } });
   for (const house of houses.slice(0, 5)) {
     const existingView = await prisma.houseView.findFirst({
       where: { userId: user.id, houseId: house.id },
