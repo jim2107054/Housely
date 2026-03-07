@@ -20,12 +20,12 @@ router.get('/unread-count', notificationController.getUnreadCount);
 router.patch('/read-all', notificationController.markAllAsRead);
 router.delete('/clear-all', notificationController.clearAll);
 
+// Device tokens for push notifications (must be before /:id routes)
+router.post('/device-token', validate(registerDeviceSchema), notificationController.registerDevice);
+router.delete('/device-token', validate(removeDeviceSchema), notificationController.removeDevice);
+
 router.get('/:id', validate(notificationIdSchema), notificationController.getNotification);
 router.patch('/:id/read', validate(notificationIdSchema), notificationController.markAsRead);
 router.delete('/:id', validate(notificationIdSchema), notificationController.deleteNotification);
-
-// Device tokens for push notifications
-router.post('/device-token', validate(registerDeviceSchema), notificationController.registerDevice);
-router.delete('/device-token', validate(removeDeviceSchema), notificationController.removeDevice);
 
 export default router;

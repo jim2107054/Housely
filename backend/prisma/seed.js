@@ -316,24 +316,32 @@ async function main() {
   console.log('  ✅ Sample bookings created');
 
   // ─── Create sample reviews ───
-  for (let i = 0; i < Math.min(4, houses.length); i++) {
-    const house = houses[i];
+  const completedBookings = await prisma.booking.findMany({
+    where: { userId: user.id, status: 'COMPLETED' },
+    select: { id: true, houseId: true },
+  });
+
+  const reviewComments = [
+    'Great place to stay! Very clean and well maintained.',
+    'Loved the location. Agent was very helpful.',
+    'Modern amenities and spacious rooms. Highly recommend!',
+    'Perfect for families. Kids loved the neighborhood.',
+  ];
+
+  for (let i = 0; i < completedBookings.length; i++) {
+    const booking = completedBookings[i];
     const existingReview = await prisma.review.findFirst({
-      where: { userId: user.id, houseId: house.id },
+      where: { bookingId: booking.id },
     });
-    
+
     if (!existingReview) {
       await prisma.review.create({
         data: {
           userId: user.id,
-          houseId: house.id,
-          rating: Math.floor(Math.random() * 2) + 4, // 4 or 5 stars
-          comment: [
-            'Great place to stay! Very clean and well maintained.',
-            'Loved the location. Agent was very helpful.',
-            'Modern amenities and spacious rooms. Highly recommend!',
-            'Perfect for families. Kids loved the neighborhood.',
-          ][i],
+          houseId: booking.houseId,
+          bookingId: booking.id,
+          rating: Math.floor(Math.random() * 2) + 4,
+          comment: reviewComments[i % reviewComments.length],
         },
       });
     }

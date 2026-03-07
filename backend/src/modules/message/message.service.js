@@ -52,6 +52,8 @@ export const getOrCreateConversation = async (userId, agentId, houseId = null) =
 // ─── Get User Conversations ───
 
 export const getUserConversations = async (userId, role, { page = 1, limit = 20 }) => {
+  page = Number(page);
+  limit = Number(limit);
   const skip = (page - 1) * limit;
 
   const where = role === 'USER' ? { userId } : { agentId: userId };
@@ -113,6 +115,8 @@ export const getConversationById = async (userId, conversationId) => {
 // ─── Get Messages in Conversation ───
 
 export const getMessages = async (userId, conversationId, { page = 1, limit = 50, before }) => {
+  page = Number(page);
+  limit = Number(limit);
   // Verify user is part of conversation
   const conversation = await prisma.conversation.findFirst({
     where: {

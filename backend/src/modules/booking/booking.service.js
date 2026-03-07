@@ -91,6 +91,8 @@ export const createBooking = async (userId, data) => {
 // ─── Get User Bookings ───
 
 export const getUserBookings = async (userId, { status = 'all', page = 1, limit = 20 }) => {
+  page = Number(page);
+  limit = Number(limit);
   const skip = (page - 1) * limit;
   const now = new Date();
 
@@ -191,6 +193,8 @@ export const cancelBooking = async (userId, bookingId) => {
 // ─── Get Agent Bookings ───
 
 export const getAgentBookings = async (agentId, { status = 'all', page = 1, limit = 20 }) => {
+  page = Number(page);
+  limit = Number(limit);
   const skip = (page - 1) * limit;
   const now = new Date();
 

@@ -53,6 +53,8 @@ export const createReview = async (userId, data) => {
 // ─── Get Reviews for House ───
 
 export const getHouseReviews = async (houseId, { sortBy = 'newest', page = 1, limit = 20 }) => {
+  page = Number(page);
+  limit = Number(limit);
   const skip = (page - 1) * limit;
 
   // Check house exists
