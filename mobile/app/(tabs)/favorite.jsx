@@ -12,66 +12,19 @@ import { useRouter } from "expo-router";
 // Import SVG icons
 import LocationIcon from "../../assets/images/home-icons/Location.svg";
 
-// Sample data for favorite properties
-const favoriteProperties = [
-  {
-    id: "1",
-    name: "Takatea Homestay",
-    location: "Jl. Tentara Pelajar No.47, RW.001",
-    price: 120,
-    priceType: "night",
-    rating: 4.5,
-    image: require("../../assets/images/popular/Rectangle 11.png"),
-    isFavorite: false,
-  },
-  {
-    id: "2",
-    name: "Maharani Villa Yogyakarta",
-    location: "Benhil, Jl. Bendungan Hilir Karet...",
-    price: 320,
-    priceType: "month",
-    rating: 4.5,
-    image: require("../../assets/images/popular/Rectangle 12.png"),
-    isFavorite: true,
-  },
-  {
-    id: "3",
-    name: "Bali Komang Guest",
-    location: "Nusa Penida, Bali",
-    price: 180,
-    priceType: "night",
-    rating: 4.5,
-    image: require("../../assets/images/popular/Rectangle 13.png"),
-    isFavorite: false,
-  },
-  {
-    id: "4",
-    name: "Batavia Apartments",
-    location: "Benhil, Jl. Bendungan Hilir Karet...",
-    price: 120,
-    priceType: "night",
-    rating: 4.5,
-    image: require("../../assets/images/popular/Rectangle 14.png"),
-    isFavorite: false,
-  },
-  {
-    id: "5",
-    name: "Manhattan Hotel",
-    location: "Jl. Prof. DR. Satrio No.Kav.19-24, RT.7/...",
-    price: 230,
-    priceType: "night",
-    rating: 4.5,
-    image: require("../../assets/images/popular/Rectangle 15.png"),
-    isFavorite: true,
-  },
-];
+// Import data
+import { allProperties } from "../../data/properties";
 
 const Favorite = () => {
   const router = useRouter();
-  const [favorites, setFavorites] = useState(["2", "5"]);
+  // IDs of favorited properties
+  const [favoriteIds, setFavoriteIds] = useState(["1", "2", "4"]);
+
+  // Filter to show only favorited properties
+  const favoriteProperties = allProperties.filter(prop => favoriteIds.includes(prop.id));
 
   const toggleFavorite = (id) => {
-    setFavorites((prev) =>
+    setFavoriteIds((prev) =>
       prev.includes(id) ? prev.filter((fId) => fId !== id) : [...prev, id]
     );
   };
@@ -91,64 +44,80 @@ const Favorite = () => {
     </View>
   );
 
-  // Favorite Card Component
+  // Favorite Card Component - Similar to Popular card but with larger image
   const FavoriteCard = ({ item }) => (
     <TouchableOpacity 
-      className="flex-row items-center py-3 mx-5 border-b border-border"
+      className="flex-row bg-white rounded-2xl p-3 mb-3 mx-5 border border-border"
       onPress={() => router.push({ pathname: "/(tabs)/propertyDetails", params: { id: item.id } })}
     >
       <Image
-        source={item.image}
-        className="w-20 h-20 rounded-xl"
+        source={{ uri: item.image }}
+        className="w-24 h-24 rounded-xl"
         resizeMode="cover"
       />
       <View className="flex-1 ml-3 justify-center">
-        <Text className="text-textPrimary font-poppins-semibold text-base" numberOfLines={1}>
-          {item.name}
-        </Text>
-        <View className="flex-row items-center mt-1">
-          <View className="w-4 h-4 rounded-full bg-primary items-center justify-center">
-            <LocationIcon width={8} height={8} />
-          </View>
+        <View className="flex-row items-start justify-between">
+          <Text className="text-textPrimary font-poppins-bold text-sm flex-1 pr-2" numberOfLines={1}>
+            {item.name}
+          </Text>
+          <TouchableOpacity
+            onPress={(e) => {
+              e.stopPropagation();
+              toggleFavorite(item.id);
+            }}
+          >
+            <Ionicons
+              name={favoriteIds.includes(item.id) ? "heart" : "heart-outline"}
+              size={22}
+              color={favoriteIds.includes(item.id) ? "#FF6B6B" : "#DADADA"}
+            />
+          </TouchableOpacity>
+        </View>
+        <View className="flex-row items-center">
+          <LocationIcon width={10} height={10} />
           <Text className="text-textSecondary font-poppins text-xs ml-1 flex-1" numberOfLines={1}>
             {item.location}
           </Text>
         </View>
-        <View className="flex-row items-center mt-1">
-          <Text className="text-textPrimary font-poppins-semibold text-sm">
-            ${item.price}/{item.priceType}
+        <View className="flex-row items-center justify-between mt-1">
+          <Text className="text-primary font-poppins-bold text-sm">
+            ${item.price}<Text className="text-textSecondary font-poppins text-xs">/{item.priceType}</Text>
           </Text>
-          <View className="flex-row items-center ml-4">
+          <View className="flex-row items-center">
             <Ionicons name="star" size={14} color="#FFC42D" />
-            <Text className="text-textPrimary font-poppins-medium text-sm ml-1">
+            <Text className="text-textPrimary font-poppins-bold text-xs ml-1">
               {item.rating}
             </Text>
           </View>
         </View>
       </View>
-      <TouchableOpacity
-        onPress={(e) => {
-          e.stopPropagation();
-          toggleFavorite(item.id);
-        }}
-        className="p-2"
-      >
-        <Ionicons
-          name={favorites.includes(item.id) ? "heart" : "heart-outline"}
-          size={22}
-          color={favorites.includes(item.id) ? "#FF6B6B" : "#DADADA"}
-        />
-      </TouchableOpacity>
     </TouchableOpacity>
+  );
+
+  // Empty State Component
+  const EmptyState = () => (
+    <View className="flex-1 items-center justify-center py-20">
+      <Ionicons name="heart-outline" size={64} color="#DADADA" />
+      <Text className="text-textSecondary font-poppins-semibold text-lg mt-4">
+        No favorites yet
+      </Text>
+      <Text className="text-textSecondary font-poppins text-sm mt-2 text-center px-10">
+        Start adding properties to your favorites by tapping the heart icon
+      </Text>
+    </View>
   );
 
   return (
     <View className="flex-1 bg-white">
       <Header />
       <ScrollView showsVerticalScrollIndicator={false}>
-        {favoriteProperties.map((item) => (
-          <FavoriteCard key={item.id} item={item} />
-        ))}
+        {favoriteProperties.length > 0 ? (
+          favoriteProperties.map((item) => (
+            <FavoriteCard key={item.id} item={item} />
+          ))
+        ) : (
+          <EmptyState />
+        )}
         {/* Bottom spacing */}
         <View className="h-24" />
       </ScrollView>
