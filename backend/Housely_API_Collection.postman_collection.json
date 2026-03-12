@@ -1,0 +1,1534 @@
+{
+	"info": {
+		"_postman_id": "housely-api-collection-2026",
+		"name": "Housely API Collection",
+		"description": "Complete API collection for Housely - House Rental Application",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Health & App Info",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": ["{{base_url}}"],
+							"path": ["health"]
+						}
+					}
+				},
+				{
+					"name": "App About",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/app/about",
+							"host": ["{{base_url}}"],
+							"path": ["api", "app", "about"]
+						}
+					}
+				},
+				{
+					"name": "Swagger Documentation",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/docs/",
+							"host": ["{{base_url}}"],
+							"path": ["api", "docs", ""]
+						}
+					}
+				},
+				{
+					"name": "Swagger JSON",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/docs.json",
+							"host": ["{{base_url}}"],
+							"path": ["api", "docs.json"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 201) {",
+									"    const response = pm.response.json();",
+									"    if (response.tokens && response.tokens.accessToken) {",
+									"        pm.collectionVariables.set('auth_token', response.tokens.accessToken);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fullName\": \"John Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"phone\": \"+1234567890\",\n  \"password\": \"SecurePass123!\",\n  \"role\": \"USER\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "register"]
+						}
+					}
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.tokens && response.tokens.accessToken) {",
+									"        pm.collectionVariables.set('auth_token', response.tokens.accessToken);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/auth/logout",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "logout"]
+						}
+					}
+				},
+				{
+					"name": "Refresh Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"your-refresh-token-here\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/refresh-token",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "refresh-token"]
+						}
+					}
+				},
+				{
+					"name": "Forgot Password - Email",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"john.doe@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/forgot-password/email",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "forgot-password", "email"]
+						}
+					}
+				},
+				{
+					"name": "Forgot Password - Phone",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"+1234567890\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/forgot-password/phone",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "forgot-password", "phone"]
+						}
+					}
+				},
+				{
+					"name": "Verify OTP",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"identifier\": \"john.doe@example.com\",\n  \"otp\": \"123456\",\n  \"type\": \"EMAIL\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/verify-otp",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "verify-otp"]
+						}
+					}
+				},
+				{
+					"name": "Reset Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"reset-token-here\",\n  \"newPassword\": \"NewSecurePass123!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/auth/reset-password",
+							"host": ["{{base_url}}"],
+							"path": ["api", "auth", "reset-password"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "User",
+			"item": [
+				{
+					"name": "Get Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/me",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", "me"]
+						}
+					}
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fullName\": \"John Updated Doe\",\n  \"phone\": \"+1234567890\",\n  \"bio\": \"Updated bio\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/users/me",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", "me"]
+						}
+					}
+				},
+				{
+					"name": "Upload Avatar",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "avatar",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/users/me/avatar",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", "me", "avatar"]
+						}
+					}
+				},
+				{
+					"name": "Get Payment History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/me/payment-history",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", "me", "payment-history"]
+						}
+					}
+				},
+				{
+					"name": "Get Notification Settings",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/me/notifications",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", "me", "notifications"]
+						}
+					}
+				},
+				{
+					"name": "Update Notification Settings",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pushNotifications\": true,\n  \"emailNotifications\": false,\n  \"smsNotifications\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/users/me/notifications",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", "me", "notifications"]
+						}
+					}
+				},
+				{
+					"name": "Get Recent Viewed",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/users/me/recent-viewed",
+							"host": ["{{base_url}}"],
+							"path": ["api", "users", "me", "recent-viewed"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Houses",
+			"item": [
+				{
+					"name": "List Houses",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/houses?page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "houses"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Top Locations",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/houses/top-locations",
+							"host": ["{{base_url}}"],
+							"path": ["api", "houses", "top-locations"]
+						}
+					}
+				},
+				{
+					"name": "Get Popular Houses",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/houses/popular",
+							"host": ["{{base_url}}"],
+							"path": ["api", "houses", "popular"]
+						}
+					}
+				},
+				{
+					"name": "Get Recommended Houses",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/houses/recommended",
+							"host": ["{{base_url}}"],
+							"path": ["api", "houses", "recommended"]
+						}
+					}
+				},
+				{
+					"name": "Get Nearby Houses",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/houses/nearby?latitude=23.8103&longitude=90.4125&radius=5",
+							"host": ["{{base_url}}"],
+							"path": ["api", "houses", "nearby"],
+							"query": [
+								{
+									"key": "latitude",
+									"value": "23.8103"
+								},
+								{
+									"key": "longitude",
+									"value": "90.4125"
+								},
+								{
+									"key": "radius",
+									"value": "5"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get House by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/houses/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "houses", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "house-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Share Link",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/houses/:id/share-link",
+							"host": ["{{base_url}}"],
+							"path": ["api", "houses", ":id", "share-link"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "house-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Track View",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/houses/:id/view",
+							"host": ["{{base_url}}"],
+							"path": ["api", "houses", ":id", "view"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "house-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create House (Agent)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Beautiful 3BR Apartment\",\n  \"description\": \"A beautiful apartment in the heart of the city\",\n  \"listingType\": \"RENT\",\n  \"propertyType\": \"APARTMENT\",\n  \"price\": 50000,\n  \"bedrooms\": 3,\n  \"bathrooms\": 2,\n  \"area\": 1500,\n  \"address\": \"123 Main Street\",\n  \"city\": \"Dhaka\",\n  \"state\": \"Dhaka\",\n  \"country\": \"Bangladesh\",\n  \"zipCode\": \"1212\",\n  \"latitude\": 23.8103,\n  \"longitude\": 90.4125,\n  \"amenities\": [\"PARKING\", \"WIFI\", \"GYM\"],\n  \"images\": [\"image-url-1\", \"image-url-2\"]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/houses",
+							"host": ["{{base_url}}"],
+							"path": ["api", "houses"]
+						}
+					}
+				},
+				{
+					"name": "Update House (Agent)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Updated Beautiful 3BR Apartment\",\n  \"price\": 55000\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/houses/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "houses", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "house-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete House (Agent)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/houses/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "houses", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "house-id-here"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Filter",
+			"item": [
+				{
+					"name": "Filter Houses",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/filter/search?listingType=RENT&city=Dhaka&minPrice=10000&maxPrice=100000&bedrooms=3&sortBy=price_asc&page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "filter", "search"],
+							"query": [
+								{
+									"key": "listingType",
+									"value": "RENT"
+								},
+								{
+									"key": "city",
+									"value": "Dhaka"
+								},
+								{
+									"key": "minPrice",
+									"value": "10000"
+								},
+								{
+									"key": "maxPrice",
+									"value": "100000"
+								},
+								{
+									"key": "bedrooms",
+									"value": "3"
+								},
+								{
+									"key": "sortBy",
+									"value": "price_asc"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Bookings",
+			"item": [
+				{
+					"name": "Create Booking",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"houseId\": \"house-id-here\",\n  \"startDate\": \"2026-04-01\",\n  \"endDate\": \"2026-04-10\",\n  \"guests\": 2,\n  \"message\": \"Looking forward to staying here\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/bookings",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bookings"]
+						}
+					}
+				},
+				{
+					"name": "Get My Bookings",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/bookings/my?status=PENDING&page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bookings", "my"],
+							"query": [
+								{
+									"key": "status",
+									"value": "PENDING"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Booking by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/bookings/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bookings", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "booking-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Cancel Booking",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/bookings/:id/cancel",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bookings", ":id", "cancel"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "booking-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Agent Bookings (Agent)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/bookings/agent/all?status=PENDING&page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bookings", "agent", "all"],
+							"query": [
+								{
+									"key": "status",
+									"value": "PENDING"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Booking Status (Agent)",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"status\": \"CONFIRMED\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/bookings/agent/:id/status",
+							"host": ["{{base_url}}"],
+							"path": ["api", "bookings", "agent", ":id", "status"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "booking-id-here"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Reviews",
+			"item": [
+				{
+					"name": "Create Review",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"houseId\": \"house-id-here\",\n  \"rating\": 5,\n  \"comment\": \"Excellent place to stay!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/reviews",
+							"host": ["{{base_url}}"],
+							"path": ["api", "reviews"]
+						}
+					}
+				},
+				{
+					"name": "Get My Reviews",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/reviews/my",
+							"host": ["{{base_url}}"],
+							"path": ["api", "reviews", "my"]
+						}
+					}
+				},
+				{
+					"name": "Get House Reviews",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/reviews/house/:houseId?page=1&limit=10",
+							"host": ["{{base_url}}"],
+							"path": ["api", "reviews", "house", ":houseId"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							],
+							"variable": [
+								{
+									"key": "houseId",
+									"value": "house-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Review by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/reviews/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "reviews", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "review-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Review",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"rating\": 4,\n  \"comment\": \"Updated review comment\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/reviews/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "reviews", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "review-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Review",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/reviews/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "reviews", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "review-id-here"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Location",
+			"item": [
+				{
+					"name": "Reverse Geocode",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"latitude\": 23.8103,\n  \"longitude\": 90.4125\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/location/reverse-geocode",
+							"host": ["{{base_url}}"],
+							"path": ["api", "location", "reverse-geocode"]
+						}
+					}
+				},
+				{
+					"name": "Get Saved Locations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/location/saved",
+							"host": ["{{base_url}}"],
+							"path": ["api", "location", "saved"]
+						}
+					}
+				},
+				{
+					"name": "Save Location",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Home\",\n  \"address\": \"123 Main Street\",\n  \"latitude\": 23.8103,\n  \"longitude\": 90.4125\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/location/save",
+							"host": ["{{base_url}}"],
+							"path": ["api", "location", "save"]
+						}
+					}
+				},
+				{
+					"name": "Delete Saved Location",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/location/saved/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "location", "saved", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "location-id-here"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Conversations & Messages",
+			"item": [
+				{
+					"name": "Get Conversations",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/conversations?page=1&limit=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "conversations"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Create Conversation",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"participantId\": \"user-id-here\",\n  \"houseId\": \"house-id-here\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/conversations",
+							"host": ["{{base_url}}"],
+							"path": ["api", "conversations"]
+						}
+					}
+				},
+				{
+					"name": "Get Unread Count",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/conversations/unread-count",
+							"host": ["{{base_url}}"],
+							"path": ["api", "conversations", "unread-count"]
+						}
+					}
+				},
+				{
+					"name": "Get Conversation",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/conversations/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "conversations", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "conversation-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Conversation",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/conversations/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "conversations", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "conversation-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Messages",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/conversations/:id/messages?page=1&limit=50",
+							"host": ["{{base_url}}"],
+							"path": ["api", "conversations", ":id", "messages"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "50"
+								}
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "conversation-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Send Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"content\": \"Hello, I'm interested in this property\",\n  \"type\": \"TEXT\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/conversations/:id/messages",
+							"host": ["{{base_url}}"],
+							"path": ["api", "conversations", ":id", "messages"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "conversation-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Mark as Read",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/conversations/:id/read",
+							"host": ["{{base_url}}"],
+							"path": ["api", "conversations", ":id", "read"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "conversation-id-here"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Notifications",
+			"item": [
+				{
+					"name": "Get Notifications",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/notifications?page=1&limit=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "notifications"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Unread Count",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/notifications/unread-count",
+							"host": ["{{base_url}}"],
+							"path": ["api", "notifications", "unread-count"]
+						}
+					}
+				},
+				{
+					"name": "Mark All as Read",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/notifications/read-all",
+							"host": ["{{base_url}}"],
+							"path": ["api", "notifications", "read-all"]
+						}
+					}
+				},
+				{
+					"name": "Clear All",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/notifications/clear-all",
+							"host": ["{{base_url}}"],
+							"path": ["api", "notifications", "clear-all"]
+						}
+					}
+				},
+				{
+					"name": "Get Notification",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/notifications/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "notifications", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "notification-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Mark as Read",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/notifications/:id/read",
+							"host": ["{{base_url}}"],
+							"path": ["api", "notifications", ":id", "read"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "notification-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Notification",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/notifications/:id",
+							"host": ["{{base_url}}"],
+							"path": ["api", "notifications", ":id"],
+							"variable": [
+								{
+									"key": "id",
+									"value": "notification-id-here"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Register Device Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"deviceToken\": \"device-token-here\",\n  \"platform\": \"ANDROID\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/notifications/device-token",
+							"host": ["{{base_url}}"],
+							"path": ["api", "notifications", "device-token"]
+						}
+					}
+				},
+				{
+					"name": "Remove Device Token",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{auth_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"deviceToken\": \"device-token-here\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/notifications/device-token",
+							"host": ["{{base_url}}"],
+							"path": ["api", "notifications", "device-token"]
+						}
+					}
+				}
+			]
+		}
+	]
+}

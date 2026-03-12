@@ -4,11 +4,11 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
-  TextInput,
   FlatList,
   Dimensions,
+  Animated,
 } from "react-native";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import useLocationStore from "../../store/locationStore";
@@ -19,121 +19,20 @@ import NotificationIcon from "../../assets/images/home-icons/Notification.svg";
 import ChatIcon from "../../assets/images/home-icons/Chat.svg";
 import FilterIcon from "../../assets/images/home-icons/Filter.svg";
 
+// Import data from centralized data folder
+import {
+  recommendedProperties,
+  nearbyPropertiesRow1,
+  nearbyPropertiesRow2,
+  topLocations,
+  popularProperties,
+} from "../../data/properties";
+
 const { width } = Dimensions.get("window");
-const CARD_WIDTH = width * 0.55;
-
-// Sample data for recommended properties
-const recommendedProperties = [
-  {
-    id: "1",
-    name: "Ayana Homestay",
-    location: "Imogiri, Yogyakarta",
-    price: 310,
-    image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400",
-    isFavorite: true,
-  },
-  {
-    id: "2",
-    name: "Bali Komang Guest",
-    location: "Nusa penida,",
-    price: 280,
-    image: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400",
-    isFavorite: false,
-  },
-  {
-    id: "3",
-    name: "Villa Paradise",
-    location: "Seminyak, Bali",
-    price: 450,
-    image: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=400",
-    isFavorite: false,
-  },
-];
-
-// Sample data for nearby properties
-const nearbyProperties = [
-  {
-    id: "1",
-    name: "Maharani Villa...",
-    location: "Benhil, Jl. Bendungan...",
-    price: 320,
-    rating: 4.5,
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=200",
-    image2: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=200",
-  },
-  {
-    id: "2",
-    name: "Apartement land...",
-    location: "Jl. Tentara Pelajar...",
-    price: 320,
-    rating: 4.7,
-    image: "https://images.unsplash.com/photo-1600607687644-c7171b42498f?w=200",
-    image2: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=200",
-  },
-];
-
-// Sample data for top locations
-const topLocations = [
-  {
-    id: "1",
-    name: "Malang",
-    image: require("../../assets/images/home-icons/Rectangle 14.png"),
-  },
-  {
-    id: "2",
-    name: "Bali",
-    image: require("../../assets/images/home-icons/Rectangle 15.png"),
-    isActive: true,
-  },
-  {
-    id: "3",
-    name: "Yogyakarta",
-    image: require("../../assets/images/home-icons/Rectangle 16.png"),
-  },
-  {
-    id: "4",
-    name: "Jakarta",
-    image: require("../../assets/images/home-icons/Rectangle 14.png"),
-  },
-];
-
-// Sample data for popular properties
-const popularProperties = [
-  {
-    id: "1",
-    name: "Takatea Homestay",
-    location: "Jl. Tentara Pelajar No.47, RW.001",
-    price: 120,
-    priceType: "night",
-    rating: 4.5,
-    image: require("../../assets/images/home-icons/Rectangle 27.png"),
-    isFavorite: false,
-  },
-  {
-    id: "2",
-    name: "Maharani Villa Yogyakarta",
-    location: "Benhil, Jl. Bendungan Hilir Karet...",
-    price: 320,
-    priceType: "month",
-    rating: 4.5,
-    image: require("../../assets/images/home-icons/Rectangle 28.png"),
-    isFavorite: true,
-  },
-  {
-    id: "3",
-    name: "Bali Komang Guest",
-    location: "Nusa Penida, Bali",
-    price: 280,
-    priceType: "month",
-    rating: 4.8,
-    image: require("../../assets/images/home-icons/Rectangle 29.png"),
-    isFavorite: false,
-  },
-];
+const CARD_WIDTH = width * 0.65;
 
 const Home = () => {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
   const [favorites, setFavorites] = useState(["1"]);
   const [popularFavorites, setPopularFavorites] = useState(["2"]);
   const [activeLocation, setActiveLocation] = useState("2");
@@ -144,6 +43,38 @@ const Home = () => {
   // Load saved location on mount
   useEffect(() => {
     loadLocation();
+  }, []);
+
+  // Auto-scroll animation for Recommended section
+  const recommendedScrollX = useRef(new Animated.Value(0)).current;
+  
+  useEffect(() => {
+    // Calculate total content width: (CARD_WIDTH + 16px margin) * number of cards
+    const totalWidth = (CARD_WIDTH + 16) * recommendedProperties.length;
+    
+    if (totalWidth > width) {
+      const scrollDistance = totalWidth - width + 40;
+      
+      const animation = Animated.loop(
+        Animated.sequence([
+          // Scroll from right to left
+          Animated.timing(recommendedScrollX, {
+            toValue: -scrollDistance,
+            duration: 10000,
+            useNativeDriver: true,
+          }),
+          // Reset instantly to starting position
+          Animated.timing(recommendedScrollX, {
+            toValue: 0,
+            duration: 0,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      animation.start();
+      
+      return () => animation.stop();
+    }
   }, []);
 
   const toggleFavorite = (id) => {
@@ -163,15 +94,13 @@ const Home = () => {
     <View className="flex-row items-center justify-between px-5 pt-2 pb-4">
       <TouchableOpacity onPress={() => router.push("/(location)")}>
         <View className="flex-row items-center gap-1">
-          <Text className="text-xs text-textSecondary font-poppins">Location</Text>
-          <Ionicons name="chevron-down" size={12} color="#53587A" />
+          <Text className="text-sm text-textSecondary font-poppins">Location</Text>
+          <Ionicons name="chevron-down" size={16} color="#6941C6" />
         </View>
         <View className="flex-row items-center mt-1">
-          <View className="w-5 h-5 rounded-full bg-primary items-center justify-center">
-            <LocationIcon width={12} height={12} />
-          </View>
+          <LocationIcon width={20} height={20} />
           <Text 
-            className="text-base font-poppins-semibold text-textPrimary ml-2"
+            className="text-lg font-poppins-semibold text-textPrimary ml-2"
             numberOfLines={1}
             style={{ maxWidth: 180 }}
           >
@@ -180,10 +109,34 @@ const Home = () => {
         </View>
       </TouchableOpacity>
       <View className="flex-row items-center gap-2">
-        <TouchableOpacity className="w-10 h-10 rounded-full bg-cardBackground items-center justify-center border border-border">
+        <TouchableOpacity 
+          className="w-10 h-10 rounded-full bg-cardBackground items-center justify-center border border-border"
+          onPress={() => router.push("/(tabs)/notifications")}
+        >
           <NotificationIcon width={20} height={20} />
+          {/* Notification Badge */}
+          <View 
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              backgroundColor: '#FF5252',
+              width: 18,
+              height: 18,
+              borderRadius: 9,
+              justifyContent: 'center',
+              alignItems: 'center',
+              borderWidth: 2,
+              borderColor: '#FFFFFF',
+            }}
+          >
+            <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: 'bold' }}>2</Text>
+          </View>
         </TouchableOpacity>
-        <TouchableOpacity className="w-10 h-10 rounded-full bg-cardBackground items-center justify-center border border-border">
+        <TouchableOpacity 
+          className="w-10 h-10 rounded-full bg-cardBackground items-center justify-center border border-border"
+          onPress={() => router.push("/(tabs)/chat")}
+        >
           <ChatIcon width={20} height={20} />
         </TouchableOpacity>
       </View>
@@ -192,21 +145,19 @@ const Home = () => {
 
   // Search Bar Component
   const SearchBar = () => (
-    <View className="flex-row items-center mx-5 mb-5">
-      <View className="flex-1 flex-row items-center bg-cardBackground rounded-xl h-12 px-4 border border-border">
-        <Ionicons name="search-outline" size={20} color="#A1A5C1" />
-        <TextInput
-          placeholder="Search Property"
-          placeholderTextColor="#A1A5C1"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          className="flex-1 ml-3 text-textPrimary font-poppins text-sm"
-        />
+    <TouchableOpacity 
+      className="flex-row items-center mx-5 mb-5"
+      onPress={() => router.push("/(tabs)/search")}
+      activeOpacity={0.7}
+    >
+      <View className="flex-1 flex-row items-center bg-cardBackground rounded-xl py-3 px-4 border border-border">
+        <Ionicons name="search-outline" size={24} color="#6941C6" />
+        <Text className="flex-1 ml-3 text-textHint font-poppins text-base">
+          Search Property
+        </Text>
+        <FilterIcon width={24} height={24} color="#6941C6" />
       </View>
-      <TouchableOpacity className="ml-3 w-12 h-12 rounded-xl bg-white border border-border items-center justify-center">
-        <FilterIcon width={20} height={20} />
-      </TouchableOpacity>
-    </View>
+    </TouchableOpacity>
   );
 
   // Promo Banner Component
@@ -232,7 +183,7 @@ const Home = () => {
   // Recommended Card Component
   const RecommendedCard = ({ item }) => (
     <TouchableOpacity
-      className="mr-4 rounded-2xl overflow-hidden"
+      className="mr-4 rounded-xl border-gray-200 overflow-hidden"
       style={{ width: CARD_WIDTH }}
       onPress={() => router.push({ pathname: "/(tabs)/propertyDetails", params: { id: item.id } })}
     >
@@ -243,10 +194,10 @@ const Home = () => {
           resizeMode="cover"
         />
         {/* Price Tag */}
-        <View className="absolute top-3 right-3 bg-primary px-3 py-1 rounded-lg">
-          <Text className="text-white font-poppins-semibold text-xs">
+        <View className="absolute top-3 right-3 bg-white px-3 py-1 rounded-lg">
+          <Text className="text-primary font-bold font-poppins-semibold">
             ${item.price}
-            <Text className="font-poppins text-white/80">/month</Text>
+            <Text className="font-poppins text-gray-800/50">/month</Text>
           </Text>
         </View>
         {/* Favorite Button */}
@@ -265,12 +216,12 @@ const Home = () => {
         </TouchableOpacity>
         {/* Property Info */}
         <View className="absolute bottom-3 left-3">
-          <Text className="text-white font-poppins-semibold text-base">
+          <Text className="text-white font-bold font-poppins-semibold text-xl" numberOfLines={1}>
             {item.name}
           </Text>
           <View className="flex-row items-center mt-1">
-            <LocationIcon width={12} height={12} />
-            <Text className="text-white/80 font-poppins text-xs ml-1">
+            <LocationIcon width={16} height={16} />
+            <Text className="text-white font-poppins text-base ml-1">
               {item.location}
             </Text>
           </View>
@@ -279,8 +230,88 @@ const Home = () => {
     </TouchableOpacity>
   );
 
-  // Nearby Card Component
+  // Nearby Card Component - Horizontal layout with image on left
   const NearbyCard = ({ item }) => (
+    <TouchableOpacity 
+      className="bg-white rounded-xl p-3 mr-4 flex-row border border-border"
+      style={{ width: width * 0.75 }}
+      onPress={() => router.push({ pathname: "/(tabs)/propertyDetails", params: { id: item.id } })}
+    >
+      <Image
+        source={{ uri: item.image }}
+        className="w-24 h-24 rounded-lg"
+        resizeMode="cover"
+      />
+      <View className="flex-1 ml-3 justify-between">
+        <View>
+          <Text className="text-textPrimary font-poppins-bold text-base" numberOfLines={1}>
+            {item.name}
+          </Text>
+          <View className="flex-row items-center mt-1">
+            <LocationIcon width={12} height={12} />
+            <Text className="text-textSecondary font-poppins text-xs ml-1" numberOfLines={1}>
+              {item.location}
+            </Text>
+          </View>
+        </View>
+        <View className="flex-row items-center justify-between">
+          <Text className="text-primary font-poppins-bold text-sm">
+            ${item.price}<Text className="text-textSecondary font-poppins text-xs">/month</Text>
+          </Text>
+          <View className="flex-row items-center">
+            <Ionicons name="star" size={14} color="#FFC42D" />
+            <Text className="text-textPrimary font-poppins-bold text-xs ml-1">
+              {item.rating}
+            </Text>
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
+  // Section Header Component
+  const SectionHeader = ({ title, onPress }) => (
+    <View className="flex-row items-center justify-between px-5 mb-4">
+      <Text className="text-textPrimary font-bold font-poppins-bold text-xl">
+        {title}
+      </Text>
+      <TouchableOpacity onPress={onPress}>
+        <Text className="text-primary font-poppins-semibold text-sm">See all</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  // Top Location Card Component - Rectangle with rounded-md
+  const LocationCard = ({ item }) => {
+    const isActive = activeLocation === item.id;
+    return (
+      <TouchableOpacity
+        onPress={() => setActiveLocation(item.id)}
+        className="mr-3 rounded-xl overflow-hidden"
+        style={{ width: 100, height: 80 }}
+      >
+        <Image
+          source={item.image}
+          className="w-full h-full rounded-xl"
+          resizeMode="cover"
+        />
+        <View className={`absolute inset-0 rounded-xl ${isActive ? 'bg-primary/40' : 'bg-black/30'}`} />
+        <View className="absolute bottom-2 left-2 right-2">
+          <Text className="text-white font-poppins-bold text-sm text-center">
+            {item.name}
+          </Text>
+        </View>
+        {isActive && (
+          <View className="absolute top-2 right-2 w-5 h-5 bg-primary rounded-full items-center justify-center">
+            <Ionicons name="checkmark" size={12} color="white" />
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  };
+
+  // Popular Card Component - Reduced gaps and improved layout
+  const PopularCard = ({ item }) => (
     <TouchableOpacity 
       className="flex-row bg-white rounded-2xl p-3 mb-3 mx-5 border border-border"
       onPress={() => router.push({ pathname: "/(tabs)/propertyDetails", params: { id: item.id } })}
@@ -291,119 +322,41 @@ const Home = () => {
         resizeMode="cover"
       />
       <View className="flex-1 ml-3 justify-center">
-        <Text className="text-textPrimary font-poppins-semibold text-sm" numberOfLines={1}>
-          {item.name}
-        </Text>
-        <View className="flex-row items-center mt-1">
+        <View className="flex-row items-start justify-between">
+          <Text className="text-textPrimary font-poppins-bold text-sm flex-1 pr-2" numberOfLines={1}>
+            {item.name}
+          </Text>
+          <TouchableOpacity
+            onPress={(e) => {
+              e.stopPropagation();
+              togglePopularFavorite(item.id);
+            }}
+          >
+            <Ionicons
+              name={popularFavorites.includes(item.id) ? "heart" : "heart-outline"}
+              size={22}
+              color={popularFavorites.includes(item.id) ? "#FF6B6B" : "#DADADA"}
+            />
+          </TouchableOpacity>
+        </View>
+        <View className="flex-row items-center">
           <LocationIcon width={10} height={10} />
           <Text className="text-textSecondary font-poppins text-xs ml-1" numberOfLines={1}>
             {item.location}
           </Text>
         </View>
-        <View className="flex-row items-center mt-2">
-          <Text className="text-textPrimary font-poppins-semibold text-xs">
-            ${item.price}/month
+        <View className="flex-row items-center justify-between mt-1">
+          <Text className="text-primary font-poppins-bold text-sm">
+            ${item.price}<Text className="text-textSecondary font-poppins text-xs">/{item.priceType}</Text>
           </Text>
-          <View className="flex-row items-center ml-3">
-            <Ionicons name="star" size={12} color="#FFC42D" />
-            <Text className="text-textPrimary font-poppins-medium text-xs ml-1">
+          <View className="flex-row items-center">
+            <Ionicons name="star" size={14} color="#FFC42D" />
+            <Text className="text-textPrimary font-poppins-bold text-xs ml-1">
               {item.rating}
             </Text>
           </View>
         </View>
       </View>
-      <Image
-        source={{ uri: item.image2 }}
-        className="w-16 h-20 rounded-xl ml-2"
-        resizeMode="cover"
-      />
-    </TouchableOpacity>
-  );
-
-  // Section Header Component
-  const SectionHeader = ({ title, onPress }) => (
-    <View className="flex-row items-center justify-between px-5 mb-4">
-      <Text className="text-textPrimary font-poppins-semibold text-lg">
-        {title}
-      </Text>
-      <TouchableOpacity onPress={onPress}>
-        <Text className="text-primary font-poppins-medium text-sm">See all</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  // Top Location Chip Component
-  const LocationChip = ({ item }) => {
-    const isActive = activeLocation === item.id;
-    return (
-      <TouchableOpacity
-        onPress={() => setActiveLocation(item.id)}
-        className={`mr-3 rounded-full flex-row items-center px-1 py-1 pr-4 ${
-          isActive ? "bg-primary" : "bg-cardBackground border border-border"
-        }`}
-      >
-        <Image
-          source={item.image}
-          className="w-9 h-9 rounded-full"
-          resizeMode="cover"
-        />
-        <Text
-          className={`ml-2 font-poppins-medium text-sm ${
-            isActive ? "text-white" : "text-textPrimary"
-          }`}
-        >
-          {item.name}
-        </Text>
-      </TouchableOpacity>
-    );
-  };
-
-  // Popular Card Component
-  const PopularCard = ({ item }) => (
-    <TouchableOpacity 
-      className="flex-row bg-white rounded-2xl p-3 mb-3 mx-5 border border-border"
-      onPress={() => router.push({ pathname: "/(tabs)/propertyDetails", params: { id: item.id } })}
-    >
-      <Image
-        source={item.image}
-        className="w-16 h-16 rounded-xl"
-        resizeMode="cover"
-      />
-      <View className="flex-1 ml-3 justify-center">
-        <Text className="text-textPrimary font-poppins-semibold text-sm" numberOfLines={1}>
-          {item.name}
-        </Text>
-        <View className="flex-row items-center mt-0.5">
-          <LocationIcon width={10} height={10} />
-          <Text className="text-textSecondary font-poppins text-xs ml-1" numberOfLines={1}>
-            {item.location}
-          </Text>
-        </View>
-        <View className="flex-row items-center mt-1">
-          <Text className="text-textPrimary font-poppins-semibold text-xs">
-            ${item.price}/{item.priceType}
-          </Text>
-          <View className="flex-row items-center ml-3">
-            <Ionicons name="star" size={12} color="#FFC42D" />
-            <Text className="text-textPrimary font-poppins-medium text-xs ml-1">
-              {item.rating}
-            </Text>
-          </View>
-        </View>
-      </View>
-      <TouchableOpacity
-        onPress={(e) => {
-          e.stopPropagation();
-          togglePopularFavorite(item.id);
-        }}
-        className="self-center ml-2"
-      >
-        <Ionicons
-          name={popularFavorites.includes(item.id) ? "heart" : "heart-outline"}
-          size={20}
-          color={popularFavorites.includes(item.id) ? "#FF6B6B" : "#DADADA"}
-        />
-      </TouchableOpacity>
     </TouchableOpacity>
   );
 
@@ -414,35 +367,45 @@ const Home = () => {
         <SearchBar />
         <PromoBanner />
 
-        {/* Recommended Section */}
+        {/* Recommended Section - Auto-scrolling */}
         <SectionHeader
           title="Recommended"
-          onPress={() => console.log("See all recommended")}
+          onPress={() => router.push("/(tabs)/recommended")}
+        />
+        <View className="mb-6 overflow-hidden">
+          <Animated.View 
+            style={{ 
+              flexDirection: 'row', 
+              transform: [{ translateX: recommendedScrollX }],
+              paddingHorizontal: 20,
+            }}
+          >
+            {recommendedProperties.map((item) => (
+              <RecommendedCard key={item.id} item={item} />
+            ))}
+          </Animated.View>
+        </View>
+
+        {/* Nearby Section - Single horizontal scrollable row */}
+        <SectionHeader
+          title="Nearby"
+          onPress={() => router.push("/(tabs)/nearby")}
         />
         <FlatList
-          data={recommendedProperties}
+          data={[...nearbyPropertiesRow1, ...nearbyPropertiesRow2]}
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 20 }}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <RecommendedCard item={item} />}
+          renderItem={({ item }) => <NearbyCard item={item} />}
           className="mb-6"
         />
-
-        {/* Nearby Section */}
-        <SectionHeader
-          title="Nearby"
-          onPress={() => console.log("See all nearby")}
-        />
-        {nearbyProperties.map((item) => (
-          <NearbyCard key={item.id} item={item} />
-        ))}
 
         {/* Top Locations Section */}
         <View className="mt-3">
           <SectionHeader
             title="Top Locations"
-            onPress={() => console.log("See all locations")}
+            onPress={() => router.push("/(tabs)/topLocations")}
           />
           <FlatList
             data={topLocations}
@@ -450,7 +413,7 @@ const Home = () => {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ paddingHorizontal: 20 }}
             keyExtractor={(item) => item.id}
-            renderItem={({ item }) => <LocationChip item={item} />}
+            renderItem={({ item }) => <LocationCard item={item} />}
             className="mb-6"
           />
         </View>

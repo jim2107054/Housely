@@ -22,9 +22,13 @@ const TabLayout = () => {
         <Tabs
           screenOptions={{
             headerShown: false,
-            tabBarActiveTintColor: "#7F56D9",
-            tabBarInactiveTintColor: "#B0B0B0",
+            tabBarActiveTintColor: "#6941C6",
+            tabBarInactiveTintColor: "#A1A5C1",
             headerShadowVisible: false,
+            tabBarLabelStyle: {
+              fontWeight: "600",
+              fontSize: 11,
+            },
             tabBarStyle: {
               backgroundColor: "#FFFFFF",
               borderTopWidth: 1,
@@ -118,6 +122,84 @@ const TabLayout = () => {
           />
           <Tabs.Screen
             name="propertyDetails"
+            options={{
+              href: null,
+            }}
+          />
+          <Tabs.Screen
+            name="recommended"
+            options={{
+              href: null,
+            }}
+          />
+          <Tabs.Screen
+            name="nearby"
+            options={{
+              href: null,
+            }}
+          />
+          <Tabs.Screen
+            name="topLocations"
+            options={{
+              href: null,
+            }}
+          />
+          <Tabs.Screen
+            name="chat"
+            options={{
+              href: null,
+            }}
+          />
+          <Tabs.Screen
+            name="chatConversation"
+            options={{
+              href: null,
+            }}
+          />
+          <Tabs.Screen
+            name="paymentHistory"
+            options={{
+              href: null,
+            }}
+          />
+          <Tabs.Screen
+            name="notificationSettings"
+            options={{
+              href: null,
+            }}
+          />
+          <Tabs.Screen
+            name="recentViewed"
+            options={{
+              href: null,
+            }}
+          />
+          <Tabs.Screen
+            name="about"
+            options={{
+              href: null,
+            }}
+          />
+          <Tabs.Screen
+            name="notifications"
+            options={{
+              href: null,
+            }}
+          />
+          <Tabs.Screen
+            name="search"
+            options={{
+              href: null,
+            }}
+          />
+          <Tabs.Screen
+            name="writeReview"
+            options={{
+              href: null,
+            }}
+          />
+          <Tabs.Screen
+            name="settings"
             options={{
               href: null,
             }}

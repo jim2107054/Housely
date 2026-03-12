@@ -1,41 +1,24 @@
-import express from "express";
-import dotenv from "dotenv";
-import cors from "cors";
-import connectDB from "./config/db.js";
+import http from 'http';
+import app from './src/app.js';
+import env from './src/config/env.js';
+import { initializeSocket } from './src/sockets/index.js';
 
-// Load environment variables from .env file
-dotenv.config();
+const PORT = env.PORT;
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+// Create HTTP server
+const server = http.createServer(app);
 
-// Routes
-import authRoutes from "./routes/authRoutes.js";
+// Initialize Socket.IO
+const io = initializeSocket(server);
 
-// Middleware
-app.use(cors());
-app.use(express.json()); // for parsing application/json
-app.use(express.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
+// Make io accessible in app for emitting events from routes
+app.set('io', io);
 
-// Mount Routes
-app.use("/api/auth", authRoutes);
-
-// Database connection
-connectDB();
-
-//Health check endpoint
-app.get("/health", (req, res) => {
-  res.status(200).json({
-    status: "OK",
-    message: "Server is running smoothly",
-    timestamp: new Date().toISOString(),
-  });
-});
-
-// Start the server (only in non-serverless environment)
-if (process.env.NODE_ENV !== "production") {
-  app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+if (env.NODE_ENV !== 'production') {
+  server.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`🔌 Socket.IO initialized`);
+    console.log(`📋 Environment: ${env.NODE_ENV}`);
   });
 }
 

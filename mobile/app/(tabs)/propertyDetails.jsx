@@ -523,12 +523,27 @@ const PropertyDetails = () => {
             </Text>
           </View>
         </View>
-        <TouchableOpacity
-          onPress={callAgent}
-          className="w-10 h-10 rounded-full bg-primary items-center justify-center"
-        >
-          <Ionicons name="call" size={18} color="white" />
-        </TouchableOpacity>
+        <View className="flex-row items-center gap-2">
+          <TouchableOpacity
+            onPress={() => router.push({
+              pathname: "/(tabs)/chatConversation",
+              params: { 
+                id: property.id, 
+                name: property.agent.name, 
+                avatar: property.agent.image 
+              }
+            })}
+            className="w-10 h-10 rounded-full bg-cardBackground border border-border items-center justify-center"
+          >
+            <Ionicons name="chatbubble-ellipses-outline" size={18} color="#7F56D9" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={callAgent}
+            className="w-10 h-10 rounded-full bg-primary items-center justify-center"
+          >
+            <Ionicons name="call" size={18} color="white" />
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
