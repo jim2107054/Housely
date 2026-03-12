@@ -1,4 +1,9 @@
-import { Stack, useRouter, useSegments, useRootNavigationState } from "expo-router";
+import {
+  Stack,
+  useRouter,
+  useSegments,
+  useRootNavigationState,
+} from "expo-router";
 import "../global.css";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import SafeScreen from "../components/SafeScreen";
@@ -16,34 +21,49 @@ export default function RootLayout() {
   //! segments tells us where we are in the navigation tree(ex: auth stack, main app stack, etc)
   // console.log(segments);
 
-  const {checkAuth, user, token} = useAuthStore();
+  const { checkAuth, user, token } = useAuthStore();
 
   //! Firstly check if the user is authenticated
-  useEffect(()=>{
-    checkAuth();//! it will set the user and token if valid token found in async storage
-  },[]); // only once on mount
+  useEffect(() => {
+    checkAuth(); //! it will set the user and token if valid token found in async storage
+  }, []); // only once on mount
 
-  useEffect(()=>{
+  useEffect(() => {
     // Don't navigate until the navigation state is ready
     if (!navigationState?.key) return;
-    
+
     const inAuthScreen = segments[0] === "(auth)";
+    const inOwnerScreen = segments[0] === "(owner)";
+    const inOnboarding = segments[0] === "(onbording)";
+    const inIndex = segments[0] === "index" || segments[0] === undefined;
     const isSignedIn = user && token;
 
     // Use setTimeout to ensure navigation happens after render
     const timeout = setTimeout(() => {
-      //! if user is signed in and trying to access auth screens, redirect to main app
-      if(isSignedIn && inAuthScreen){
-        router.replace("/(tabs)");
+      //! if user is signed in and trying to access auth screens, redirect based on role
+      // But NOT if they're on the ownerLogin screen (which is inside (auth))
+      if (isSignedIn && inAuthScreen && segments[1] !== "ownerLogin") {
+        if (user.role === "AGENT") {
+          router.replace("/(owner)");
+        } else {
+          router.replace("/(tabs)");
+        }
       }
-      //! if user is not signed in and trying to access main app screens, redirect to auth
-      else if(!isSignedIn && !inAuthScreen && segments[0] !== "(onbording)" && segments[0] !== "index"){
+      //! if user is not signed in and trying to access protected screens, redirect to auth
+      // Allow: (auth), (onbording), index, and (owner) — owner area is open for now
+      else if (
+        !isSignedIn &&
+        !inAuthScreen &&
+        !inOnboarding &&
+        !inIndex &&
+        !inOwnerScreen
+      ) {
         router.replace("/(auth)");
       }
     }, 0);
 
     return () => clearTimeout(timeout);
-  },[user, token, segments, navigationState?.key]); //! whenever user or token or segments changes
+  }, [user, token, segments, navigationState?.key]); //! whenever user or token or segments changes
 
   return (
     <SafeAreaProvider>
@@ -53,6 +73,7 @@ export default function RootLayout() {
             <Stack.Screen name="index" />
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="(owner)" />
             <Stack.Screen name="(location)" />
             <Stack.Screen name="(onbording)" />
           </Stack>

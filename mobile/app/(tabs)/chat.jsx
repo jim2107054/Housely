@@ -12,8 +12,18 @@ import { useState, useRef } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
-// Import chat data
-import { chatConversations } from "../../data/chats";
+// Import data (structured like backend API response)
+import { chatConversations } from "../../data/dummyData";
+
+//!api calls - uncomment when connecting backend
+// import api from "../../services/api";
+// useEffect(() => {
+//   const fetchConversations = async () => {
+//     const response = await api.get('/api/messages/conversations');
+//     setConversations(response.data.conversations);
+//   };
+//   fetchConversations();
+// }, []);
 
 const Chat = () => {
   const router = useRouter();

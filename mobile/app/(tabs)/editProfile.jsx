@@ -3,12 +3,21 @@ import React, { useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
+import useAuthStore from '../../store/authStore'
+
+//!api calls - uncomment when connecting backend
+// import api from '../../services/api';
+// const updateProfile = async (data) => {
+//   const response = await api.put('/api/users/profile', data);
+//   return response.data;
+// };
 
 const EditProfile = () => {
+  const { user } = useAuthStore();
   const [formData, setFormData] = useState({
-    fullName: 'Brooklyn Simmons',
-    username: 'Brooklynsim',
-    email: 'brooklynsim@gmail.com',
+    fullName: user?.name || 'Brooklyn Simmons',
+    username: user?.username || 'Brooklynsim',
+    email: user?.email || 'brooklynsim@gmail.com',
     dateOfBirth: 'November/21/1992'
   })
 

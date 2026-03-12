@@ -9,7 +9,7 @@ import {
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Link, useRouter } from "expo-router";
+import { Link, useRouter, useLocalSearchParams } from "expo-router";
 import Toast from "react-native-toast-message";
 import useAuthStore from "../../store/authStore";
 import { ActivityIndicator } from "react-native-paper";
@@ -24,6 +24,8 @@ const Signup = () => {
 
   const { isLoading, register } = useAuthStore();
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const role = params.role || "USER";
 
   const handleRegister = async () => {
     // Validate inputs
@@ -72,7 +74,7 @@ const Signup = () => {
     }
 
     // Implement register logic here
-    const result = await register(userName, email, password);
+    const result = await register(userName, email, password, role);
 
     if (!result.success) {
       Toast.show({
@@ -91,9 +93,13 @@ const Signup = () => {
         visibilityTime: 2000,
       });
       
-      // Navigate to main app screen
+      // Navigate based on role
       setTimeout(() => {
-        router.replace("/(tabs)");
+        if (role === "AGENT") {
+          router.replace("/(owner)");
+        } else {
+          router.replace("/(tabs)");
+        }
       }, 500);
     }
   };
@@ -118,8 +124,8 @@ const Signup = () => {
               Register Account
             </Text>
             <Text className="text-start font-light text-gray-500 mb-6">
-              Sign in with your email and password {"\n"}
-              or social media to continue
+              Sign up as {role === "AGENT" ? "House Owner" : "User"} with your{"\n"}
+              email and password to continue
             </Text>
           </View>
           {/* UserName Input Field */}
@@ -253,16 +259,16 @@ const Signup = () => {
               </TouchableOpacity>
             </View>
           </View>
-          {/* Sign Up Link */}
+          {/* Sign In Link */}
           <View className="mt-4 flex-row justify-center">
             <Text className="text-gray-600 text-lg">
               Already have an account?{" "}
             </Text>
-            <Link href="/(auth)">
+            <TouchableOpacity onPress={() => router.push({ pathname: "/(auth)", params: { role } })}>
               <Text className="text-secondary text-lg font-semibold">
                 Sign in
               </Text>
-            </Link>
+            </TouchableOpacity>
           </View>
         </View>
       </View>

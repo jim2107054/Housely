@@ -26,7 +26,25 @@ import {
   nearbyPropertiesRow2,
   topLocations,
   popularProperties,
-} from "../../data/properties";
+} from "../../data/dummyData";
+
+//!api calls - uncomment when connecting backend
+// import api from "../../services/api";
+// useEffect(() => {
+//   const fetchData = async () => {
+//     const [recommended, nearby, popular, locations] = await Promise.all([
+//       api.get("/api/houses/recommended"),
+//       api.get("/api/houses/nearby", { params: { latitude: coords.latitude, longitude: coords.longitude, radius_km: 10 } }),
+//       api.get("/api/houses/popular"),
+//       api.get("/api/houses/top-locations"),
+//     ]);
+//     setRecommendedData(recommended.data.houses);
+//     setNearbyData(nearby.data.houses);
+//     setPopularData(popular.data.houses);
+//     setLocationsData(locations.data.locations);
+//   };
+//   fetchData();
+// }, []);
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = width * 0.65;

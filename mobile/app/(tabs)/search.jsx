@@ -15,6 +15,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// Import data (structured like backend API response)
+import { searchResults as mockSearchResults } from '../../data/dummyData';
+
+//!api calls - uncomment when connecting backend
+// import api from '../../services/api';
+// const searchProperties = async (query) => {
+//   const response = await api.get(`/api/houses/search?q=${query}`);
+//   return response.data.houses;
+// };
+
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // Design Tokens
@@ -38,15 +48,6 @@ const COLORS = {
 
 // Storage Keys
 const RECENT_SEARCHES_KEY = 'housely_recent_searches';
-
-// Mock Search Results
-const mockSearchResults = [
-  { id: '1', name: 'Greenhost Boutique Hotel', location: 'Yogyakarta, Indonesia' },
-  { id: '2', name: 'Grand Keisha Yogyakarta', location: 'Yogyakarta, Indonesia' },
-  { id: '3', name: 'Jogja Village', location: 'Yogyakarta, Indonesia' },
-  { id: '4', name: 'Ambarrukmo Plaza', location: 'Yogyakarta, Indonesia' },
-  { id: '5', name: 'Hyatt Regency Yogyakarta', location: 'Yogyakarta, Indonesia' },
-];
 
 // Default Filter State
 const defaultFilters = {

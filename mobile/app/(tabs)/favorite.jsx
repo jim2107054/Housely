@@ -12,13 +12,23 @@ import { useRouter } from "expo-router";
 // Import SVG icons
 import LocationIcon from "../../assets/images/home-icons/Location.svg";
 
-// Import data
-import { allProperties } from "../../data/properties";
+// Import data (structured like backend API response)
+import { allProperties, dummyFavorites } from "../../data/dummyData";
+
+//!api calls - uncomment when connecting backend
+// import api from "../../services/api";
+// useEffect(() => {
+//   const fetchFavorites = async () => {
+//     const response = await api.get('/api/houses/favorites');
+//     setFavorites(response.data.favorites);
+//   };
+//   fetchFavorites();
+// }, []);
 
 const Favorite = () => {
   const router = useRouter();
-  // IDs of favorited properties
-  const [favoriteIds, setFavoriteIds] = useState(["1", "2", "4"]);
+  // IDs of favorited properties (from dummy data)
+  const [favoriteIds, setFavoriteIds] = useState(dummyFavorites.map(f => f.houseId));
 
   // Filter to show only favorited properties
   const favoriteProperties = allProperties.filter(prop => favoriteIds.includes(prop.id));

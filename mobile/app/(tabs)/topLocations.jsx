@@ -10,45 +10,18 @@ import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
-// Sample data for top locations
-const topLocationsData = [
-  {
-    id: "1",
-    name: "Malang",
-    properties: 124,
-    image: require("../../assets/images/home-icons/Rectangle 14.png"),
-  },
-  {
-    id: "2",
-    name: "Bali",
-    properties: 256,
-    image: require("../../assets/images/home-icons/Rectangle 15.png"),
-  },
-  {
-    id: "3",
-    name: "Yogyakarta",
-    properties: 189,
-    image: require("../../assets/images/home-icons/Rectangle 16.png"),
-  },
-  {
-    id: "4",
-    name: "Jakarta",
-    properties: 312,
-    image: require("../../assets/images/home-icons/Rectangle 14.png"),
-  },
-  {
-    id: "5",
-    name: "Surabaya",
-    properties: 145,
-    image: require("../../assets/images/home-icons/Rectangle 15.png"),
-  },
-  {
-    id: "6",
-    name: "Bandung",
-    properties: 178,
-    image: require("../../assets/images/home-icons/Rectangle 16.png"),
-  },
-];
+// Import data (structured like backend API response)
+import { topLocationsScreen as topLocationsData } from "../../data/dummyData";
+
+//!api calls - uncomment when connecting backend
+// import api from "../../services/api";
+// useEffect(() => {
+//   const fetchLocations = async () => {
+//     const response = await api.get('/api/locations/top');
+//     setLocations(response.data.locations);
+//   };
+//   fetchLocations();
+// }, []);
 
 const TopLocations = () => {
   const router = useRouter();
