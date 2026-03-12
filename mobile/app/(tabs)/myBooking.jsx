@@ -11,6 +11,24 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
+// Import data (structured like backend API response)
+import {
+  upcomingBookings,
+  completedBookings,
+  cancelledBookings,
+} from '../../data/dummyData';
+
+//!api calls - uncomment when connecting backend
+// import api from '../../services/api';
+// useEffect(() => {
+//   const fetchBookings = async () => {
+//     const response = await api.get('/api/bookings');
+//     const bookings = response.data.bookings;
+//     // Transform and set state...
+//   };
+//   fetchBookings();
+// }, []);
+
 // Design Tokens
 const COLORS = {
   primary: '#7B61FF',
@@ -31,48 +49,6 @@ const COLORS = {
   badgeCancelledBg: '#FFEBEE',
   badgeCancelledText: '#F44336',
 };
-
-// Mock Booking Data
-const upcomingBookings = [
-  {
-    id: '1',
-    name: 'Batavia Apartments',
-    location: 'Jaksel, Jakarta Selatan',
-    dateRange: '08 Aug - 12 Aug',
-    status: 'waiting_payment',
-    image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&q=80',
-  },
-  {
-    id: '2',
-    name: 'Takatea Homestay',
-    location: 'Seminyak, Bali',
-    dateRange: '15 Aug - 20 Aug',
-    status: 'checkin',
-    image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400&q=80',
-  },
-];
-
-const completedBookings = [
-  {
-    id: '3',
-    name: 'Takatea Homestay',
-    location: 'Seminyak, Bali',
-    dateRange: '01 Aug - 05 Aug',
-    status: 'completed',
-    image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400&q=80',
-  },
-];
-
-const cancelledBookings = [
-  {
-    id: '4',
-    name: 'Tropis Homestay',
-    location: 'Ubud, Bali',
-    dateRange: '25 Jul - 28 Jul',
-    status: 'cancelled',
-    image: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=400&q=80',
-  },
-];
 
 // Status Badge Component
 const StatusBadge = ({ status }) => {

@@ -11,6 +11,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
+// Import data (structured like backend API response)
+import { notificationsScreenData } from '../../data/dummyData';
+
+//!api calls - uncomment when connecting backend
+// import api from '../../services/api';
+// useEffect(() => {
+//   const fetchNotifications = async () => {
+//     const response = await api.get('/api/notifications');
+//     setNotifications(response.data.notifications);
+//   };
+//   fetchNotifications();
+// }, []);
+
 // Design Tokens
 const COLORS = {
   primary: '#7B61FF',
@@ -21,86 +34,6 @@ const COLORS = {
   border: '#F0F0F0',
   unreadBg: '#F5F4FF',
 };
-
-// Mock Notifications Data
-const notificationsData = [
-  {
-    id: '1',
-    type: 'booking',
-    title: 'Booking Confirmed!',
-    message: 'Your booking at Batavia Apartments has been confirmed for Aug 8-12.',
-    timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(), // 15 mins ago
-    isRead: false,
-    icon: 'checkmark-circle',
-    iconColor: '#4CAF50',
-    propertyImage: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&q=80',
-  },
-  {
-    id: '2',
-    type: 'payment',
-    title: 'Payment Successful',
-    message: 'Your payment of $620 for Batavia Apartments has been processed.',
-    timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
-    isRead: false,
-    icon: 'card',
-    iconColor: '#7B61FF',
-  },
-  {
-    id: '3',
-    type: 'message',
-    title: 'New Message',
-    message: 'Hi! The property is ready for your check-in. Let me know if you need anything.',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-    isRead: true,
-    icon: 'chatbubble-ellipses',
-    iconColor: '#2196F3',
-    senderName: 'John (Host)',
-    senderImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&q=80',
-  },
-  {
-    id: '4',
-    type: 'promo',
-    title: '20% Cashback Offer 🎉',
-    message: 'Book any property this weekend and get 20% cashback! Limited time offer.',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 hours ago
-    isRead: true,
-    icon: 'gift',
-    iconColor: '#FF9800',
-  },
-  {
-    id: '5',
-    type: 'reminder',
-    title: 'Check-in Tomorrow',
-    message: 'Your check-in at Takatea Homestay is tomorrow at 2:00 PM. Don\'t forget!',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
-    isRead: true,
-    icon: 'alarm',
-    iconColor: '#FF5722',
-    propertyImage: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400&q=80',
-  },
-  {
-    id: '6',
-    type: 'review',
-    title: 'Review Your Stay',
-    message: 'How was your stay at Villa Paradise? Share your experience with others.',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), // 2 days ago
-    isRead: true,
-    icon: 'star',
-    iconColor: '#FFC42D',
-    propertyImage: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=400&q=80',
-  },
-  {
-    id: '7',
-    type: 'price_drop',
-    title: 'Price Drop Alert!',
-    message: 'Sunset Apartment price dropped by 15%! Now available at $280/month.',
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(), // 3 days ago
-    isRead: true,
-    icon: 'trending-down',
-    iconColor: '#4CAF50',
-    propertyImage: 'https://images.unsplash.com/photo-1600607687644-c7171b42498f?w=400&q=80',
-  },
-];
 
 // Helper to format time ago
 const formatTimeAgo = (dateString) => {
@@ -316,7 +249,7 @@ const EmptyState = ({ filter }) => (
 
 const Notifications = () => {
   const router = useRouter();
-  const [notifications, setNotifications] = useState(notificationsData);
+  const [notifications, setNotifications] = useState(notificationsScreenData);
   const [activeFilter, setActiveFilter] = useState('all');
 
   // Get unread count

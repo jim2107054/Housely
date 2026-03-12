@@ -17,6 +17,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 
+//!api calls - uncomment when connecting backend
+// import api from '../../services/api';
+// const submitReview = async (data) => {
+//   const response = await api.post('/api/reviews', data);
+//   return response.data;
+// };
+
 // Design Tokens
 const COLORS = {
   primary: '#7B61FF',

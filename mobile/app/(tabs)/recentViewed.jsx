@@ -10,6 +10,19 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
+// Import data (structured like backend API response)
+import { recentlyViewedScreenData } from '../../data/dummyData';
+
+//!api calls - uncomment when connecting backend
+// import api from '../../services/api';
+// useEffect(() => {
+//   const fetchRecentlyViewed = async () => {
+//     const response = await api.get('/api/houses/recently-viewed');
+//     setRecentItems(response.data.recentlyViewed);
+//   };
+//   fetchRecentlyViewed();
+// }, []);
+
 // Design Tokens
 const COLORS = {
   primary: '#7B61FF',
@@ -19,70 +32,6 @@ const COLORS = {
   textSecondary: '#9E9E9E',
   border: '#F0F0F0',
 };
-
-// Mock recently viewed data (in real app, this would come from AsyncStorage or global state)
-const mockRecentlyViewed = [
-  {
-    id: '1',
-    name: 'Batavia Apartments',
-    location: 'Jaksel, Jakarta Selatan',
-    price: 620,
-    rating: 4.8,
-    image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&q=80',
-    viewedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
-    type: 'Apartment',
-  },
-  {
-    id: '2',
-    name: 'Takatea Homestay',
-    location: 'Seminyak, Bali',
-    price: 450,
-    rating: 4.9,
-    image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400&q=80',
-    viewedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
-    type: 'Homestay',
-  },
-  {
-    id: '3',
-    name: 'Villa Paradise',
-    location: 'Ubud, Bali',
-    price: 890,
-    rating: 4.7,
-    image: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=400&q=80',
-    viewedAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), // 5 hours ago
-    type: 'Villa',
-  },
-  {
-    id: '4',
-    name: 'Sunset Apartment',
-    location: 'Kemang, Jakarta',
-    price: 280,
-    rating: 4.5,
-    image: 'https://images.unsplash.com/photo-1600607687644-c7171b42498f?w=400&q=80',
-    viewedAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
-    type: 'Apartment',
-  },
-  {
-    id: '5',
-    name: 'Green Valley Resort',
-    location: 'Puncak, Bogor',
-    price: 320,
-    rating: 4.6,
-    image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400&q=80',
-    viewedAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), // 2 days ago
-    type: 'Resort',
-  },
-  {
-    id: '6',
-    name: 'Sky Residence',
-    location: 'SCBD, Jakarta',
-    price: 550,
-    rating: 4.8,
-    image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400&q=80',
-    viewedAt: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(), // 3 days ago
-    type: 'Apartment',
-  },
-];
 
 // Helper to format time ago
 const formatTimeAgo = (dateString) => {
@@ -322,7 +271,7 @@ const EmptyState = () => (
 
 const RecentViewed = () => {
   const router = useRouter();
-  const [recentItems, setRecentItems] = useState(mockRecentlyViewed);
+  const [recentItems, setRecentItems] = useState(recentlyViewedScreenData);
 
   // Group items by time period
   const groupedItems = groupByTimePeriod(recentItems);

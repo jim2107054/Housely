@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import api from "../services/api";
+// import api from "../services/api"; //!api calls
+import { dummyAuthResponses, dummyUsers } from "../data/dummyData";
 
 const useAuthStore = create((set) => ({
   user: null,
@@ -8,22 +9,29 @@ const useAuthStore = create((set) => ({
   isLoading: false,
   error: null,
 
-  register: async (username, email, password) => {
+  register: async (username, email, password, role = "USER") => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.post("/api/auth/register", {
-        username,
-        email,
-        password,
-      });
+      //!api calls - uncomment when connecting backend
+      // const response = await api.post("/api/auth/register", {
+      //   username,
+      //   email,
+      //   password,
+      //   role,
+      // });
+      // const data = response.data;
 
-      const data = response.data;
+      // Local dummy data - comment out when using backend
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      const isOwner = role === "AGENT";
+      const data = isOwner
+        ? { ...dummyAuthResponses.registerOwner, user: { ...dummyUsers.owner, username, email } }
+        : { ...dummyAuthResponses.registerUser, user: { ...dummyUsers.user, username, email } };
+
       if (data.success) {
-        // Store token and user in AsyncStorage
         await AsyncStorage.setItem("user", JSON.stringify(data.user));
         await AsyncStorage.setItem("token", data.token);
 
-        // Update state
         set({ user: data.user, token: data.token, isLoading: false });
         return { success: true, user: data.user, token: data.token };
       } else {
@@ -48,21 +56,25 @@ const useAuthStore = create((set) => ({
     }
   },
 
-  login: async (email, password) => {
+  login: async (email, password, role = "USER") => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.post("/api/auth/login", {
-        email,
-        password,
-      });
+      //!api calls - uncomment when connecting backend
+      // const response = await api.post("/api/auth/login", {
+      //   email,
+      //   password,
+      // });
+      // const data = response.data;
 
-      const data = response.data;
+      // Local dummy data - comment out when using backend
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      const isOwner = role === "AGENT";
+      const data = isOwner ? dummyAuthResponses.loginOwner : dummyAuthResponses.loginUser;
+
       if (data.success) {
-        // Store token and user in AsyncStorage
         await AsyncStorage.setItem("user", JSON.stringify(data.user));
         await AsyncStorage.setItem("token", data.token);
 
-        // Update state
         set({ user: data.user, token: data.token, isLoading: false });
         return {
           success: true,
@@ -108,6 +120,14 @@ const useAuthStore = create((set) => ({
       await AsyncStorage.removeItem("token");
       await AsyncStorage.removeItem("user");
       set({ user: null, token: null });
+    } catch (error) {
+      console.log(error);
+    }
+  },
+  setUser: async (updatedUser) => {
+    try {
+      await AsyncStorage.setItem("user", JSON.stringify(updatedUser));
+      set({ user: updatedUser });
     } catch (error) {
       console.log(error);
     }

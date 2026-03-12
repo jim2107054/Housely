@@ -12,59 +12,18 @@ import { useRouter } from "expo-router";
 // Import SVG icons
 import LocationIcon from "../../assets/images/home-icons/Location.svg";
 
-// Sample data for popular properties
-const popularProperties = [
-  {
-    id: "1",
-    name: "Takatea Homestay",
-    location: "Jl. Tentara Pelajar No.47, RW.001",
-    price: 120,
-    priceType: "night",
-    rating: 4.5,
-    image: require("../../assets/images/popular/Rectangle 11.png"),
-    isFavorite: false,
-  },
-  {
-    id: "2",
-    name: "Maharani Villa Yogyakarta",
-    location: "Benhil, Jl. Bendungan Hilir Karet...",
-    price: 320,
-    priceType: "month",
-    rating: 4.5,
-    image: require("../../assets/images/popular/Rectangle 12.png"),
-    isFavorite: true,
-  },
-  {
-    id: "3",
-    name: "Bali Komang Guest",
-    location: "Nusa Penida, Bali",
-    price: 180,
-    priceType: "night",
-    rating: 4.5,
-    image: require("../../assets/images/popular/Rectangle 13.png"),
-    isFavorite: false,
-  },
-  {
-    id: "4",
-    name: "Batavia Apartments",
-    location: "Benhil, Jl. Bendungan Hilir Karet...",
-    price: 120,
-    priceType: "night",
-    rating: 4.5,
-    image: require("../../assets/images/popular/Rectangle 14.png"),
-    isFavorite: false,
-  },
-  {
-    id: "5",
-    name: "Manhattan Hotel",
-    location: "Jl. Prof. DR. Satrio No.Kav.19-24, RT.7/...",
-    price: 230,
-    priceType: "night",
-    rating: 4.5,
-    image: require("../../assets/images/popular/Rectangle 15.png"),
-    isFavorite: true,
-  },
-];
+// Import data (structured like backend API response)
+import { popularPropertiesScreen as popularProperties } from "../../data/dummyData";
+
+//!api calls - uncomment when connecting backend
+// import api from "../../services/api";
+// useEffect(() => {
+//   const fetchPopular = async () => {
+//     const response = await api.get('/api/houses?sortBy=popular');
+//     setProperties(response.data.houses);
+//   };
+//   fetchPopular();
+// }, []);
 
 const Popular = () => {
   const router = useRouter();
@@ -98,7 +57,7 @@ const Popular = () => {
       onPress={() => router.push({ pathname: "/(tabs)/propertyDetails", params: { id: item.id } })}
     >
       <Image
-        source={item.image}
+        source={{ uri: item.image }}
         className="w-20 h-20 rounded-xl"
         resizeMode="cover"
       />

@@ -18,14 +18,24 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import LocationIcon from "../../assets/images/home-icons/Location.svg";
 import FilterIcon from "../../assets/images/home-icons/Filter.svg";
 
-// Import data
+// Import data (structured like backend API response)
 import {
   allProperties,
   recommendedProperties,
   nearbyPropertiesRow1,
   nearbyPropertiesRow2,
   popularProperties,
-} from "../../data/properties";
+} from "../../data/dummyData";
+
+//!api calls - uncomment when connecting backend
+// import api from "../../services/api";
+// useEffect(() => {
+//   const fetchHouses = async () => {
+//     const response = await api.get('/api/houses');
+//     setHouses(response.data.houses);
+//   };
+//   fetchHouses();
+// }, []);
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = (width - 52) / 2; // Two cards per row with gaps
