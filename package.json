@@ -1,0 +1,18 @@
+{
+  "name": "housely",
+  "version": "1.0.0",
+  "description": "Housely — House Rental App (monorepo root)",
+  "private": true,
+  "scripts": {
+    "dev": "npm run docker:up && npm run backend & npm run mobile",
+    "backend": "npm --prefix backend run dev",
+    "mobile": "npm --prefix mobile run start",
+    "docker:up": "docker compose -f backend/docker-compose.yml up -d",
+    "docker:down": "docker compose -f backend/docker-compose.yml down",
+    "install:all": "npm --prefix backend install && npm --prefix mobile install",
+    "db:generate": "npm --prefix backend run db:generate",
+    "db:push": "npm --prefix backend run db:push",
+    "db:seed": "npm --prefix backend run db:seed",
+    "test": "npm --prefix backend test"
+  }
+}

@@ -3,6 +3,8 @@ import prisma from '../../config/prisma.js';
 // ─── Get Notifications ───
 
 export const getNotifications = async (userId, { type, isRead, page = 1, limit = 20 }) => {
+  page = Number(page);
+  limit = Number(limit);
   const skip = (page - 1) * limit;
 
   const where = { userId };

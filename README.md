@@ -18,6 +18,7 @@ Housely is a comprehensive house rental platform that connects property seekers 
 - [Project Structure](#-project-structure)
 - [Prerequisites](#-prerequisites)
 - [Getting Started](#-getting-started)
+  - [Quick Start (one command)](#-quick-start-one-command)
   - [Backend Setup](#1-backend-setup)
   - [Mobile App Setup](#2-mobile-app-setup)
 - [Environment Variables](#-environment-variables)
@@ -178,6 +179,28 @@ Before you begin, ensure you have the following installed:
 ---
 
 ## 🚀 Getting Started
+
+### ⚡ Quick Start (one command)
+
+Run the **entire project** (Docker services + backend + mobile) with a single command from the repository root:
+
+```bash
+# 1. Install all dependencies (first time only)
+npm run install:all
+
+# 2. Start everything
+npm run dev
+```
+
+This will:
+1. Start PostgreSQL and Redis via Docker Compose
+2. Launch the backend dev server at `http://localhost:3000`
+3. Launch the Expo dev server for the mobile app
+
+> **Prerequisites**: [Docker Desktop](https://www.docker.com/products/docker-desktop/) must be installed and running.  
+> Scan the QR code printed in the terminal with **Expo Go** to open the app on your device.
+
+---
 
 ### 1. Backend Setup
 
