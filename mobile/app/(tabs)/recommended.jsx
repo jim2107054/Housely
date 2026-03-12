@@ -12,54 +12,18 @@ import { useRouter } from "expo-router";
 // Import SVG icons
 import LocationIcon from "../../assets/images/home-icons/Location.svg";
 
-// Sample data for recommended properties
-const recommendedProperties = [
-  {
-    id: "1",
-    name: "Ayana Homestay",
-    location: "Imogiri, Yogyakarta",
-    price: 310,
-    rating: 4.5,
-    image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400",
-    isFavorite: true,
-  },
-  {
-    id: "2",
-    name: "Bali Komang Guest",
-    location: "Nusa penida, Bali",
-    price: 280,
-    rating: 4.7,
-    image: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400",
-    isFavorite: false,
-  },
-  {
-    id: "3",
-    name: "Villa Paradise",
-    location: "Seminyak, Bali",
-    price: 450,
-    rating: 4.9,
-    image: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=400",
-    isFavorite: false,
-  },
-  {
-    id: "4",
-    name: "Sunset Villa",
-    location: "Ubud, Bali",
-    price: 380,
-    rating: 4.6,
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400",
-    isFavorite: false,
-  },
-  {
-    id: "5",
-    name: "Ocean View Resort",
-    location: "Kuta, Bali",
-    price: 520,
-    rating: 4.8,
-    image: "https://images.unsplash.com/photo-1600607687644-c7171b42498f?w=400",
-    isFavorite: true,
-  },
-];
+// Import data (structured like backend API response)
+import { recommendedPropertiesScreen as recommendedProperties } from "../../data/dummyData";
+
+//!api calls - uncomment when connecting backend
+// import api from "../../services/api";
+// useEffect(() => {
+//   const fetchRecommended = async () => {
+//     const response = await api.get('/api/houses?sortBy=recommended');
+//     setProperties(response.data.houses);
+//   };
+//   fetchRecommended();
+// }, []);
 
 const Recommended = () => {
   const router = useRouter();

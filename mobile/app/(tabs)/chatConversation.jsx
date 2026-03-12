@@ -12,8 +12,18 @@ import { useState, useRef, useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 
-// Import chat data
-import { chatMessages, chatConversations } from "../../data/chats";
+// Import data (structured like backend API response)
+import { chatMessages, chatConversations } from "../../data/dummyData";
+
+//!api calls - uncomment when connecting backend
+// import api from "../../services/api";
+// useEffect(() => {
+//   const fetchMessages = async () => {
+//     const response = await api.get(`/api/messages/${id}`);
+//     setMessages(response.data.messages);
+//   };
+//   fetchMessages();
+// }, [id]);
 
 const ChatConversation = () => {
   const router = useRouter();

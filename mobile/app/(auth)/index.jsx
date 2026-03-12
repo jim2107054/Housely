@@ -9,7 +9,7 @@ import {
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Link, useRouter } from "expo-router";
+import { Link, useRouter, useLocalSearchParams } from "expo-router";
 import Toast from "react-native-toast-message";
 import useAuthStore from "../../store/authStore";
 import { ActivityIndicator } from "react-native-paper";
@@ -23,6 +23,8 @@ const Login = () => {
 
   const { isLoading, login } = useAuthStore();
   const router = useRouter();
+  const params = useLocalSearchParams();
+  const role = params.role || "USER";
 
   const handleLogin = async () => {
     // Validate inputs
@@ -49,7 +51,7 @@ const Login = () => {
     }
 
     // Implement login logic here
-    const result = await login(email, password);
+    const result = await login(email, password, role);
 
     if (!result.success) {
       Toast.show({
@@ -68,9 +70,13 @@ const Login = () => {
         visibilityTime: 2000,
       });
       
-      // Navigate to main app screen
+      // Navigate based on role
       setTimeout(() => {
-        router.replace("/(tabs)");
+        if (role === "AGENT") {
+          router.replace("/(owner)");
+        } else {
+          router.replace("/(tabs)");
+        }
       }, 500);
     }
   };
@@ -88,15 +94,15 @@ const Login = () => {
       <View className="flex-1 bg-cardBackground justify-center items-center">
         <View className="w-full h-full py-6 px-4">
           <TouchableOpacity className="mb-6">
-            <ArrowLeft size={24} color="black" onPress={() => router.back()} />
+            <ArrowLeft size={24} color="black" onPress={() => router.push("/(auth)/roleSelection")} />
           </TouchableOpacity>
           <View>
             <Text className="text-start text-3xl font-bold text-gray-900 mb-2">
               Welcome Back !
             </Text>
             <Text className="text-start font-semibold text-gray-500 mb-6">
-              Sign in with your email and password {"\n"}
-              or social media to continue
+              Sign in as {role === "AGENT" ? "House Owner" : "User"} with your{"\n"}
+              email and password to continue
             </Text>
           </View>
           {/* Email Input Field */}
@@ -213,11 +219,11 @@ const Login = () => {
             <Text className="text-gray-600 text-lg">
               Don&apos;t have an account?{" "}
             </Text>
-            <Link href="/(auth)/signup">
+            <TouchableOpacity onPress={() => router.push({ pathname: "/(auth)/signup", params: { role } })}>
               <Text className="text-secondary text-lg font-semibold">
                 Sign Up
               </Text>
-            </Link>
+            </TouchableOpacity>
           </View>
         </View>
       </View>

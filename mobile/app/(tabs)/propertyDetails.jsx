@@ -18,157 +18,29 @@ import { WebView } from "react-native-webview";
 // Import SVG icons
 import LocationIcon from "../../assets/images/home-icons/Location.svg";
 
+// Import dummy data (structured like backend API response)
+import { propertiesDetailMap } from "../../data/dummyData";
+
+//!api calls - uncomment when connecting backend
+// import api from "../../services/api";
+// useEffect(() => {
+//   const fetchProperty = async () => {
+//     const response = await api.get(`/api/houses/${propertyId}`);
+//     setProperty(response.data.house);
+//   };
+//   fetchProperty();
+// }, [propertyId]);
+
 const { width } = Dimensions.get("window");
 
-// Sample property data (this would typically come from an API or route params)
-const propertiesData = {
-  "1": {
-    id: "1",
-    name: "House of Mormon",
-    location: "Denpasar, Bali",
-    price: 310,
-    priceType: "month",
-    rating: 4.5,
-    images: [
-      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800",
-      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400",
-      "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=400",
-      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400",
-    ],
-    bedrooms: 3,
-    bathrooms: 2,
-    area: 1880,
-    buildYear: 2020,
-    parking: "1 Indoor",
-    status: "For Rent",
-    description:
-      "Lorem ipsum is simply dummy text of the printing and typesetting industry. 1500s, when an unknown printer took a type specimen book. Lorem ipsum is simply dummy text of the printing and typesetting industry.",
-    agent: {
-      name: "Esther Howard",
-      role: "Real Estate Agent",
-      image: "https://randomuser.me/api/portraits/women/44.jpg",
-      phone: "+1234567890",
-    },
-    facilities: ["Hospital", "Gas stations", "Mall", "Mosque"],
-    coordinates: {
-      latitude: -8.4095,
-      longitude: 115.1889,
-    },
-    reviews: [
-      {
-        id: "1",
-        name: "Theresa Webb",
-        rating: 4,
-        comment:
-          "Lorem ipsum is simply dummy text of the printing and typesetting industry. 1500s.",
-        image: "https://randomuser.me/api/portraits/women/65.jpg",
-      },
-      {
-        id: "2",
-        name: "Alex Johnson",
-        rating: 5,
-        comment: "Amazing property with great amenities. Highly recommended!",
-        image: "https://randomuser.me/api/portraits/men/32.jpg",
-      },
-    ],
-    totalReviews: 152,
-  },
-  "2": {
-    id: "2",
-    name: "Ayana Homestay",
-    location: "Imogiri, Yogyakarta",
-    price: 310,
-    priceType: "month",
-    rating: 4.8,
-    images: [
-      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800",
-      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400",
-      "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=400",
-      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400",
-    ],
-    bedrooms: 4,
-    bathrooms: 3,
-    area: 2200,
-    buildYear: 2019,
-    parking: "2 Indoor",
-    status: "For Rent",
-    description:
-      "Beautiful homestay with modern amenities and stunning views. Perfect for families looking for a comfortable stay with all the facilities needed.",
-    agent: {
-      name: "John Smith",
-      role: "Property Manager",
-      image: "https://randomuser.me/api/portraits/men/45.jpg",
-      phone: "+1987654321",
-    },
-    facilities: ["Hospital", "School", "Mall", "Park"],
-    coordinates: {
-      latitude: -7.9361,
-      longitude: 110.3634,
-    },
-    reviews: [
-      {
-        id: "1",
-        name: "Sarah Williams",
-        rating: 5,
-        comment: "Excellent property! Very clean and well maintained.",
-        image: "https://randomuser.me/api/portraits/women/22.jpg",
-      },
-    ],
-    totalReviews: 89,
-  },
-  "3": {
-    id: "3",
-    name: "Bali Komang Guest",
-    location: "Nusa Penida, Bali",
-    price: 280,
-    priceType: "month",
-    rating: 4.7,
-    images: [
-      "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800",
-      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400",
-      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400",
-      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400",
-    ],
-    bedrooms: 2,
-    bathrooms: 2,
-    area: 1500,
-    buildYear: 2021,
-    parking: "1 Outdoor",
-    status: "For Rent",
-    description:
-      "Cozy guest house in the heart of Nusa Penida with easy access to famous beaches and attractions.",
-    agent: {
-      name: "Made Komang",
-      role: "Local Host",
-      image: "https://randomuser.me/api/portraits/men/55.jpg",
-      phone: "+6281234567890",
-    },
-    facilities: ["Beach", "Restaurant", "ATM", "Pharmacy"],
-    coordinates: {
-      latitude: -8.7275,
-      longitude: 115.5444,
-    },
-    reviews: [
-      {
-        id: "1",
-        name: "Michael Brown",
-        rating: 4,
-        comment: "Great location and friendly host!",
-        image: "https://randomuser.me/api/portraits/men/75.jpg",
-      },
-    ],
-    totalReviews: 124,
-  },
-};
-
 // Default property for fallback
-const defaultProperty = propertiesData["1"];
+const defaultProperty = propertiesDetailMap[Object.keys(propertiesDetailMap)[0]];
 
 const PropertyDetails = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const propertyId = params.id || "1";
-  const property = propertiesData[propertyId] || defaultProperty;
+  const propertyId = params.id || Object.keys(propertiesDetailMap)[0];
+  const property = propertiesDetailMap[propertyId] || defaultProperty;
 
   const [isFavorite, setIsFavorite] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
