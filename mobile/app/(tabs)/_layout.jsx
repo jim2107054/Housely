@@ -156,6 +156,54 @@ const TabLayout = () => {
               href: null,
             }}
           />
+          <Tabs.Screen
+            name="paymentHistory"
+            options={{
+              href: null,
+            }}
+          />
+          <Tabs.Screen
+            name="notificationSettings"
+            options={{
+              href: null,
+            }}
+          />
+          <Tabs.Screen
+            name="recentViewed"
+            options={{
+              href: null,
+            }}
+          />
+          <Tabs.Screen
+            name="about"
+            options={{
+              href: null,
+            }}
+          />
+          <Tabs.Screen
+            name="notifications"
+            options={{
+              href: null,
+            }}
+          />
+          <Tabs.Screen
+            name="search"
+            options={{
+              href: null,
+            }}
+          />
+          <Tabs.Screen
+            name="writeReview"
+            options={{
+              href: null,
+            }}
+          />
+          <Tabs.Screen
+            name="settings"
+            options={{
+              href: null,
+            }}
+          />
         </Tabs>
       </SafeScreen>
     </SafeAreaProvider>

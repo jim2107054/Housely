@@ -69,7 +69,6 @@ const sortOptions = [
 const Explore = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [favorites, setFavorites] = useState(["1", "4"]);
   const [viewMode, setViewMode] = useState("grid"); // grid or list
@@ -83,12 +82,10 @@ const Explore = () => {
   const filteredProperties = useMemo(() => {
     let result = [...allHouses];
     
-    // Search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
+    // Category filter
+    if (selectedCategory !== "all") {
       result = result.filter(
-        p => p.name.toLowerCase().includes(query) || 
-             p.location.toLowerCase().includes(query)
+        p => p.type?.toLowerCase() === selectedCategory.toLowerCase()
       );
     }
     
@@ -113,7 +110,7 @@ const Explore = () => {
     }
     
     return result;
-  }, [allHouses, searchQuery, selectedCategory, sortBy, priceRange]);
+  }, [allHouses, selectedCategory, sortBy, priceRange]);
 
   const toggleFavorite = (id) => {
     setFavorites((prev) =>
@@ -128,30 +125,20 @@ const Explore = () => {
         Explore
       </Text>
       
-      {/* Search Bar */}
-      <View className="flex-row items-center gap-3">
+      {/* Search Bar - Matching Home Screen Style */}
+      <TouchableOpacity 
+        className="flex-row items-center"
+        onPress={() => router.push("/(tabs)/search")}
+        activeOpacity={0.7}
+      >
         <View className="flex-1 flex-row items-center bg-cardBackground rounded-xl py-3 px-4 border border-border">
-          <Ionicons name="search-outline" size={22} color="#6941C6" />
-          <TextInput
-            placeholder="Search houses, apartments..."
-            placeholderTextColor="#A1A5C1"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            className="flex-1 ml-3 text-textPrimary font-poppins text-base"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery("")}>
-              <Ionicons name="close-circle" size={20} color="#A1A5C1" />
-            </TouchableOpacity>
-          )}
+          <Ionicons name="search-outline" size={24} color="#6941C6" />
+          <Text className="flex-1 ml-3 text-textHint font-poppins text-base">
+            Search Property
+          </Text>
+          <FilterIcon width={24} height={24} color="#6941C6" />
         </View>
-        <TouchableOpacity 
-          className="w-12 h-12 rounded-xl bg-primary items-center justify-center"
-          onPress={() => setShowFilterModal(true)}
-        >
-          <FilterIcon width={22} height={22} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
+      </TouchableOpacity>
     </View>
   );
 
