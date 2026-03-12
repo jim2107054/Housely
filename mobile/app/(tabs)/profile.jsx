@@ -14,31 +14,31 @@ const Profile = () => {
       id: 1,
       title: 'Settings',
       iconName: 'settings-outline',
-      onPress: () => console.log('Settings pressed')
+      onPress: () => router.push('/(tabs)/settings')
     },
     {
       id: 2,
-      title: 'Payment',
+      title: 'Payment History',
       iconName: 'wallet-outline',
-      onPress: () => console.log('Payment pressed')
+      onPress: () => router.push('/(tabs)/paymentHistory')
     },
     {
       id: 3,
-      title: 'Notification',
+      title: 'Notification Settings',
       iconName: 'notifications-outline',
-      onPress: () => console.log('Notification pressed')
+      onPress: () => router.push('/(tabs)/notificationSettings')
     },
     {
       id: 4,
       title: 'Recent Viewed',
       iconName: 'time-outline',
-      onPress: () => console.log('Recent Viewed pressed')
+      onPress: () => router.push('/(tabs)/recentViewed')
     },
     {
       id: 5,
       title: 'About',
       iconName: 'information-circle-outline',
-      onPress: () => console.log('About pressed')
+      onPress: () => router.push('/(tabs)/about')
     }
   ]
 
@@ -129,15 +129,17 @@ const Profile = () => {
           ))}
         </View>
 
-        {/* Sign Out Button */}
-        <TouchableOpacity
-          onPress={handleSignOut}
-          className="items-center py-6 mt-4"
-        >
-          <Text className="text-base font-medium text-[#FF5252]">
-            Sign Out
-          </Text>
-        </TouchableOpacity>
+        {/* Sign Out Button with Background */}
+        <View className="px-4 mt-6 mb-8">
+          <TouchableOpacity
+            onPress={handleSignOut}
+            className="bg-[#FFE5E5] py-4 rounded-xl items-center"
+          >
+            <Text className="text-base font-semibold text-[#FF5252]">
+              Sign Out
+            </Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </SafeAreaView>
   )

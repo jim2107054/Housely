@@ -4,7 +4,6 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
-  TextInput,
   FlatList,
   Dimensions,
   Animated,
@@ -34,7 +33,6 @@ const CARD_WIDTH = width * 0.65;
 
 const Home = () => {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
   const [favorites, setFavorites] = useState(["1"]);
   const [popularFavorites, setPopularFavorites] = useState(["2"]);
   const [activeLocation, setActiveLocation] = useState("2");
@@ -59,14 +57,16 @@ const Home = () => {
       
       const animation = Animated.loop(
         Animated.sequence([
+          // Scroll from right to left
           Animated.timing(recommendedScrollX, {
             toValue: -scrollDistance,
             duration: 10000,
             useNativeDriver: true,
           }),
+          // Reset instantly to starting position
           Animated.timing(recommendedScrollX, {
             toValue: 0,
-            duration: 10000,
+            duration: 0,
             useNativeDriver: true,
           }),
         ])
@@ -109,8 +109,29 @@ const Home = () => {
         </View>
       </TouchableOpacity>
       <View className="flex-row items-center gap-2">
-        <TouchableOpacity className="w-10 h-10 rounded-full bg-cardBackground items-center justify-center border border-border">
+        <TouchableOpacity 
+          className="w-10 h-10 rounded-full bg-cardBackground items-center justify-center border border-border"
+          onPress={() => router.push("/(tabs)/notifications")}
+        >
           <NotificationIcon width={20} height={20} />
+          {/* Notification Badge */}
+          <View 
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              backgroundColor: '#FF5252',
+              width: 18,
+              height: 18,
+              borderRadius: 9,
+              justifyContent: 'center',
+              alignItems: 'center',
+              borderWidth: 2,
+              borderColor: '#FFFFFF',
+            }}
+          >
+            <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: 'bold' }}>2</Text>
+          </View>
         </TouchableOpacity>
         <TouchableOpacity 
           className="w-10 h-10 rounded-full bg-cardBackground items-center justify-center border border-border"
@@ -124,21 +145,19 @@ const Home = () => {
 
   // Search Bar Component
   const SearchBar = () => (
-    <View className="flex-row items-center mx-5 mb-5">
-      <View className="flex-1 flex-row items-center bg-cardBackground rounded-xl py-1.5 px-4 border border-border">
+    <TouchableOpacity 
+      className="flex-row items-center mx-5 mb-5"
+      onPress={() => router.push("/(tabs)/search")}
+      activeOpacity={0.7}
+    >
+      <View className="flex-1 flex-row items-center bg-cardBackground rounded-xl py-3 px-4 border border-border">
         <Ionicons name="search-outline" size={24} color="#6941C6" />
-        <TextInput
-          placeholder="Search Property"
-          placeholderTextColor="#A1A5C1"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          className="flex-1 ml-3 text-textPrimary font-poppins text-base"
-        />
-        <TouchableOpacity>
-          <FilterIcon width={24} height={24} color="#6941C6" />
-        </TouchableOpacity>
+        <Text className="flex-1 ml-3 text-textHint font-poppins text-base">
+          Search Property
+        </Text>
+        <FilterIcon width={24} height={24} color="#6941C6" />
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   // Promo Banner Component
