@@ -13,11 +13,13 @@ const router = Router();
 // User routes
 router.post('/', protect, validate(createBookingSchema), bookingController.createBooking);
 router.get('/my', protect, validate(listBookingsSchema), bookingController.getMyBookings);
-router.get('/:id', protect, validate(bookingIdSchema), bookingController.getBookingById);
-router.patch('/:id/cancel', protect, validate(bookingIdSchema), bookingController.cancelBooking);
 
-// Agent routes
+// Agent routes (MUST be before /:id)
 router.get('/agent/all', protect, requireRole('AGENT', 'ADMIN'), validate(listBookingsSchema), bookingController.getAgentBookings);
 router.patch('/agent/:id/status', protect, requireRole('AGENT', 'ADMIN'), bookingController.updateBookingStatus);
+
+// Parameterized routes last
+router.get('/:id', protect, validate(bookingIdSchema), bookingController.getBookingById);
+router.patch('/:id/cancel', protect, validate(bookingIdSchema), bookingController.cancelBooking);
 
 export default router;
