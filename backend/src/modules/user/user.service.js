@@ -87,6 +87,17 @@ export const getPaymentHistory = async (userId, page = 1, limit = 20) => {
   const [payments, total] = await Promise.all([
     prisma.payment.findMany({
       where: { userId },
+      include: {
+        booking: {
+          include: {
+            house: {
+              include: {
+                images: { take: 1, orderBy: { order: 'asc' } },
+              },
+            },
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
       skip,
       take: limit,
@@ -139,5 +150,8 @@ export const getRecentViewed = async (userId, limit = 20) => {
     },
   });
 
-  return views.map((v) => v.house);
+  return views.map((v) => ({
+    ...v.house,
+    viewedAt: v.viewedAt,
+  }));
 };
