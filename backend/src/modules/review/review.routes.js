@@ -17,6 +17,9 @@ router.post('/', protect, validate(createReviewSchema), reviewController.createR
 // Get user's own reviews
 router.get('/my', protect, reviewController.getMyReviews);
 
+// Get reviews for agent's properties
+router.get('/agent', protect, reviewController.getAgentReviews);
+
 // Get reviews for a house (public)
 router.get('/house/:houseId', validate(listReviewsSchema), reviewController.getHouseReviews);
 
