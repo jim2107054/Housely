@@ -7,22 +7,15 @@ import {
   Dimensions,
   Alert,
 } from "react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
-import { ownerHouses, ownerReviews } from "../../data/dummyData";
+import api from "../../services/api";
 
-//!api calls - uncomment when connecting backend
-// import api from "../../services/api";
-// useEffect(() => {
-//   const fetchProperty = async () => {
-//     const response = await api.get(`/api/houses/${id}`);
-//     setProperty(response.data.house);
-//   };
-//   fetchProperty();
-// }, [id]);
+
 
 const { width } = Dimensions.get("window");
 
@@ -40,9 +33,34 @@ const OwnerPropertyDetails = () => {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams();
 
-  const property = ownerHouses.find((h) => h.id === id) || ownerHouses[0];
-  const reviews = ownerReviews.filter((r) => r.houseId === property?.id);
+  const [property, setProperty] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [currentImage, setCurrentImage] = useState(0);
+
+  useEffect(() => {
+    const fetchProperty = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get(`/api/houses/${id}`);
+        const house = response.data.house;
+        setProperty({
+          ...house,
+          price: house.listingType === 'RENT' ? house.rentPerMonth : house.salePrice,
+          rating: house.rating || 4.5,
+        });
+        
+        // Fetch reviews for this house
+        const reviewsResponse = await api.get(`/api/reviews/house/${id}`);
+        setReviews(reviewsResponse.data.reviews || []);
+      } catch (err) {
+        console.error('Error fetching owner property details:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProperty();
+  }, [id]);
 
   const handleDelete = () => {
     Alert.alert(
@@ -53,14 +71,28 @@ const OwnerPropertyDetails = () => {
         {
           text: "Delete",
           style: "destructive",
-          onPress: () => {
-            Toast.show({ type: "success", text1: "Property Deleted" });
-            router.back();
+          onPress: async () => {
+            try {
+              await api.delete(`/api/houses/${id}`);
+              Toast.show({ type: "success", text1: "Property Deleted" });
+              router.back();
+            } catch (err) {
+              console.error('Error deleting property:', err);
+              Toast.show({ type: "error", text1: "Delete Failed" });
+            }
           },
         },
       ]
     );
   };
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: COLORS.background, justifyContent: "center", alignItems: "center" }}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
 
   if (!property) {
     return (
@@ -294,7 +326,7 @@ const OwnerPropertyDetails = () => {
               <Text style={{ color: COLORS.danger, fontSize: 16, fontWeight: "600" }}>Delete</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => Toast.show({ type: "info", text1: "Edit feature coming soon" })}
+              onPress={() => router.push({ pathname: "/(owner)/addProperty", params: { id: property.id } })}
               style={{
                 flex: 1,
                 paddingVertical: 14,

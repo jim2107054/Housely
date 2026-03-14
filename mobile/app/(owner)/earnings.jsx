@@ -5,21 +5,14 @@ import {
   TouchableOpacity,
   FlatList,
 } from "react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ownerEarnings } from "../../data/dummyData";
+import api from "../../services/api";
 
-//!api calls - uncomment when connecting backend
-// import api from "../../services/api";
-// useEffect(() => {
-//   const fetchEarnings = async () => {
-//     const response = await api.get('/api/agent/earnings');
-//     setEarnings(response.data);
-//   };
-//   fetchEarnings();
-// }, []);
+
 
 const COLORS = {
   primary: "#7B61FF",
@@ -34,14 +27,39 @@ const COLORS = {
 const OwnerEarnings = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [earnings] = useState(ownerEarnings);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchEarnings = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get('/api/houses/agent/dashboard');
+        setDashboardData(response.data);
+      } catch (err) {
+        console.error('Error fetching dashboard earnings:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEarnings();
+  }, []);
+
+  const stats = dashboardData?.stats || {
+    totalEarnings: 0,
+    thisMonthEarnings: 0,
+    lastMonthEarnings: 0,
+    pendingPayouts: 0,
+  };
 
   const summaryCards = [
-    { label: "Total Earnings", value: `$${earnings.totalEarnings.toLocaleString()}`, icon: "wallet", color: "#4CAF50", bgColor: "#E8F5E9" },
-    { label: "This Month", value: `$${earnings.thisMonth.toLocaleString()}`, icon: "trending-up", color: "#7B61FF", bgColor: "#F0ECFF" },
-    { label: "Last Month", value: `$${earnings.lastMonth.toLocaleString()}`, icon: "analytics", color: "#2196F3", bgColor: "#E3F2FD" },
-    { label: "Pending Payouts", value: `$${earnings.pendingPayouts.toLocaleString()}`, icon: "time", color: "#FF9800", bgColor: "#FFF3E0" },
+    { label: "Total Earnings", value: `$${stats.totalEarnings.toLocaleString()}`, icon: "wallet", color: "#4CAF50", bgColor: "#E8F5E9" },
+    { label: "This Month", value: `$${stats.thisMonthEarnings.toLocaleString()}`, icon: "trending-up", color: "#7B61FF", bgColor: "#F0ECFF" },
+    { label: "Last Month", value: `$${stats.lastMonthEarnings.toLocaleString()}`, icon: "analytics", color: "#2196F3", bgColor: "#E3F2FD" },
+    { label: "Pending Payouts", value: `$${stats.pendingPayouts.toLocaleString()}`, icon: "time", color: "#FF9800", bgColor: "#FFF3E0" },
   ];
+
+  const transactions = dashboardData?.transactions || [];
 
   const renderTransaction = ({ item }) => {
     const isCompleted = item.status === "COMPLETED";
@@ -115,11 +133,16 @@ const OwnerEarnings = () => {
         </Text>
       </View>
 
-      <FlatList
-        data={earnings.transactions}
-        keyExtractor={(item) => item.id}
-        renderItem={renderTransaction}
-        showsVerticalScrollIndicator={false}
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      ) : (
+        <FlatList
+          data={transactions}
+          keyExtractor={(item) => item.id}
+          renderItem={renderTransaction}
+          showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <>
             {/* Summary Cards */}
@@ -177,7 +200,8 @@ const OwnerEarnings = () => {
           </View>
         }
         contentContainerStyle={{ paddingBottom: 30 }}
-      />
+        />
+      )}
     </View>
   );
 };

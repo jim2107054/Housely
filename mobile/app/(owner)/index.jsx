@@ -6,27 +6,15 @@ import {
   TouchableOpacity,
   Dimensions,
 } from "react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import useAuthStore from "../../store/authStore";
-import {
-  ownerHouses,
-  ownerBookings,
-  ownerReviews,
-  ownerEarnings,
-} from "../../data/dummyData";
+import api from "../../services/api";
 
-//!api calls - uncomment when connecting backend
-// import api from "../../services/api";
-// useEffect(() => {
-//   const fetchDashboard = async () => {
-//     const response = await api.get('/api/agent/dashboard');
-//     setDashboardData(response.data);
-//   };
-//   fetchDashboard();
-// }, []);
+
 
 const { width } = Dimensions.get("window");
 
@@ -45,15 +33,41 @@ const OwnerDashboard = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const pendingBookings = ownerBookings.filter((b) => b.status === "PENDING");
-  const confirmedBookings = ownerBookings.filter((b) => b.status === "CONFIRMED");
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get('/api/houses/agent/dashboard');
+        setDashboardData(response.data);
+      } catch (err) {
+        console.error('Error fetching dashboard:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboard();
+  }, []);
+
+  const statsData = dashboardData?.stats || {
+    housesCount: 0,
+    bookingsCount: 0,
+    reviewsCount: 0,
+    avgRating: 0,
+    totalEarnings: 0,
+    thisMonthEarnings: 0,
+    pendingPayouts: 0,
+  };
+
+  const recentBookings = dashboardData?.recentBookings || [];
 
   // Stats
   const stats = [
     {
       label: "Properties",
-      value: ownerHouses.length,
+      value: statsData.housesCount,
       icon: "home",
       color: "#7B61FF",
       bgColor: "#F0ECFF",
@@ -61,15 +75,15 @@ const OwnerDashboard = () => {
     },
     {
       label: "Bookings",
-      value: ownerBookings.length,
+      value: statsData.bookingsCount,
       icon: "calendar",
       color: "#FF9800",
       bgColor: "#FFF3E0",
       onPress: () => router.push("/(owner)/bookings"),
     },
     {
-      label: "Reviews",
-      value: ownerReviews.length,
+      label: "Rating",
+      value: statsData.avgRating.toFixed(1),
       icon: "star",
       color: "#FFC107",
       bgColor: "#FFFDE7",
@@ -77,13 +91,21 @@ const OwnerDashboard = () => {
     },
     {
       label: "Earnings",
-      value: `$${ownerEarnings.totalEarnings.toLocaleString()}`,
+      value: `$${statsData.totalEarnings.toLocaleString()}`,
       icon: "cash",
       color: "#4CAF50",
       bgColor: "#E8F5E9",
       onPress: () => router.push("/(owner)/earnings"),
     },
   ];
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: COLORS.background }}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
@@ -141,7 +163,7 @@ const OwnerDashboard = () => {
               This Month's Earnings
             </Text>
             <Text style={{ color: "#fff", fontSize: 32, fontWeight: "bold", marginTop: 4 }}>
-              ${ownerEarnings.thisMonth.toLocaleString()}
+              ${statsData.thisMonthEarnings.toLocaleString()}
             </Text>
             <View style={{ flexDirection: "row", marginTop: 12 }}>
               <View style={{ flex: 1 }}>
@@ -149,7 +171,7 @@ const OwnerDashboard = () => {
                   Pending
                 </Text>
                 <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>
-                  ${ownerEarnings.pendingPayouts.toLocaleString()}
+                  ${statsData.pendingPayouts.toLocaleString()}
                 </Text>
               </View>
               <View style={{ flex: 1 }}>
@@ -157,7 +179,7 @@ const OwnerDashboard = () => {
                   Total Earned
                 </Text>
                 <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>
-                  ${ownerEarnings.totalEarnings.toLocaleString()}
+                  ${statsData.totalEarnings.toLocaleString()}
                 </Text>
               </View>
             </View>
@@ -226,7 +248,7 @@ const OwnerDashboard = () => {
             </TouchableOpacity>
           </View>
 
-          {pendingBookings.length === 0 ? (
+          {recentBookings.length === 0 ? (
             <View
               style={{
                 backgroundColor: COLORS.card,
@@ -237,11 +259,11 @@ const OwnerDashboard = () => {
             >
               <Ionicons name="checkmark-circle" size={40} color={COLORS.success} />
               <Text style={{ color: COLORS.textSecondary, marginTop: 8 }}>
-                No pending bookings
+                No recent bookings
               </Text>
             </View>
           ) : (
-            pendingBookings.map((booking) => {
+            recentBookings.map((booking) => {
               const checkIn = new Date(booking.checkIn).toLocaleDateString("en-US", { month: "short", day: "numeric" });
               const checkOut = new Date(booking.checkOut).toLocaleDateString("en-US", { month: "short", day: "numeric" });
               return (
@@ -261,7 +283,7 @@ const OwnerDashboard = () => {
                   }}
                 >
                   <Image
-                    source={{ uri: booking.house?.images?.[0]?.url }}
+                    source={{ uri: booking.house?.images?.[0]?.url || 'https://via.placeholder.com/150' }}
                     style={{ width: 70, height: 70, borderRadius: 12 }}
                   />
                   <View style={{ flex: 1, marginLeft: 12, justifyContent: "center" }}>
@@ -274,15 +296,15 @@ const OwnerDashboard = () => {
                     <View
                       style={{
                         marginTop: 6,
-                        backgroundColor: "#FFF3E0",
+                        backgroundColor: booking.status === 'COMPLETED' ? '#E8F5E9' : '#FFF3E0',
                         paddingHorizontal: 8,
                         paddingVertical: 3,
                         borderRadius: 6,
                         alignSelf: "flex-start",
                       }}
                     >
-                      <Text style={{ fontSize: 11, color: "#FF9800", fontWeight: "600" }}>
-                        Pending
+                      <Text style={{ fontSize: 11, color: booking.status === 'COMPLETED' ? '#4CAF50' : '#FF9800', fontWeight: "600" }}>
+                        {booking.status.charAt(0) + booking.status.slice(1).toLowerCase()}
                       </Text>
                     </View>
                   </View>
@@ -308,7 +330,7 @@ const OwnerDashboard = () => {
             </TouchableOpacity>
           </View>
 
-          {ownerReviews.slice(0, 2).map((review) => (
+          {(dashboardData?.recentReviews || []).slice(0, 2).map((review) => (
             <View
               key={review.id}
               style={{

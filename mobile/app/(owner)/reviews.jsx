@@ -8,17 +8,11 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ownerReviews } from "../../data/dummyData";
+import api from "../../services/api";
+import { useEffect, useState } from "react";
+import { ActivityIndicator } from "react-native";
 
-//!api calls - uncomment when connecting backend
-// import api from "../../services/api";
-// useEffect(() => {
-//   const fetchReviews = async () => {
-//     const response = await api.get('/api/reviews/agent-reviews');
-//     setReviews(response.data.reviews);
-//   };
-//   fetchReviews();
-// }, []);
+
 
 const COLORS = {
   primary: "#7B61FF",
@@ -28,14 +22,31 @@ const COLORS = {
   textSecondary: "#9E9E9E",
 };
 
-const avgRating =
-  ownerReviews.length > 0
-    ? (ownerReviews.reduce((sum, r) => sum + r.rating, 0) / ownerReviews.length).toFixed(1)
-    : "0.0";
-
 const OwnerReviews = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchReviews = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get('/api/reviews/agent');
+        setReviews(response.data.reviews || []);
+      } catch (err) {
+        console.error('Error fetching agent reviews:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchReviews();
+  }, []);
+
+  const avgRating =
+    reviews.length > 0
+      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+      : "0.0";
 
   const renderStars = (rating) => {
     return Array.from({ length: 5 }, (_, i) => (
@@ -127,24 +138,30 @@ const OwnerReviews = () => {
           </Text>
           <View style={{ flexDirection: "row", marginTop: 4 }}>{renderStars(Math.round(Number(avgRating)))}</View>
           <Text style={{ fontSize: 13, color: COLORS.textSecondary, marginTop: 4 }}>
-            {ownerReviews.length} reviews
+            {reviews.length} reviews
           </Text>
         </View>
       </View>
 
-      <FlatList
-        data={ownerReviews}
-        keyExtractor={(item) => item.id}
-        renderItem={renderReview}
-        contentContainerStyle={{ paddingBottom: 30 }}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={{ alignItems: "center", marginTop: 40 }}>
-            <Ionicons name="star-outline" size={60} color="#E0E0E0" />
-            <Text style={{ color: COLORS.textSecondary, marginTop: 12 }}>No reviews yet</Text>
-          </View>
-        }
-      />
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      ) : (
+        <FlatList
+          data={reviews}
+          keyExtractor={(item) => item.id}
+          renderItem={renderReview}
+          contentContainerStyle={{ paddingBottom: 30 }}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={{ alignItems: "center", marginTop: 40 }}>
+              <Ionicons name="star-outline" size={60} color="#E0E0E0" />
+              <Text style={{ color: COLORS.textSecondary, marginTop: 12 }}>No reviews yet</Text>
+            </View>
+          }
+        />
+      )}
     </View>
   );
 };
