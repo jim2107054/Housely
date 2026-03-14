@@ -9,6 +9,7 @@ import {
   Linking,
   Share,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { useState, useRef } from "react";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,34 +19,82 @@ import { WebView } from "react-native-webview";
 // Import SVG icons
 import LocationIcon from "../../assets/images/home-icons/Location.svg";
 
-// Import dummy data (structured like backend API response)
-import { propertiesDetailMap } from "../../data/dummyData";
+import api from "../../services/api";
+import { useEffect } from "react";
 
-//!api calls - uncomment when connecting backend
-// import api from "../../services/api";
-// useEffect(() => {
-//   const fetchProperty = async () => {
-//     const response = await api.get(`/api/houses/${propertyId}`);
-//     setProperty(response.data.house);
-//   };
-//   fetchProperty();
-// }, [propertyId]);
+
 
 const { width } = Dimensions.get("window");
 
-// Default property for fallback
-const defaultProperty = propertiesDetailMap[Object.keys(propertiesDetailMap)[0]];
+// Fallback property state handled via useEffect and API call
+const defaultProperty = null;
 
 const PropertyDetails = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const propertyId = params.id || Object.keys(propertiesDetailMap)[0];
-  const property = propertiesDetailMap[propertyId] || defaultProperty;
+  const propertyId = params.id;
 
+  const [property, setProperty] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
+
+  useEffect(() => {
+    const fetchProperty = async () => {
+      if (!propertyId) return;
+      setLoading(true);
+      try {
+        const response = await api.get(`/api/houses/${propertyId}`);
+        const h = response.data.house;
+        
+        // Transform facilities
+        const facilities = [];
+        if (h.publicFacilities) {
+          if (h.publicFacilities.hospitalDistance) facilities.push("Hospital");
+          if (h.publicFacilities.shoppingMallDistance) facilities.push("Mall");
+          if (h.publicFacilities.mosqueDistance) facilities.push("Mosque");
+          if (h.publicFacilities.marketDistance) facilities.push("Market");
+        }
+        if (h.hasWifi) facilities.push("WiFi");
+
+        const transformedProperty = {
+          id: h.id,
+          name: h.name,
+          location: `${h.area}, ${h.city}`,
+          price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
+          priceType: h.listingType === 'RENT' ? 'month' : 'total',
+          rating: h.rating || 4.5,
+          images: h.images?.map(img => img.url) || [],
+          bedrooms: h.bedrooms,
+          bathrooms: h.bathrooms,
+          area: h.sizeInSqft,
+          buildYear: h.buildYear,
+          status: h.listingType === 'RENT' ? 'For Rent' : 'For Sale',
+          description: h.description,
+          agent: {
+            name: h.agent?.name || "Unknown Agent",
+            role: h.agent?.role === "AGENT" ? "Real Estate Agent" : "Property Owner",
+            image: h.agent?.avatar || "https://randomuser.me/api/portraits/men/1.jpg",
+            phone: h.agent?.phoneNumber || "+000000000",
+          },
+          facilities,
+          totalReviews: h._count?.reviews || 0,
+          coordinates: {
+            latitude: h.latitude || -8.4095,
+            longitude: h.longitude || 115.1889,
+          }
+        };
+        setProperty(transformedProperty);
+      } catch (err) {
+        console.error('Error fetching property details:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProperty();
+  }, [propertyId]);
 
   // Toggle favorite
   const toggleFavorite = () => {
@@ -629,6 +678,29 @@ const PropertyDetails = () => {
       </TouchableOpacity>
     </Modal>
   );
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "white" }}>
+        <ActivityIndicator size="large" color="#6941C6" />
+      </View>
+    );
+  }
+
+  if (!property) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "white", padding: 20 }}>
+        <Ionicons name="alert-circle-outline" size={60} color="#DADADA" />
+        <Text style={{ marginTop: 12, fontSize: 16, color: "#252B5C", textAlign: "center" }}>Property not found or failed to load.</Text>
+        <TouchableOpacity 
+          onPress={() => router.back()}
+          style={{ marginTop: 20, backgroundColor: "#6941C6", paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10 }}
+        >
+          <Text style={{ color: "white", fontWeight: "600" }}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-white">

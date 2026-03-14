@@ -12,17 +12,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 // Import data (structured like backend API response)
-import { notificationsScreenData } from '../../data/dummyData';
+import api from '../../services/api';
+import { useEffect } from 'react';
+import { ActivityIndicator } from 'react-native';
 
-//!api calls - uncomment when connecting backend
-// import api from '../../services/api';
-// useEffect(() => {
-//   const fetchNotifications = async () => {
-//     const response = await api.get('/api/notifications');
-//     setNotifications(response.data.notifications);
-//   };
-//   fetchNotifications();
-// }, []);
+
 
 // Design Tokens
 const COLORS = {
@@ -249,8 +243,24 @@ const EmptyState = ({ filter }) => (
 
 const Notifications = () => {
   const router = useRouter();
-  const [notifications, setNotifications] = useState(notificationsScreenData);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all');
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get('/api/notifications');
+        setNotifications(response.data.notifications || []);
+      } catch (err) {
+        console.error('Error fetching notifications:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchNotifications();
+  }, []);
 
   // Get unread count
   const unreadCount = notifications.filter((n) => !n.isRead).length;
@@ -263,15 +273,25 @@ const Notifications = () => {
   });
 
   // Mark notification as read
-  const handleMarkRead = (id) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-    );
+  const handleMarkRead = async (id) => {
+    try {
+      await api.patch(`/api/notifications/${id}/read`);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+      );
+    } catch (err) {
+      console.error('Error marking notification as read:', err);
+    }
   };
 
   // Mark all as read
-  const handleMarkAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+  const handleMarkAllRead = async () => {
+    try {
+      await api.patch('/api/notifications/read-all');
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    } catch (err) {
+      console.error('Error marking all as read:', err);
+    }
   };
 
   // Handle notification press
@@ -372,7 +392,11 @@ const Notifications = () => {
       </View>
 
       {/* Notifications List */}
-      {filteredNotifications.length === 0 ? (
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      ) : filteredNotifications.length === 0 ? (
         <EmptyState filter={activeFilter} />
       ) : (
         <FlatList

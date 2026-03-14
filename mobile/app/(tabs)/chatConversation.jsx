@@ -12,35 +12,54 @@ import { useState, useRef, useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 
-// Import data (structured like backend API response)
-import { chatMessages, chatConversations } from "../../data/dummyData";
+import api from "../../services/api";
+import useAuthStore from "../../store/authStore";
+import { ActivityIndicator } from "react-native";
 
-//!api calls - uncomment when connecting backend
-// import api from "../../services/api";
-// useEffect(() => {
-//   const fetchMessages = async () => {
-//     const response = await api.get(`/api/messages/${id}`);
-//     setMessages(response.data.messages);
-//   };
-//   fetchMessages();
-// }, [id]);
+
 
 const ChatConversation = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { id, name, avatar } = params;
   const scrollViewRef = useRef(null);
+  const { user } = useAuthStore();
 
-  const [messages, setMessages] = useState(chatMessages[id] || []);
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [newMessage, setNewMessage] = useState("");
 
-  // Get conversation details
-  const conversation = chatConversations.find((c) => c.id === id) || {
+  const conversation = {
     name: name || "Unknown",
     avatar: avatar || "https://randomuser.me/api/portraits/men/1.jpg",
     online: false,
-    role: "Agent",
+    role: "User",
   };
+
+  useEffect(() => {
+    const fetchMessages = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get(`/api/conversations/${id}/messages`);
+        const transformed = response.data.messages.map(m => ({
+          id: m.id,
+          senderId: m.senderId,
+          text: m.content,
+          timestamp: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isMe: m.senderId === user.id,
+        }));
+        setMessages(transformed);
+        
+        // Mark as read
+        await api.patch(`/api/conversations/${id}/read`);
+      } catch (err) {
+        console.error('Error fetching messages:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMessages();
+  }, [id]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -50,37 +69,30 @@ const ChatConversation = () => {
   }, [messages]);
 
   // Send a new message
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (newMessage.trim() === "") return;
 
-    const message = {
-      id: `m${messages.length + 1}`,
-      senderId: "user",
-      text: newMessage.trim(),
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      isMe: true,
-    };
-
-    setMessages((prev) => [...prev, message]);
+    const text = newMessage.trim();
     setNewMessage("");
 
-    // Simulate agent reply after 1 second
-    setTimeout(() => {
-      const reply = {
-        id: `m${messages.length + 2}`,
-        senderId: "agent",
-        text: "Thanks for your message! I'll get back to you shortly.",
-        timestamp: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        isMe: false,
-      };
-      setMessages((prev) => [...prev, reply]);
-    }, 1500);
+    // Optimistic update
+    const tempId = `temp-${Date.now()}`;
+    const messageObj = {
+      id: tempId,
+      senderId: user.id,
+      text: text,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isMe: true,
+    };
+    setMessages((prev) => [...prev, messageObj]);
+
+    try {
+      const response = await api.post(`/api/conversations/${id}/messages`, { content: text });
+      // Update with real ID from backend if needed, or just let it be
+    } catch (err) {
+      console.error('Error sending message:', err);
+      setMessages((prev) => prev.filter(m => m.id !== tempId));
+    }
   };
 
   // Header Component
@@ -199,26 +211,32 @@ const ChatConversation = () => {
     >
       <Header />
 
-      <ScrollView
-        ref={scrollViewRef}
-        className="flex-1 px-4 py-4"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 10 }}
-      >
-        {/* Date separator */}
-        <View className="items-center mb-4">
-          <View className="bg-cardBackground px-4 py-1 rounded-full">
-            <Text className="text-textSecondary font-poppins text-xs">
-              Today
-            </Text>
-          </View>
+      {loading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#7C4DFF" />
         </View>
+      ) : (
+        <ScrollView
+          ref={scrollViewRef}
+          className="flex-1 px-4 py-4"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 10 }}
+        >
+          {/* Date separator */}
+          <View className="items-center mb-4">
+            <View className="bg-cardBackground px-4 py-1 rounded-full">
+              <Text className="text-textSecondary font-poppins text-xs">
+                Today
+              </Text>
+            </View>
+          </View>
 
-        {/* Messages */}
-        {messages.map((message) => (
-          <MessageBubble key={message.id} message={message} />
-        ))}
-      </ScrollView>
+          {/* Messages */}
+          {messages.map((message) => (
+            <MessageBubble key={message.id} message={message} />
+          ))}
+        </ScrollView>
+      )}
 
       <InputBar />
     </KeyboardAvoidingView>

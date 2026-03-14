@@ -13,30 +13,52 @@ import { useRouter } from "expo-router";
 import LocationIcon from "../../assets/images/home-icons/Location.svg";
 
 // Import data (structured like backend API response)
-import { allProperties, dummyFavorites } from "../../data/dummyData";
+import api from "../../services/api";
+import { useEffect } from "react";
+import { ActivityIndicator } from "react-native";
 
-//!api calls - uncomment when connecting backend
-// import api from "../../services/api";
-// useEffect(() => {
-//   const fetchFavorites = async () => {
-//     const response = await api.get('/api/houses/favorites');
-//     setFavorites(response.data.favorites);
-//   };
-//   fetchFavorites();
-// }, []);
+
 
 const Favorite = () => {
   const router = useRouter();
-  // IDs of favorited properties (from dummy data)
-  const [favoriteIds, setFavoriteIds] = useState(dummyFavorites.map(f => f.houseId));
+  const [favorites, setFavorites] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // Filter to show only favorited properties
-  const favoriteProperties = allProperties.filter(prop => favoriteIds.includes(prop.id));
+  useEffect(() => {
+    const fetchFavorites = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get('/api/houses/favorites');
+        const transformedFavorites = response.data.houses.map(h => ({
+          ...h,
+          name: h.name,
+          location: `${h.area}, ${h.city}`,
+          price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
+          priceType: h.listingType === 'RENT' ? 'month' : 'total',
+          image: h.images?.[0]?.url || 'https://via.placeholder.com/150',
+          rating: h.rating || 4.5,
+          isFavorite: true,
+        }));
+        setFavorites(transformedFavorites);
+      } catch (err) {
+        console.error('Error fetching favorites:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchFavorites();
+  }, []);
 
-  const toggleFavorite = (id) => {
-    setFavoriteIds((prev) =>
-      prev.includes(id) ? prev.filter((fId) => fId !== id) : [...prev, id]
-    );
+  const toggleFavorite = async (id) => {
+    try {
+      const response = await api.post(`/api/houses/${id}/favorite`);
+      if (!response.data.isFavorite) {
+        // If removed, filter out from local state
+        setFavorites(prev => prev.filter(f => f.id !== id));
+      }
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
+    }
   };
 
   // Header Component
@@ -77,9 +99,9 @@ const Favorite = () => {
             }}
           >
             <Ionicons
-              name={favoriteIds.includes(item.id) ? "heart" : "heart-outline"}
+              name="heart"
               size={22}
-              color={favoriteIds.includes(item.id) ? "#FF6B6B" : "#DADADA"}
+              color="#FF6B6B"
             />
           </TouchableOpacity>
         </View>
@@ -120,17 +142,23 @@ const Favorite = () => {
   return (
     <View className="flex-1 bg-white">
       <Header />
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {favoriteProperties.length > 0 ? (
-          favoriteProperties.map((item) => (
-            <FavoriteCard key={item.id} item={item} />
-          ))
-        ) : (
-          <EmptyState />
-        )}
-        {/* Bottom spacing */}
-        <View className="h-24" />
-      </ScrollView>
+      {loading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#6C5CE7" />
+        </View>
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {favorites.length > 0 ? (
+            favorites.map((item) => (
+              <FavoriteCard key={item.id} item={item} />
+            ))
+          ) : (
+            <EmptyState />
+          )}
+          {/* Bottom spacing */}
+          <View className="h-24" />
+        </ScrollView>
+      )}
     </View>
   );
 };

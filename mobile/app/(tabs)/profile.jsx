@@ -90,7 +90,7 @@ const Profile = () => {
             className="relative mb-4"
           >
             <Image
-              source={require('../../assets/images/profileImage.png')}
+              source={user?.avatar ? { uri: user.avatar } : require('../../assets/images/profileImage.png')}
               className="w-[100px] h-[100px] rounded-full"
             />
             <View className="absolute bottom-0 right-0 bg-[#6C5CE7] rounded-[15px] w-[30px] h-[30px] justify-center items-center border-2 border-white">

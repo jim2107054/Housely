@@ -12,23 +12,46 @@ import { useState, useRef } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
-// Import data (structured like backend API response)
-import { chatConversations } from "../../data/dummyData";
+import api from "../../services/api";
+import { useEffect } from "react";
+import { ActivityIndicator } from "react-native";
+import useAuthStore from "../../store/authStore";
 
-//!api calls - uncomment when connecting backend
-// import api from "../../services/api";
-// useEffect(() => {
-//   const fetchConversations = async () => {
-//     const response = await api.get('/api/messages/conversations');
-//     setConversations(response.data.conversations);
-//   };
-//   fetchConversations();
-// }, []);
+
 
 const Chat = () => {
+  const { user } = useAuthStore();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
-  const [conversations, setConversations] = useState(chatConversations);
+  const [conversations, setConversations] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchConversations = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get('/api/conversations');
+        const transformedConversations = response.data.conversations.map(c => {
+          const otherUser = c.user1Id === user.id ? c.user2 : c.user1;
+          return {
+            id: c.id,
+            name: otherUser.name || otherUser.username,
+            lastMessage: c.lastMessage?.content || "No message yet",
+            time: c.lastMessageAt ? new Date(c.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "",
+            unreadCount: c.unreadCount || 0,
+            image: otherUser.avatar || "https://randomuser.me/api/portraits/men/1.jpg",
+            online: true,
+          };
+        });
+        setConversations(transformedConversations);
+      } catch (err) {
+        console.error('Error fetching conversations:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchConversations();
+  }, []);
 
   // Filter conversations based on search
   const filteredConversations = conversations.filter(
@@ -155,7 +178,7 @@ const Chat = () => {
             onPress={() =>
               router.push({
                 pathname: "/(tabs)/chatConversation",
-                params: { id: item.id, name: item.name, avatar: item.avatar },
+                params: { id: item.id, name: item.name, avatar: item.image },
               })
             }
             activeOpacity={0.9}
@@ -163,7 +186,7 @@ const Chat = () => {
             {/* Avatar with online indicator */}
             <View className="relative">
               <Image
-                source={{ uri: item.avatar }}
+                source={{ uri: item.image }}
                 className="w-14 h-14 rounded-full"
                 resizeMode="cover"
               />
@@ -182,12 +205,10 @@ const Chat = () => {
                   {item.name}
                 </Text>
                 <Text className="text-textSecondary font-poppins text-xs">
-                  {item.timestamp}
+                  {item.time}
                 </Text>
               </View>
-              <Text className="text-textSecondary font-poppins text-xs mt-0.5">
-                {item.role}
-              </Text>
+
               <Text
                 className="text-textSecondary font-poppins text-sm mt-1"
                 numberOfLines={1}
@@ -197,10 +218,10 @@ const Chat = () => {
             </View>
 
             {/* Unread badge */}
-            {item.unread > 0 && (
+            {item.unreadCount > 0 && (
               <View className="w-6 h-6 bg-primary rounded-full items-center justify-center ml-2">
                 <Text className="text-white text-xs font-poppins-bold">
-                  {item.unread}
+                  {item.unreadCount}
                 </Text>
               </View>
             )}
@@ -222,6 +243,14 @@ const Chat = () => {
       </Text>
     </View>
   );
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "white" }}>
+        <ActivityIndicator size="large" color="#6941C6" />
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-white">
