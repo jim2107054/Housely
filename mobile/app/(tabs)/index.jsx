@@ -19,32 +19,9 @@ import NotificationIcon from "../../assets/images/home-icons/Notification.svg";
 import ChatIcon from "../../assets/images/home-icons/Chat.svg";
 import FilterIcon from "../../assets/images/home-icons/Filter.svg";
 
-// Import data from centralized data folder
-import {
-  recommendedProperties,
-  nearbyPropertiesRow1,
-  nearbyPropertiesRow2,
-  topLocations,
-  popularProperties,
-} from "../../data/dummyData";
 
-//!api calls - uncomment when connecting backend
-// import api from "../../services/api";
-// useEffect(() => {
-//   const fetchData = async () => {
-//     const [recommended, nearby, popular, locations] = await Promise.all([
-//       api.get("/api/houses/recommended"),
-//       api.get("/api/houses/nearby", { params: { latitude: coords.latitude, longitude: coords.longitude, radius_km: 10 } }),
-//       api.get("/api/houses/popular"),
-//       api.get("/api/houses/top-locations"),
-//     ]);
-//     setRecommendedData(recommended.data.houses);
-//     setNearbyData(nearby.data.houses);
-//     setPopularData(popular.data.houses);
-//     setLocationsData(locations.data.locations);
-//   };
-//   fetchData();
-// }, []);
+
+import api from "../../services/api";
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = width * 0.65;
@@ -55,20 +32,60 @@ const Home = () => {
   const [popularFavorites, setPopularFavorites] = useState(["2"]);
   const [activeLocation, setActiveLocation] = useState("2");
 
+  // Real data states
+  const [recommended, setRecommended] = useState([]);
+  const [nearby, setNearby] = useState([]);
+  const [popular, setPopular] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [loading, setLoading] = useState(false);
+
   // Location store - for displaying selected location in header
   const { locationName, isLocationSet, loadLocation } = useLocationStore();
 
-  // Load saved location on mount
   useEffect(() => {
-    loadLocation();
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [recRes, nearRes, popRes, locRes] = await Promise.all([
+          api.get('/api/houses/recommended'),
+          api.get('/api/houses/nearby'),
+          api.get('/api/houses/popular'),
+          api.get('/api/houses/top-locations'),
+        ]);
+
+        const transformHouse = (h) => ({
+          id: h.id,
+          name: h.name,
+          location: `${h.area}, ${h.city}`,
+          price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
+          priceType: h.listingType === 'RENT' ? 'month' : 'total',
+          rating: h.rating || 4.5,
+          image: h.images?.[0]?.url || 'https://via.placeholder.com/300',
+          isFavorite: h.isFavorite || false,
+        });
+
+        setRecommended(recRes.data.houses.map(transformHouse));
+        setNearby(nearRes.data.houses.map(transformHouse));
+        setPopular(popRes.data.houses.map(transformHouse));
+        setLocations(locRes.data.locations || []);
+      } catch (err) {
+        console.error('Error fetching home data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   // Auto-scroll animation for Recommended section
   const recommendedScrollX = useRef(new Animated.Value(0)).current;
   
   useEffect(() => {
+    if (recommended.length === 0) return;
+
     // Calculate total content width: (CARD_WIDTH + 16px margin) * number of cards
-    const totalWidth = (CARD_WIDTH + 16) * recommendedProperties.length;
+    const totalWidth = (CARD_WIDTH + 16) * recommended.length;
     
     if (totalWidth > width) {
       const scrollDistance = totalWidth - width + 40;
@@ -398,7 +415,7 @@ const Home = () => {
               paddingHorizontal: 20,
             }}
           >
-            {recommendedProperties.map((item) => (
+            {recommended.map((item) => (
               <RecommendedCard key={item.id} item={item} />
             ))}
           </Animated.View>
@@ -410,7 +427,7 @@ const Home = () => {
           onPress={() => router.push("/(tabs)/nearby")}
         />
         <FlatList
-          data={[...nearbyPropertiesRow1, ...nearbyPropertiesRow2]}
+          data={nearby}
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 20 }}
@@ -426,11 +443,11 @@ const Home = () => {
             onPress={() => router.push("/(tabs)/topLocations")}
           />
           <FlatList
-            data={topLocations}
+            data={locations}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ paddingHorizontal: 20 }}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item, index) => item.id || String(index)}
             renderItem={({ item }) => <LocationCard item={item} />}
             className="mb-6"
           />
@@ -441,7 +458,7 @@ const Home = () => {
           title="Popular for you"
           onPress={() => router.push("/(tabs)/popular")}
         />
-        {popularProperties.map((item) => (
+        {popular.map((item) => (
           <PopularCard key={item.id} item={item} />
         ))}
 

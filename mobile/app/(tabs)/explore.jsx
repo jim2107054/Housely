@@ -1,4 +1,4 @@
-﻿import {
+import {
   View,
   Text,
   ScrollView,
@@ -19,47 +19,13 @@ import LocationIcon from "../../assets/images/home-icons/Location.svg";
 import FilterIcon from "../../assets/images/home-icons/Filter.svg";
 
 // Import data (structured like backend API response)
-import {
-  allProperties,
-  recommendedProperties,
-  nearbyPropertiesRow1,
-  nearbyPropertiesRow2,
-  popularProperties,
-} from "../../data/dummyData";
-
-//!api calls - uncomment when connecting backend
-// import api from "../../services/api";
-// useEffect(() => {
-//   const fetchHouses = async () => {
-//     const response = await api.get('/api/houses');
-//     setHouses(response.data.houses);
-//   };
-//   fetchHouses();
-// }, []);
+import api from "../../services/api";
+import { useEffect } from "react";
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = (width - 52) / 2; // Two cards per row with gaps
 
-// Combine all properties into one array
-const getAllHouses = () => {
-  const combined = [
-    ...allProperties,
-    ...recommendedProperties.map(p => ({ ...p, priceType: p.priceType || "month" })),
-    ...nearbyPropertiesRow1.map(p => ({ ...p, priceType: "month" })),
-    ...nearbyPropertiesRow2.map(p => ({ ...p, priceType: "month" })),
-    ...popularProperties,
-  ];
-  
-  // Remove duplicates by id
-  const uniqueMap = new Map();
-  combined.forEach(property => {
-    if (!uniqueMap.has(property.id)) {
-      uniqueMap.set(property.id, property);
-    }
-  });
-  
-  return Array.from(uniqueMap.values());
-};
+
 
 const categories = [
   { id: "all", name: "All", icon: "apps" },
@@ -85,42 +51,50 @@ const Explore = () => {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [sortBy, setSortBy] = useState("default");
   const [priceRange, setPriceRange] = useState({ min: 0, max: 1000 });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [houses, setHouses] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const allHouses = useMemo(() => getAllHouses(), []);
+  useEffect(() => {
+    const fetchHouses = async () => {
+      setLoading(true);
+      try {
+        const params = {
+          q: searchQuery,
+          propertyType: selectedCategory !== "all" ? selectedCategory.toUpperCase() : undefined,
+          sortBy: sortBy === "default" ? "newest" : sortBy === "price_low" ? "price_asc" : sortBy === "price_high" ? "price_desc" : "most_popular",
+          minPrice: priceRange.min,
+          maxPrice: priceRange.max,
+        };
+        const response = await api.get('/api/filter', { params });
+        const transformedHouses = response.data.houses.map(h => ({
+          id: h.id,
+          name: h.name,
+          location: `${h.area}, ${h.city}`,
+          price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
+          priceType: h.listingType === 'RENT' ? 'month' : 'total',
+          rating: h.rating || 4.5,
+          image: h.images?.[0]?.url || 'https://via.placeholder.com/300',
+          type: h.propertyType,
+        }));
+        setHouses(transformedHouses);
+      } catch (err) {
+        console.error('Error fetching houses:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Filter and sort properties
-  const filteredProperties = useMemo(() => {
-    let result = [...allHouses];
+    const timer = setTimeout(() => {
+      fetchHouses();
+    }, 500); // Debounce search
+
+    return () => clearTimeout(timer);
+  }, [selectedCategory, searchQuery, sortBy, priceRange]);
+
+  const filteredProperties = houses;
     
-    // Category filter
-    if (selectedCategory !== "all") {
-      result = result.filter(
-        p => p.type?.toLowerCase() === selectedCategory.toLowerCase()
-      );
-    }
-    
-    // Price range filter
-    result = result.filter(
-      p => p.price >= priceRange.min && p.price <= priceRange.max
-    );
-    
-    // Sort
-    switch (sortBy) {
-      case "price_low":
-        result.sort((a, b) => a.price - b.price);
-        break;
-      case "price_high":
-        result.sort((a, b) => b.price - a.price);
-        break;
-      case "rating":
-        result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        break;
-      default:
-        break;
-    }
-    
-    return result;
-  }, [allHouses, selectedCategory, sortBy, priceRange]);
+
 
   const toggleFavorite = (id) => {
     setFavorites((prev) =>
