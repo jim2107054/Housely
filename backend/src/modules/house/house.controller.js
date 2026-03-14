@@ -1,12 +1,14 @@
 import * as houseService from './house.service.js';
 import { success } from '../../utils/response.js';
+import { uploadToCloudinary } from '../../config/cloudinary.js';
 
 export const listHouses = async (req, res, next) => {
   try {
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 20;
     const sortBy = req.query.sortBy || 'newest';
-    const result = await houseService.listHouses({ page, limit, sortBy });
+    const search = req.query.search || '';
+    const result = await houseService.listHouses({ page, limit, sortBy, search });
     return success(res, result);
   } catch (err) {
     next(err);
@@ -114,3 +116,67 @@ export const getShareLink = async (req, res, next) => {
     next(err);
   }
 };
+
+export const getFavorites = async (req, res, next) => {
+  try {
+    const houses = await houseService.getFavorites(req.user.id);
+    return success(res, { houses });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const toggleFavorite = async (req, res, next) => {
+  try {
+    const result = await houseService.toggleFavorite(req.user.id, req.params.id);
+    return success(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getMyHouses = async (req, res, next) => {
+  try {
+    const houses = await houseService.getMyHouses(req.user.id);
+    return success(res, { houses });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getAgentDashboard = async (req, res, next) => {
+  try {
+    const result = await houseService.getAgentDashboard(req.user.id);
+    return success(res, result);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const uploadMedia = async (req, res, next) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ success: false, message: 'No files uploaded' });
+    }
+
+    const uploadPromises = req.files.map((file) => {
+      const isVideo = file.mimetype.startsWith('video/');
+      return uploadToCloudinary(file.buffer, {
+        resource_type: isVideo ? 'video' : 'image',
+        folder: isVideo ? 'housely/videos' : 'housely/images',
+      });
+    });
+
+    const results = await Promise.all(uploadPromises);
+    const urls = results.map((result) => ({
+      url: result.secure_url,
+      publicId: result.public_id,
+      resourceType: result.resource_type,
+    }));
+
+    return success(res, { urls }, 'Media uploaded successfully');
+  } catch (err) {
+    next(err);
+  }
+};
+
