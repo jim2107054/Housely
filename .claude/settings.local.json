@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__ruflo__system_health",
+      "mcp__ruflo__system_status",
+      "Bash(node -e \":*)",
+      "Bash(npx prisma:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(node prisma/seed.js)",
+      "Bash(npm run:*)",
+      "Bash(npm install:*)",
+      "Bash(curl -s http://localhost:3000/api/videos?limit=3)",
+      "Bash(curl:*)",
+      "Bash(ADMIN_TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNtbWJ6cjk2YzAwMDJzdDlzYml6c2FiMWEiLCJ0eXBlIjoiYWNjZXNzIiwiaWF0IjoxNzc0MjYxNTM5LCJleHAiOjE3NzQyNjI0Mzl9.mj1mfZ1sM7-1gflRVeYDE6Vw0hUrneRbxnD4u2i428A\" __NEW_LINE_3ef6a729cbbf3250__ echo \"--- /api/admin/stats ---\" curl -s http://localhost:3000/api/admin/stats -H \"Authorization: Bearer $ADMIN_TOKEN\" __NEW_LINE_3ef6a729cbbf3250__ echo \"\" echo \"--- /api/videos?tag=luxury ---\" curl -s \"http://localhost:3000/api/videos?tag=luxury\")",
+      "Bash(node -e \"process.stdin.resume\\(\\);let d='''''''';process.stdin.on\\(''''data'''',c=>d+=c\\);process.stdin.on\\(''''end'''',\\(\\)=>{const j=JSON.parse\\(d\\);console.log\\(''''total:'''',j.total,''''videos:'''',j.videos?.map\\(v=>v.title\\)\\)}\\)\" __NEW_LINE_3ef6a729cbbf3250__ echo \"\" echo \"--- /api/users/admin/list ---\" curl -s \"http://localhost:3000/api/users/admin/list\" -H \"Authorization: Bearer $ADMIN_TOKEN\")",
+      "Bash(node -e \"process.stdin.resume\\(\\);let d='''''''';process.stdin.on\\(''''data'''',c=>d+=c\\);process.stdin.on\\(''''end'''',\\(\\)=>{const j=JSON.parse\\(d\\);console.log\\(''''total users:'''',j.data?.total,''''roles:'''',j.data?.users?.map\\(u=>u.role+'''':''''+u.username\\)\\)}\\)\")",
+      "Bash(npx expo:*)",
+      "Bash(node -e \"const p=require\\(''./package.json''\\); console.log\\(''expo-av:'', p.dependencies[''expo-av''] || ''❌ missing''\\); console.log\\(''flash-list:'', p.dependencies[''@shopify/flash-list''] || ''❌ missing''\\)\")"
+    ]
+  }
+}

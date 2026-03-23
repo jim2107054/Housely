@@ -360,6 +360,134 @@ async function main() {
   }
   console.log('  ✅ Sample views created');
 
+  // ─── Create Tags ───
+  const tagNames = ['apartment', 'villa', 'luxury', 'budget', 'family', 'studio', 'dhaka', 'chittagong', 'furnished', 'sea-view'];
+  const tags = [];
+  for (const name of tagNames) {
+    const tag = await prisma.tag.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
+    tags.push(tag);
+  }
+  console.log(`  ✅ Tags: ${tags.map(t => t.name).join(', ')}`);
+
+  // ─── Create sample Videos ───
+  const videosData = [
+    {
+      title: 'Gulshan Apartment — Full Walkthrough',
+      description: 'A complete tour of our most popular 3-bedroom apartment in Gulshan-2. Spacious living areas, premium finishes, and panoramic city views.',
+      cloudinaryId: 'housely/videos/sample_gulshan_tour',
+      url: 'https://res.cloudinary.com/demo/video/upload/dog.mp4',
+      thumbnailUrl: 'https://picsum.photos/seed/gulshan-video/800/450',
+      duration: 183.5,
+      width: 1920,
+      height: 1080,
+      sizeInBytes: BigInt(52428800),
+      status: 'PUBLISHED',
+      viewCount: 142,
+      uploaderId: agent.id,
+      tagNames: ['apartment', 'dhaka', 'furnished'],
+    },
+    {
+      title: 'Baridhara Villa — Luxury Living',
+      description: 'Step inside this stunning 5-bedroom villa in Baridhara. Features include a private garden, rooftop terrace, and home theatre.',
+      cloudinaryId: 'housely/videos/sample_villa_tour',
+      url: 'https://res.cloudinary.com/demo/video/upload/dog.mp4',
+      thumbnailUrl: 'https://picsum.photos/seed/baridhara-villa/800/450',
+      duration: 247.0,
+      width: 1920,
+      height: 1080,
+      sizeInBytes: BigInt(78643200),
+      status: 'PUBLISHED',
+      viewCount: 89,
+      uploaderId: agent.id,
+      tagNames: ['villa', 'luxury', 'dhaka'],
+    },
+    {
+      title: 'Chittagong Waterfront Condo — Sea View',
+      description: 'Wake up to ocean views every morning. This 3-bed condo in Agrabad offers unmatched sea views near Patenga beach.',
+      cloudinaryId: 'housely/videos/sample_chittagong_condo',
+      url: 'https://res.cloudinary.com/demo/video/upload/dog.mp4',
+      thumbnailUrl: 'https://picsum.photos/seed/chittagong-condo/800/450',
+      duration: 156.0,
+      width: 1280,
+      height: 720,
+      sizeInBytes: BigInt(31457280),
+      status: 'PUBLISHED',
+      viewCount: 204,
+      uploaderId: agent.id,
+      tagNames: ['sea-view', 'chittagong', 'luxury'],
+    },
+    {
+      title: 'Dhanmondi Studio — Perfect for Students',
+      description: 'Compact and affordable studio flat within walking distance of BUET and University of Dhaka. All utilities included.',
+      cloudinaryId: 'housely/videos/sample_studio_dhaka',
+      url: 'https://res.cloudinary.com/demo/video/upload/dog.mp4',
+      thumbnailUrl: 'https://picsum.photos/seed/dhanmondi-studio/800/450',
+      duration: 92.0,
+      width: 1280,
+      height: 720,
+      sizeInBytes: BigInt(18874368),
+      status: 'PUBLISHED',
+      viewCount: 317,
+      uploaderId: agent.id,
+      tagNames: ['studio', 'budget', 'dhaka'],
+    },
+    {
+      title: 'Bashundhara Townhouse — Family Community',
+      description: 'Modern townhouse in a gated community with playground, gym, and 24/7 security. Ideal for growing families.',
+      cloudinaryId: 'housely/videos/sample_townhouse',
+      url: 'https://res.cloudinary.com/demo/video/upload/dog.mp4',
+      thumbnailUrl: 'https://picsum.photos/seed/bashundhara-town/800/450',
+      duration: 198.0,
+      width: 1920,
+      height: 1080,
+      sizeInBytes: BigInt(62914560),
+      status: 'PROCESSING',
+      viewCount: 0,
+      uploaderId: agent.id,
+      tagNames: ['family', 'dhaka', 'furnished'],
+    },
+  ];
+
+  for (const videoData of videosData) {
+    const existing = await prisma.video.findUnique({
+      where: { cloudinaryId: videoData.cloudinaryId },
+    });
+
+    if (!existing) {
+      const { tagNames: videoTagNames, ...data } = videoData;
+
+      const video = await prisma.video.create({ data });
+
+      // Attach tags
+      for (const tagName of videoTagNames) {
+        const tag = tags.find(t => t.name === tagName);
+        if (tag) {
+          await prisma.videoTag.create({
+            data: { videoId: video.id, tagId: tag.id },
+          });
+        }
+      }
+
+      console.log(`  ✅ Video: ${video.title}`);
+    }
+  }
+
+  // ─── Create sample VideoViews (watch history) ───
+  const publishedVideos = await prisma.video.findMany({ where: { status: 'PUBLISHED' } });
+  for (let i = 0; i < Math.min(3, publishedVideos.length); i++) {
+    const video = publishedVideos[i];
+    await prisma.videoView.upsert({
+      where: { userId_videoId: { userId: user.id, videoId: video.id } },
+      update: { progress: 0.75 },
+      create: { userId: user.id, videoId: video.id, progress: 0.75 },
+    });
+  }
+  console.log('  ✅ Sample watch history created');
+
   console.log('\n🎉 Seed completed!');
   console.log('  Test credentials:');
   console.log('  User:  user@test.com / password123');

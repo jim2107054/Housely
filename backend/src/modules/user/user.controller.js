@@ -1,6 +1,7 @@
 import * as userService from './user.service.js';
 import { success } from '../../utils/response.js';
 import env from '../../config/env.js';
+import prisma from '../../config/prisma.js';
 
 export const getProfile = async (req, res, next) => {
   try {
@@ -92,6 +93,31 @@ export const getRecentViewed = async (req, res, next) => {
     const limit = parseInt(req.query.limit, 10) || 20;
     const houses = await userService.getRecentViewed(req.user.id, limit);
     return success(res, { houses });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const listAllUsers = async (req, res, next) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const role = req.query.role;
+    const skip = (page - 1) * limit;
+
+    const where = role ? { role } : {};
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        select: { id: true, username: true, email: true, name: true, avatar: true, role: true, isVerified: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.user.count({ where }),
+    ]);
+
+    return success(res, { users, total, page, limit, totalPages: Math.ceil(total / limit) });
   } catch (err) {
     next(err);
   }

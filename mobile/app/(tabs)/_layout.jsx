@@ -117,6 +117,9 @@ const TabLayout = () => {
       <Tabs.Screen name="search" options={{ href: null }} />
       <Tabs.Screen name="writeReview" options={{ href: null }} />
       <Tabs.Screen name="settings" options={{ href: null }} />
+      <Tabs.Screen name="videoFeed" options={{ href: null, headerShown: false }} />
+      <Tabs.Screen name="videoPlayer" options={{ href: null, headerShown: false }} />
+      <Tabs.Screen name="upload" options={{ href: null, headerShown: false }} />
     </Tabs>
   );
 };

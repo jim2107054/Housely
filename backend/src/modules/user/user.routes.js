@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import * as userController from './user.controller.js';
 import { validate } from '../../middlewares/validate.js';
-import { protect } from '../../middlewares/auth.js';
+import { protect, requireRole } from '../../middlewares/auth.js';
 import { upload } from '../../middlewares/upload.js';
 import { updateProfileSchema, updateNotificationSettingsSchema } from './user.validation.js';
 
@@ -14,5 +14,7 @@ router.get('/me/payment-history', protect, userController.getPaymentHistory);
 router.get('/me/notifications', protect, userController.getNotificationSettings);
 router.patch('/me/notifications', protect, validate(updateNotificationSettingsSchema), userController.updateNotificationSettings);
 router.get('/me/recent-viewed', protect, userController.getRecentViewed);
+
+router.get('/admin/list', protect, requireRole('ADMIN'), userController.listAllUsers);
 
 export default router;

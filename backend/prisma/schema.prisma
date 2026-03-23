@@ -84,6 +84,8 @@ model User {
   messages              Message[]
   notifications         Notification[]
   deviceTokens          DeviceToken[]
+  uploadedVideos        Video[]              @relation("UploadedVideos")
+  videoHistory          VideoView[]          @relation("VideoWatchHistory")
 }
 
 model SavedLocation {
@@ -136,6 +138,7 @@ model House {
   bookings         Booking[]
   reviews          Review[]
   conversations    Conversation[]
+  videos           Video[]
 
   @@index([agentId])
   @@index([city])
@@ -375,4 +378,73 @@ model DeviceToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+// ─── Video Feed ──────────────────────────────────────────
+
+enum VideoStatus {
+  PROCESSING
+  PUBLISHED
+  ARCHIVED
+}
+
+model Video {
+  id           String      @id @default(cuid())
+  title        String
+  description  String?
+  uploaderId   String
+  houseId      String?
+  cloudinaryId String      @unique
+  url          String
+  thumbnailUrl String?
+  duration     Float?
+  width        Int?
+  height       Int?
+  sizeInBytes  BigInt?
+  status       VideoStatus @default(PROCESSING)
+  viewCount    Int         @default(0)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  uploader User        @relation("UploadedVideos", fields: [uploaderId], references: [id], onDelete: Cascade)
+  house    House?      @relation(fields: [houseId], references: [id], onDelete: SetNull)
+  views    VideoView[]
+  tags     VideoTag[]
+
+  @@index([uploaderId])
+  @@index([houseId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model VideoView {
+  id        String   @id @default(cuid())
+  userId    String
+  videoId   String
+  watchedAt DateTime @default(now())
+  progress  Float    @default(0)
+
+  user  User  @relation("VideoWatchHistory", fields: [userId], references: [id], onDelete: Cascade)
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId])
+  @@index([userId])
+  @@index([videoId])
+}
+
+model Tag {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  createdAt DateTime   @default(now())
+  videos    VideoTag[]
+}
+
+model VideoTag {
+  videoId String
+  tagId   String
+
+  video Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  tag   Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([videoId, tagId])
 }
