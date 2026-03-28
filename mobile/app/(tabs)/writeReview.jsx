@@ -12,17 +12,16 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import React, { useState } from 'react';
+import api from '../../services/api';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 
-//!api calls - uncomment when connecting backend
-// import api from '../../services/api';
-// const submitReview = async (data) => {
-//   const response = await api.post('/api/reviews', data);
-//   return response.data;
-// };
+const submitReview = async (data) => {
+  const response = await api.post('/api/reviews', data);
+  return response.data;
+};
 
 // Design Tokens
 const COLORS = {
@@ -365,13 +364,24 @@ const WriteReviewScreen = () => {
   const [showPermissionModal, setShowPermissionModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Mock booking data (in real app, fetch from params)
+  if (!params?.bookingId || !params?.propertyName) {
+    // Show error - required params missing
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Unable to load booking details. Please try again from My Bookings.</Text>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Text>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   const booking = {
-    id: params?.bookingId || '1',
-    name: params?.propertyName || 'Greenhost Boutique Hotel',
-    location: params?.location || 'Yogyakarta, Indonesia',
-    image: params?.image || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400',
-    reference: params?.reference || 'HSL-2024-0156',
+    id: params.bookingId,
+    name: params.propertyName,
+    location: params?.location,
+    image: params?.image,
+    reference: params?.reference,
   };
 
   const handleAddImages = async () => {
@@ -416,8 +426,12 @@ const WriteReviewScreen = () => {
 
     setSubmitting(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await submitReview({
+        bookingId: booking.id,
+        houseId: params?.houseId,
+        rating: rating,
+        comment: reviewText,
+      });
 
       Alert.alert(
         'Review Submitted',

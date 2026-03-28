@@ -7,17 +7,18 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import Toast from "react-native-toast-message";
 import { ActivityIndicator } from "react-native-paper";
 import { ArrowLeft } from "lucide-react-native";
-import useAuthStore from "../../store/authStore";
+import api from "../../services/api";
 
 const verifyPassword = () => {
-  const [otp, setOtp] = useState(["", "", "", ""]);
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [isLoading, setIsLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(60);
   const router = useRouter();
+  const { identifier } = useLocalSearchParams();
   const inputRefs = useRef([]);
 
   // Timer for resend code
@@ -37,7 +38,7 @@ const verifyPassword = () => {
     setOtp(newOtp);
 
     // Auto-focus next input
-    if (value && index < 3) {
+    if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
   };
@@ -52,11 +53,11 @@ const verifyPassword = () => {
   const handleVerify = async () => {
     const otpCode = otp.join("");
 
-    if (otpCode.length !== 4) {
+    if (otpCode.length !== 6) {
       Toast.show({
         type: "error",
         text1: "Invalid Code",
-        text2: "Please enter the 4-digit code",
+        text2: "Please enter the 6-digit code",
         position: "top",
         visibilityTime: 3000,
       });
@@ -66,27 +67,23 @@ const verifyPassword = () => {
     setIsLoading(true);
 
     try {
-      // TODO: Implement OTP verification API call
-      // const response = await verifyOTP(otpCode);
-
-      // Simulating API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      Toast.show({
-        type: "success",
-        text1: "Success!",
-        text2: "Email verified successfully",
-        position: "top",
-        visibilityTime: 3000,
+      await api.post("/api/auth/verify-otp", {
+        identifier,
+        otp: otpCode,
       });
 
-      // Navigate to reset password screen
-      router.push("/(auth)/resetPassword");
+      router.push({
+        pathname: "/(auth)/resetPassword",
+        params: { identifier, otp: otpCode },
+      });
     } catch (error) {
       Toast.show({
         type: "error",
         text1: "Verification Failed",
-        text2: error.message || "Invalid verification code",
+        text2:
+          error.response?.data?.message ||
+          error.message ||
+          "Invalid verification code",
         position: "top",
         visibilityTime: 4000,
       });
@@ -100,8 +97,7 @@ const verifyPassword = () => {
 
     setIsLoading(true);
     try {
-      // TODO: Implement resend OTP API call
-      // await resendOTP();
+      await api.post("/api/auth/forgot-password/email", { identifier });
 
       Toast.show({
         type: "success",
@@ -116,7 +112,10 @@ const verifyPassword = () => {
       Toast.show({
         type: "error",
         text1: "Error",
-        text2: "Failed to resend code",
+        text2:
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to resend code",
         position: "top",
         visibilityTime: 3000,
       });
@@ -151,7 +150,7 @@ const verifyPassword = () => {
               {otp.map((digit, index) => (
                 <View
                   key={index}
-                  className="w-16 h-16 border-2 border-gray-800 rounded-xl justify-center items-center bg-white"
+                  className="w-12 h-16 border-2 border-gray-800 rounded-xl justify-center items-center bg-white"
                   style={{ borderColor: digit ? "#7F56D9" : "#E5E7EB" }}
                 >
                   <TextInput
@@ -190,8 +189,7 @@ const verifyPassword = () => {
             {/* Verify Button */}
             <TouchableOpacity
               className="bg-secondary rounded-lg py-4"
-              // onPress={handleVerify}
-              onPress={() => router.push("/(auth)/changePassword")}
+              onPress={handleVerify}
               disabled={isLoading}
             >
               {isLoading ? (

@@ -46,7 +46,7 @@ const Explore = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [favorites, setFavorites] = useState(["1", "4"]);
+  const [favorites, setFavorites] = useState([]);
   const [viewMode, setViewMode] = useState("grid"); // grid or list
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [sortBy, setSortBy] = useState("default");
@@ -76,8 +76,11 @@ const Explore = () => {
           rating: h.rating || 4.5,
           image: h.images?.[0]?.url || 'https://via.placeholder.com/300',
           type: h.propertyType,
+          isFavorite: h.isFavorite || false,
         }));
         setHouses(transformedHouses);
+        const initialFavs = transformedHouses.filter(h => h.isFavorite).map(h => h.id);
+        setFavorites(initialFavs);
       } catch (err) {
         console.error('Error fetching houses:', err);
       } finally {

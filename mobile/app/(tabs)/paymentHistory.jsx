@@ -4,6 +4,7 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
+  Alert,
 } from 'react-native';
 import React, { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -340,7 +341,13 @@ const PaymentHistory = () => {
           renderItem={({ item }) => (
             <PaymentCard
               payment={item}
-              onPress={() => console.log('Payment details:', item.transactionId)}
+              onPress={() => {
+                Alert.alert(
+                  'Transaction Details',
+                  `Transaction ID: ${item.transactionId || 'N/A'}\nAmount: ${item.amount}\nStatus: ${item.status}`,
+                  [{ text: 'OK' }]
+                );
+              }}
             />
           )}
           contentContainerStyle={{ paddingBottom: 100 }}

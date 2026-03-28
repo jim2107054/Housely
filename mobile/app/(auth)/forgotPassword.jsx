@@ -2,55 +2,62 @@ import { useState } from "react";
 import {
   View,
   Text,
-  Image,
   TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Link, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
-import useAuthStore from "../../store/authStore";
 import { ActivityIndicator } from "react-native-paper";
 import { ArrowLeft } from "lucide-react-native";
+import api from "../../services/api";
 
 const forgotPassword = () => {
-  const hasPhone = true; // Set to true if using phone number for reset
-  const hasEmail = true; // Set to true if using email for reset
   const [phonePress, setPhonePress] = useState(false);
-  const [emailPress, setEmailPress] = useState(false);
+  const [emailPress, setEmailPress] = useState(true);
+  const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const { isLoading, login } = useAuthStore();
   const router = useRouter();
 
-  // const handleChangePassword = async () => {
-  //   // Implement change password logic here
-  //   const result = await login(newPassword, confirmPassword);
+  const handleContinue = async () => {
+    if (!email.trim()) {
+      Toast.show({
+        type: "error",
+        text1: "Email Required",
+        text2: "Please enter your email address",
+        position: "top",
+        visibilityTime: 3000,
+      });
+      return;
+    }
 
-  //   if (!result.success) {
-  //     Toast.show({
-  //       type: "error",
-  //       text1: "Change Password Failed",
-  //       text2: result.message || "An error occurred during password change",
-  //       position: "top",
-  //       visibilityTime: 4000,
-  //     });
-  //   } else {
-  //     Toast.show({
-  //       type: "success",
-  //       text1: "Success!",
-  //       text2: "Logged in successfully",
-  //       position: "top",
-  //       visibilityTime: 3000,
-  //     });
-  //   }
-
-  //   // On successful login, you might want to navigate to the main app screen
-  //   if (result.success) {
-  //     router.replace("/(auth)/successReset"); // go to success screen after password change
-  //   }
-  // };
+    setIsLoading(true);
+    try {
+      await api.post("/api/auth/forgot-password/email", {
+        identifier: email.trim(),
+      });
+      router.push({
+        pathname: "/(auth)/verifyPassword",
+        params: { identifier: email.trim() },
+      });
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Request Failed",
+        text2:
+          error.response?.data?.message ||
+          error.message ||
+          "An error occurred. Please try again.",
+        position: "top",
+        visibilityTime: 4000,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -73,60 +80,72 @@ const forgotPassword = () => {
                 to reset your password.
               </Text>
             </View>
-            {/* Options for resetting password */}
-            {hasPhone && (
-              <TouchableOpacity
-                onPress={() => {
-                  setPhonePress(true);
-                  setEmailPress(false);
-                }}
-                className={`flex-row items-center border ${
-                  phonePress ? "border-secondary" : "border-gray-300"
-                } rounded-lg p-4 mb-4`}
-              >
-                <View className="w-16 h-16 justify-center items-center rounded-full bg-secondary/20">
-                  <Ionicons name="call" size={24} color="#7F56D9" />
-                </View>
-                <View className="ml-4 flex flex-col">
-                  <Text className="text-gray-400 font-semibold">
-                    Via Phone:{" "}
-                  </Text>
-                  <Text className="text-gray-700 text-lg font-semibold">
-                    +1 *** *** 1234
-                  </Text>
-                </View>
-              </TouchableOpacity>
+            {/* Phone option — visual placeholder, not functional yet */}
+            <TouchableOpacity
+              onPress={() => {
+                setPhonePress(true);
+                setEmailPress(false);
+              }}
+              className={`flex-row items-center border ${
+                phonePress ? "border-secondary" : "border-gray-300"
+              } rounded-lg p-4 mb-4`}
+            >
+              <View className="w-16 h-16 justify-center items-center rounded-full bg-secondary/20">
+                <Ionicons name="call" size={24} color="#7F56D9" />
+              </View>
+              <View className="ml-4 flex flex-col">
+                <Text className="text-gray-400 font-semibold">
+                  Via Phone:{" "}
+                </Text>
+                <Text className="text-gray-700 text-lg font-semibold">
+                  +1 *** *** 1234
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Email option — active by default */}
+            <TouchableOpacity
+              onPress={() => {
+                setEmailPress(true);
+                setPhonePress(false);
+              }}
+              className={`flex-row items-center border ${
+                emailPress ? "border-secondary" : "border-gray-300"
+              } rounded-lg p-4`}
+            >
+              <View className="w-16 h-16 justify-center items-center rounded-full bg-secondary/20">
+                <Ionicons name="mail" size={24} color="#7F56D9" />
+              </View>
+              <View className="ml-4 flex flex-col text-gray-700">
+                <Text className="text-gray-400 font-semibold">
+                  Via Email:{" "}
+                </Text>
+                <Text className="text-gray-700 text-lg font-semibold">
+                  Enter your email address
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Email input shown when email option is selected */}
+            {emailPress && (
+              <TextInput
+                className="border border-gray-300 rounded-lg px-4 py-3 mt-4 text-gray-900 text-base"
+                placeholder="Email address"
+                placeholderTextColor="#9CA3AF"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                value={email}
+                onChangeText={setEmail}
+              />
             )}
-            {hasEmail && (
-              <TouchableOpacity
-                onPress={() => {
-                  setEmailPress(true);
-                  setPhonePress(false);
-                }}
-                className={`flex-row items-center border ${
-                  emailPress ? "border-secondary" : "border-gray-300"
-                } rounded-lg p-4`}
-              >
-                <View className="w-16 h-16 justify-center items-center rounded-full bg-secondary/20">
-                  <Ionicons name="mail" size={24} color="#7F56D9" />
-                </View>
-                <View className="ml-4 flex flex-col text-gray-700">
-                  <Text className="text-gray-400 font-semibold">
-                    Via Email:{" "}
-                  </Text>
-                  <Text className="text-gray-700 text-lg font-semibold">
-                    mu***@gmail.com
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            )}
+
             {/* Continue Button */}
             <TouchableOpacity
               className="bg-secondary rounded-lg py-4 mt-8"
-              //! onPress={handleChangePassword}
-              onPress={() => router.push("/(auth)/verifyPassword")}
+              onPress={handleContinue}
+              disabled={isLoading}
             >
-              {/* Need to fix it */}
               {isLoading ? (
                 <ActivityIndicator
                   animating={true}

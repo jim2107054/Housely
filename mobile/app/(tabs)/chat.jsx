@@ -7,6 +7,7 @@ import {
   TextInput,
   Animated,
   PanResponder,
+  Alert,
 } from "react-native";
 import { useState, useRef } from "react";
 import { Ionicons } from "@expo/vector-icons";
@@ -149,7 +150,9 @@ const Chat = () => {
           <TouchableOpacity
             onPress={() => {
               closeSwipe();
-              console.log("More options for", item.name);
+              Alert.alert('Options', `Options for ${item.name}`, [
+                { text: 'Cancel', style: 'cancel' },
+              ]);
             }}
             className="w-14 h-full bg-blue-500 items-center justify-center"
           >

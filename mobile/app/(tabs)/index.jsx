@@ -28,9 +28,10 @@ const CARD_WIDTH = width * 0.65;
 
 const Home = () => {
   const router = useRouter();
-  const [favorites, setFavorites] = useState(["1"]);
-  const [popularFavorites, setPopularFavorites] = useState(["2"]);
-  const [activeLocation, setActiveLocation] = useState("2");
+  const [favorites, setFavorites] = useState([]);
+  const [popularFavorites, setPopularFavorites] = useState([]);
+  const [activeLocation, setActiveLocation] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Real data states
   const [recommended, setRecommended] = useState([]);
@@ -46,11 +47,12 @@ const Home = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [recRes, nearRes, popRes, locRes] = await Promise.all([
+        const [recRes, nearRes, popRes, locRes, notifRes] = await Promise.all([
           api.get('/api/houses/recommended'),
           api.get('/api/houses/nearby'),
           api.get('/api/houses/popular'),
           api.get('/api/houses/top-locations'),
+          api.get('/api/notifications/unread-count').catch(() => ({ data: { count: 0 } })),
         ]);
 
         const transformHouse = (h) => ({
@@ -68,6 +70,23 @@ const Home = () => {
         setNearby(nearRes.data.houses.map(transformHouse));
         setPopular(popRes.data.houses.map(transformHouse));
         setLocations(locRes.data.locations || []);
+
+        // Derive initial favorite state from API response
+        const initialFavorites = recRes.data.houses
+          .filter(h => h.isFavorite)
+          .map(h => h.id);
+        setFavorites([...new Set(initialFavorites)]);
+
+        const initialPopularFavs = popRes.data.houses
+          .filter(h => h.isFavorite)
+          .map(h => h.id);
+        setPopularFavorites([...new Set(initialPopularFavs)]);
+
+        if (locRes.data.locations?.length > 0) {
+          setActiveLocation(locRes.data.locations[0].id);
+        }
+
+        setUnreadCount(notifRes.data.count || 0);
       } catch (err) {
         console.error('Error fetching home data:', err);
       } finally {
@@ -150,23 +169,27 @@ const Home = () => {
         >
           <NotificationIcon width={20} height={20} />
           {/* Notification Badge */}
-          <View 
-            style={{
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              backgroundColor: '#FF5252',
-              width: 18,
-              height: 18,
-              borderRadius: 9,
-              justifyContent: 'center',
-              alignItems: 'center',
-              borderWidth: 2,
-              borderColor: '#FFFFFF',
-            }}
-          >
-            <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: 'bold' }}>2</Text>
-          </View>
+          {unreadCount > 0 && (
+            <View
+              style={{
+                position: 'absolute',
+                top: -4,
+                right: -4,
+                backgroundColor: '#FF5252',
+                borderRadius: 8,
+                minWidth: 16,
+                height: 16,
+                justifyContent: 'center',
+                alignItems: 'center',
+                borderColor: '#FFFFFF',
+                borderWidth: 2,
+              }}
+            >
+              <Text style={{ color: '#FFFFFF', fontSize: 9, fontWeight: 'bold' }}>
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </Text>
+            </View>
+          )}
         </TouchableOpacity>
         <TouchableOpacity 
           className="w-10 h-10 rounded-full bg-cardBackground items-center justify-center border border-border"
@@ -193,26 +216,6 @@ const Home = () => {
         <FilterIcon width={24} height={24} color="#6941C6" />
       </View>
     </TouchableOpacity>
-  );
-
-  // Promo Banner Component
-  const PromoBanner = () => (
-    <View className="mx-5 mb-6 rounded-3xl overflow-hidden bg-primary relative h-36">
-      {/* Yellow decorative shapes */}
-      <View className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-accent" />
-      <View className="absolute bottom-0 right-0 w-24 h-24">
-        <View className="absolute bottom-0 right-0 w-full h-full bg-accent rounded-tl-full" />
-      </View>
-      <View className="p-5 flex-1 justify-center">
-        <Text className="text-white font-poppins-bold text-lg">
-          GET YOUR 20%
-        </Text>
-        <Text className="text-white font-poppins-bold text-lg">CASHBACK</Text>
-        <Text className="text-white/70 font-poppins text-xs mt-1">
-          *Expired 25 Aug 2022
-        </Text>
-      </View>
-    </View>
   );
 
   // Recommended Card Component
@@ -400,7 +403,6 @@ const Home = () => {
       <ScrollView showsVerticalScrollIndicator={false}>
         <Header />
         <SearchBar />
-        <PromoBanner />
 
         {/* Recommended Section - Auto-scrolling */}
         <SectionHeader

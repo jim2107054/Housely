@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   FlatList,
   ScrollView,
+  Linking,
 } from 'react-native';
 import React, { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -423,7 +424,12 @@ const MyBooking = () => {
                 <ActionRow
                   icon="call-outline"
                   label="Call Agent"
-                  onPress={() => console.log('Call Agent pressed')}
+                  onPress={() => {
+                    const phone = booking.agent?.phoneNumber;
+                    if (phone) {
+                      Linking.openURL(`tel:${phone}`);
+                    }
+                  }}
                   isLast={true}
                 />
               </View>
@@ -458,7 +464,12 @@ const MyBooking = () => {
                 <ActionRow
                   icon="call-outline"
                   label="Call Agent"
-                  onPress={() => console.log('Call Agent pressed')}
+                  onPress={() => {
+                    const phone = booking.agent?.phoneNumber;
+                    if (phone) {
+                      Linking.openURL(`tel:${phone}`);
+                    }
+                  }}
                   isLast={true}
                 />
               </View>

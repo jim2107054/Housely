@@ -15,8 +15,6 @@ const index = () => {
     checkAuth();
   }, []);
 
-  console.log(user, token);
-
   useEffect(() => {
     // Parallel animations for a smooth entrance
     Animated.parallel([

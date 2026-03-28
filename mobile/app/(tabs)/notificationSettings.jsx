@@ -5,10 +5,11 @@ import {
   ScrollView,
   Switch,
 } from 'react-native';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import api from '../../services/api';
 
 // Design Tokens
 const COLORS = {
@@ -39,11 +40,45 @@ const NotificationSettings = () => {
     tips: false,
   });
 
+  // Map local state keys to backend field names
+  const backendFieldMap = {
+    pushNotifications: 'pushEnabled',
+    emailNotifications: 'emailEnabled',
+    bookingUpdates: 'bookingUpdates',
+    promotions: 'promotions',
+  };
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const res = await api.get('/api/users/me/notifications');
+        const s = res.data.settings;
+        setSettings((prev) => ({
+          ...prev,
+          ...(s.pushEnabled !== undefined && { pushNotifications: s.pushEnabled }),
+          ...(s.emailEnabled !== undefined && { emailNotifications: s.emailEnabled }),
+          ...(s.bookingUpdates !== undefined && { bookingUpdates: s.bookingUpdates }),
+          ...(s.promotions !== undefined && { promotions: s.promotions }),
+        }));
+      } catch (err) {
+        // silently ignore - keep defaults
+      }
+    };
+    loadSettings();
+  }, []);
+
   const toggleSetting = (key) => {
-    setSettings((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
+    setSettings((prev) => {
+      const newValue = !prev[key];
+      const backendField = backendFieldMap[key];
+      if (backendField) {
+        api.patch('/api/users/me/notifications', { [backendField]: newValue }).catch(() => {});
+      }
+      return {
+        ...prev,
+        [key]: newValue,
+      };
+    });
   };
 
   // Setting Item Component
