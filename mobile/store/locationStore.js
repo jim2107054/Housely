@@ -79,14 +79,14 @@ const useLocationStore = create((set, get) => ({
     const { selectedLocation } = get();
     if (selectedLocation) {
       return {
-        latitude: selectedLocation.latitude,
-        longitude: selectedLocation.longitude,
+        lat: selectedLocation.latitude,
+        lng: selectedLocation.longitude,
       };
     }
     // Default to Yogyakarta if no location set
     return {
-      latitude: -7.7956,
-      longitude: 110.3695,
+      lat: -7.7956,
+      lng: 110.3695,
     };
   },
 }));

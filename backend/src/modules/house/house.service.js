@@ -9,7 +9,14 @@ const houseDetailInclude = {
   agent: {
     select: { id: true, username: true, name: true, avatar: true, phoneNumber: true, email: true },
   },
-  _count: { select: { views: true, favorites: true } },
+  reviews: {
+    include: {
+      user: { select: { id: true, name: true, avatar: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 10,
+  },
+  _count: { select: { views: true, favorites: true, reviews: true } },
 };
 
 const houseListInclude = {

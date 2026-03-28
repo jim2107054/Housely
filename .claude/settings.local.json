@@ -15,7 +15,28 @@
       "Bash(node -e \"process.stdin.resume\\(\\);let d='''''''';process.stdin.on\\(''''data'''',c=>d+=c\\);process.stdin.on\\(''''end'''',\\(\\)=>{const j=JSON.parse\\(d\\);console.log\\(''''total:'''',j.total,''''videos:'''',j.videos?.map\\(v=>v.title\\)\\)}\\)\" __NEW_LINE_3ef6a729cbbf3250__ echo \"\" echo \"--- /api/users/admin/list ---\" curl -s \"http://localhost:3000/api/users/admin/list\" -H \"Authorization: Bearer $ADMIN_TOKEN\")",
       "Bash(node -e \"process.stdin.resume\\(\\);let d='''''''';process.stdin.on\\(''''data'''',c=>d+=c\\);process.stdin.on\\(''''end'''',\\(\\)=>{const j=JSON.parse\\(d\\);console.log\\(''''total users:'''',j.data?.total,''''roles:'''',j.data?.users?.map\\(u=>u.role+'''':''''+u.username\\)\\)}\\)\")",
       "Bash(npx expo:*)",
-      "Bash(node -e \"const p=require\\(''./package.json''\\); console.log\\(''expo-av:'', p.dependencies[''expo-av''] || ''❌ missing''\\); console.log\\(''flash-list:'', p.dependencies[''@shopify/flash-list''] || ''❌ missing''\\)\")"
+      "Bash(node -e \"const p=require\\(''./package.json''\\); console.log\\(''expo-av:'', p.dependencies[''expo-av''] || ''❌ missing''\\); console.log\\(''flash-list:'', p.dependencies[''@shopify/flash-list''] || ''❌ missing''\\)\")",
+      "Bash(cat app/\\\\\\(auth\\\\\\)/successReset.jsx)",
+      "Bash(cat app/\\\\\\(auth\\\\\\)/verifyPassword.jsx)",
+      "Bash(cat app/\\\\\\(tabs\\\\\\)/index.jsx)",
+      "Bash(tasklist)",
+      "Bash(netstat -ano)",
+      "Bash(taskkill /PID 16176 /F)",
+      "Bash(cmd /c \"taskkill /PID 16176 /F\" 2>&1)",
+      "Bash(cmd /c \"del /F /Q \\\\\"D:\\\\Dev Work\\\\Housely\\\\backend\\\\node_modules\\\\.prisma\\\\client\\\\query_engine-windows.dll.node\\\\\"\" 2>&1)",
+      "Bash(cmd /c \"for /f \"\"tokens=5\"\" %a in \\(''''netstat -aon ^| findstr LISTEN''''\\) do tasklist /fi \"\"pid eq %a\"\" /fo table 2>nul\")",
+      "Bash(cmd /c \"tasklist /fi \\\\\"imagename eq node.exe\\\\\" /fo csv\" 2>&1)",
+      "Bash(cmd /c \"tasklist\")",
+      "Bash(cmd /c \"del /F /Q \"\"D:\\\\Dev Work\\\\Housely\\\\backend\\\\node_modules\\\\.prisma\\\\client\\\\query_engine-windows.dll.node.tmp19476\"\" \"\"D:\\\\Dev Work\\\\Housely\\\\backend\\\\node_modules\\\\.prisma\\\\client\\\\query_engine-windows.dll.node.tmp2092\"\" \"\"D:\\\\Dev Work\\\\Housely\\\\backend\\\\node_modules\\\\.prisma\\\\client\\\\query_engine-windows.dll.node.tmp6708\"\" \"\"D:\\\\Dev Work\\\\Housely\\\\backend\\\\node_modules\\\\.prisma\\\\client\\\\query_engine-windows.dll.node\"\"\")",
+      "Bash(cat 'D:\\\\Dev Work\\\\Housely\\\\mobile\\\\app\\\\\\(tabs\\)\\\\writeReview.jsx')",
+      "Bash(cat 'D:\\\\Dev Work\\\\Housely\\\\mobile\\\\app\\\\\\(tabs\\)\\\\index.jsx')",
+      "Bash(cat:*)",
+      "Bash(cmd /c \"rmdir /S /Q \"\"D:\\\\Dev Work\\\\Housely\\\\backend\\\\node_modules\\\\.prisma\"\"\")",
+      "Bash(cmd /c \"wmic process where name=''''node.exe'''' get ProcessId,CommandLine 2>nul\")",
+      "Bash(cmd /c \"taskkill /PID 16176 /F\")",
+      "Bash(cmd.exe /c \"taskkill /PID 16176 /F 2>&1\")",
+      "Bash(kill -9 16176)",
+      "Bash(ipconfig)"
     ]
   }
 }

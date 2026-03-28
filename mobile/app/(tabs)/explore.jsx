@@ -51,7 +51,7 @@ const Explore = () => {
   const [viewMode, setViewMode] = useState("grid"); // grid or list
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [sortBy, setSortBy] = useState("default");
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 1000 });
+  const [priceRange, setPriceRange] = useState({ min: 0, max: null });
   const [searchQuery, setSearchQuery] = useState("");
   const [houses, setHouses] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -65,7 +65,7 @@ const Explore = () => {
           propertyType: selectedCategory !== "all" ? selectedCategory : undefined,
           sortBy: sortBy === "default" ? "newest" : sortBy === "price_low" ? "price_asc" : sortBy === "price_high" ? "price_desc" : "most_popular",
           minPrice: priceRange.min > 0 ? priceRange.min : undefined,
-          maxPrice: priceRange.max < 1000 ? priceRange.max : undefined,
+          maxPrice: priceRange.max !== null ? priceRange.max : undefined,
         };
         const response = await api.get('/api/filter', { params });
         const transformedHouses = response.data.houses.map(h => ({
@@ -381,8 +381,9 @@ const Explore = () => {
             <View className="flex-1 bg-cardBackground rounded-xl px-4 py-3 border border-border">
               <Text className="text-textSecondary font-poppins text-xs mb-1">Max</Text>
               <TextInput
-                value={String(priceRange.max)}
-                onChangeText={(text) => setPriceRange(prev => ({ ...prev, max: Number(text) || 0 }))}
+                value={priceRange.max !== null ? String(priceRange.max) : ''}
+                onChangeText={(text) => setPriceRange(prev => ({ ...prev, max: text === '' ? null : Number(text) || 0 }))}
+                placeholder="No limit"
                 keyboardType="numeric"
                 className="text-textPrimary font-poppins-semibold text-base"
               />
@@ -395,7 +396,7 @@ const Explore = () => {
               className="flex-1 py-4 rounded-xl border border-primary"
               onPress={() => {
                 setSortBy("default");
-                setPriceRange({ min: 0, max: 1000 });
+                setPriceRange({ min: 0, max: null });
               }}
             >
               <Text className="text-primary font-poppins-semibold text-center">
@@ -431,7 +432,7 @@ const Explore = () => {
         onPress={() => {
           setSearchQuery("");
           setSortBy("default");
-          setPriceRange({ min: 0, max: 1000 });
+          setPriceRange({ min: 0, max: null });
         }}
       >
         <Text className="text-white font-poppins-semibold">Clear all filters</Text>

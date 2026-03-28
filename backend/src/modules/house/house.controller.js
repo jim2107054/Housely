@@ -29,11 +29,14 @@ export const getNearby = async (req, res, next) => {
   try {
     const lat = parseFloat(req.query.lat);
     const lng = parseFloat(req.query.lng);
-    const radius = parseFloat(req.query.radius) || 10;
-    const limit = parseInt(req.query.limit, 10) || 20;
+    const radius = Math.min(parseFloat(req.query.radius) || 10, 100);
+    const limit = Math.min(parseInt(req.query.limit, 10) || 20, 50);
 
-    if (isNaN(lat) || isNaN(lng)) {
-      return res.status(400).json({ success: false, message: 'lat and lng are required' });
+    if (isNaN(lat) || isNaN(lng) || !isFinite(lat) || !isFinite(lng)) {
+      return res.status(400).json({ success: false, message: 'lat and lng must be valid numbers' });
+    }
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+      return res.status(400).json({ success: false, message: 'lat must be -90 to 90, lng must be -180 to 180' });
     }
 
     const houses = await houseService.getNearby(lat, lng, radius, limit);

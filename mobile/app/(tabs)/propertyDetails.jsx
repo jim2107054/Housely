@@ -80,6 +80,13 @@ const PropertyDetails = () => {
             phone: h.agent?.phoneNumber || "+000000000",
           },
           facilities,
+          reviews: (h.reviews || []).map(r => ({
+            id: r.id,
+            name: r.user?.name || "Anonymous",
+            image: r.user?.avatar || "https://randomuser.me/api/portraits/men/1.jpg",
+            rating: r.rating,
+            comment: r.comment,
+          })),
           totalReviews: h._count?.reviews || 0,
           coordinates: {
             latitude: h.latitude || -8.4095,
@@ -173,51 +180,6 @@ const PropertyDetails = () => {
     };
     return icons[facility] || "location";
   };
-
-  // OpenStreetMap HTML for WebView
-  const mapHtml = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-      <style>
-        body { margin: 0; padding: 0; }
-        #map { width: 100%; height: 100vh; }
-        .custom-marker {
-          background: #7F56D9;
-          border: 3px solid white;
-          border-radius: 50%;
-          width: 20px;
-          height: 20px;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        }
-      </style>
-    </head>
-    <body>
-      <div id="map"></div>
-      <script>
-        const map = L.map('map').setView([${property.coordinates.latitude}, ${property.coordinates.longitude}], 15);
-        
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
-
-        // Custom marker icon
-        const customIcon = L.divIcon({
-          className: 'custom-marker',
-          iconSize: [20, 20],
-          iconAnchor: [10, 10]
-        });
-
-        L.marker([${property.coordinates.latitude}, ${property.coordinates.longitude}], {icon: customIcon})
-          .addTo(map)
-          .bindPopup('<b>${property.name}</b><br>${property.location}');
-      </script>
-    </body>
-    </html>
-  `;
 
   // Header Component
   const Header = () => (
@@ -500,19 +462,62 @@ const PropertyDetails = () => {
   );
 
   // Map Component using OpenStreetMap
-  const MapSection = () => (
-    <View className="px-5 mb-4">
-      <View className="rounded-2xl overflow-hidden h-40 border border-border">
-        <WebView
-          source={{ html: mapHtml }}
-          style={{ flex: 1 }}
-          scrollEnabled={false}
-          javaScriptEnabled={true}
-          domStorageEnabled={true}
-        />
+  const MapSection = () => {
+    const lat = property.coordinates.latitude;
+    const lng = property.coordinates.longitude;
+    const mapHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <style>
+          body { margin: 0; padding: 0; }
+          #map { width: 100%; height: 100vh; }
+          .custom-marker {
+            background: #7F56D9;
+            border: 3px solid white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+          }
+        </style>
+      </head>
+      <body>
+        <div id="map"></div>
+        <script>
+          const map = L.map('map').setView([${lat}, ${lng}], 15);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+          }).addTo(map);
+          const customIcon = L.divIcon({
+            className: 'custom-marker',
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
+          });
+          L.marker([${lat}, ${lng}], {icon: customIcon})
+            .addTo(map)
+            .bindPopup('<b>${property.name}</b><br>${property.location}');
+        </script>
+      </body>
+      </html>
+    `;
+    return (
+      <View className="px-5 mb-4">
+        <View className="rounded-2xl overflow-hidden h-40 border border-border">
+          <WebView
+            source={{ html: mapHtml }}
+            style={{ flex: 1 }}
+            scrollEnabled={false}
+            javaScriptEnabled={true}
+            domStorageEnabled={true}
+          />
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   // Reviews Component
   const ReviewsSection = () => (
@@ -532,7 +537,7 @@ const PropertyDetails = () => {
         showsHorizontalScrollIndicator={false}
         className="flex-row"
       >
-        {property.reviews.map((review) => (
+        {(property.reviews || []).map((review) => (
           <View
             key={review.id}
             className="bg-cardBackground rounded-xl p-4 mr-3"

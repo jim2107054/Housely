@@ -413,6 +413,7 @@ const MyBooking = () => {
                     pathname: '/(tabs)/writeReview',
                     params: {
                       bookingId: booking.id,
+                      houseId: booking.house?.id,
                       propertyName: booking.name,
                       location: booking.location,
                       image: booking.image,

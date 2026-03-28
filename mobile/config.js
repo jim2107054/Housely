@@ -18,3 +18,4 @@ export const API_URL = `http://${LOCAL_IP}:3000`;
 // Uncomment one of these instead if needed:
 // export const API_URL = 'http://10.0.2.2:3000';  // Android emulator
 // export const API_URL = 'http://localhost:3000';  // iOS simulator
+
