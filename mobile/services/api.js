@@ -30,9 +30,13 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      // Token expired or invalid, clear storage
-      await AsyncStorage.removeItem("token");
-      await AsyncStorage.removeItem("user");
+      // Token expired or invalid — clear storage and Zustand store
+      await AsyncStorage.multiRemove(["token", "refreshToken", "user"]);
+      // Use dynamic require to avoid circular dependency with authStore
+      try {
+        const useAuthStore = require("../store/authStore").default;
+        useAuthStore.setState({ user: null, token: null });
+      } catch {}
     }
     return Promise.reject(error);
   }

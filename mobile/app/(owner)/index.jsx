@@ -32,24 +32,27 @@ const COLORS = {
 const OwnerDashboard = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (!token) return;
     const fetchDashboard = async () => {
       setLoading(true);
       try {
         const response = await api.get('/api/houses/agent/dashboard');
         setDashboardData(response.data);
       } catch (err) {
-        console.error('Error fetching dashboard:', err);
+        if (err.response?.status !== 401) {
+          console.error('Error fetching dashboard:', err);
+        }
       } finally {
         setLoading(false);
       }
     };
     fetchDashboard();
-  }, []);
+  }, [token]);
 
   const statsData = dashboardData?.stats || {
     housesCount: 0,

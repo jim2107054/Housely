@@ -1,3 +1,4 @@
+import "react-native-reanimated";
 import {
   Stack,
   useRouter,
@@ -50,15 +51,12 @@ export default function RootLayout() {
         }
       }
       //! if user is not signed in and trying to access protected screens, redirect to auth
-      // Allow: (auth), (onbording), index, and (owner) — owner area is open for now
-      else if (
-        !isSignedIn &&
-        !inAuthScreen &&
-        !inOnboarding &&
-        !inIndex &&
-        !inOwnerScreen
-      ) {
+      else if (!isSignedIn && !inAuthScreen && !inOnboarding && !inIndex) {
         router.replace("/(auth)");
+      }
+      // If signed in but not AGENT/ADMIN, block owner screens
+      else if (isSignedIn && inOwnerScreen && user.role === "USER") {
+        router.replace("/(tabs)");
       }
     }, 0);
 
