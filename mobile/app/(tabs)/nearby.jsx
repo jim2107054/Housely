@@ -11,11 +11,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import LocationIcon from "../../assets/images/home-icons/Location.svg";
 import api from "../../services/api";
-
-
+import useLocationStore from "../../store/locationStore";
 
 const Nearby = () => {
   const router = useRouter();
+  const { getCoordinates } = useLocationStore();
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -23,7 +23,7 @@ const Nearby = () => {
     const fetchNearby = async () => {
       setLoading(true);
       try {
-        const response = await api.get('/api/houses/nearby');
+        const response = await api.get('/api/houses/nearby', { params: getCoordinates() });
         const transformed = response.data.houses.map(h => ({
           ...h,
           name: h.name,

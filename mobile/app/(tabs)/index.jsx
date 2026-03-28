@@ -41,7 +41,7 @@ const Home = () => {
   const [loading, setLoading] = useState(false);
 
   // Location store - for displaying selected location in header
-  const { locationName, isLocationSet, loadLocation } = useLocationStore();
+  const { locationName, isLocationSet, loadLocation, getCoordinates } = useLocationStore();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -49,7 +49,7 @@ const Home = () => {
       try {
         const [recRes, nearRes, popRes, locRes, notifRes] = await Promise.all([
           api.get('/api/houses/recommended'),
-          api.get('/api/houses/nearby'),
+          api.get('/api/houses/nearby', { params: getCoordinates() }),
           api.get('/api/houses/popular'),
           api.get('/api/houses/top-locations'),
           api.get('/api/notifications/unread-count').catch(() => ({ data: { count: 0 } })),
