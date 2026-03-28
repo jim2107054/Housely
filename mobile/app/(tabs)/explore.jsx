@@ -28,11 +28,12 @@ const CARD_WIDTH = (width - 52) / 2; // Two cards per row with gaps
 
 
 const categories = [
-  { id: "all", name: "All", icon: "apps" },
-  { id: "house", name: "House", icon: "home" },
-  { id: "apartment", name: "Apartment", icon: "business" },
-  { id: "villa", name: "Villa", icon: "leaf" },
-  { id: "hotel", name: "Hotel", icon: "bed" },
+  { id: "all",       name: "All",       icon: "apps"     },
+  { id: "APARTMENT", name: "Apartment", icon: "business" },
+  { id: "VILLA",     name: "Villa",     icon: "leaf"     },
+  { id: "HOTEL",     name: "Hotel",     icon: "bed"      },
+  { id: "STUDIO",    name: "Studio",    icon: "home"     },
+  { id: "CONDO",     name: "Condo",     icon: "layers"   },
 ];
 
 const sortOptions = [
@@ -60,11 +61,11 @@ const Explore = () => {
       setLoading(true);
       try {
         const params = {
-          q: searchQuery,
-          propertyType: selectedCategory !== "all" ? selectedCategory.toUpperCase() : undefined,
+          q: searchQuery || undefined,
+          propertyType: selectedCategory !== "all" ? selectedCategory : undefined,
           sortBy: sortBy === "default" ? "newest" : sortBy === "price_low" ? "price_asc" : sortBy === "price_high" ? "price_desc" : "most_popular",
-          minPrice: priceRange.min,
-          maxPrice: priceRange.max,
+          minPrice: priceRange.min > 0 ? priceRange.min : undefined,
+          maxPrice: priceRange.max < 1000 ? priceRange.max : undefined,
         };
         const response = await api.get('/api/filter', { params });
         const transformedHouses = response.data.houses.map(h => ({
