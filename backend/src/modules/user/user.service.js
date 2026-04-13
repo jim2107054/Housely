@@ -82,6 +82,8 @@ export const uploadAvatar = async (userId, avatarUrl) => {
 // ─── Payment History ───
 
 export const getPaymentHistory = async (userId, page = 1, limit = 20) => {
+  page = Number(page);
+  limit = Number(limit);
   const skip = (page - 1) * limit;
 
   const [payments, total] = await Promise.all([
