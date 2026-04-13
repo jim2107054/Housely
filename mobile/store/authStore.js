@@ -94,19 +94,26 @@ const useAuthStore = create((set, get) => ({
       set({ user: parsedUser, token: storedToken });
 
       // Verify token is still valid by hitting /api/users/me
+      // The API interceptor will automatically refresh the token if expired
       try {
         const res = await api.get('/api/users/me');
         const freshUser = res.data.user || res.data;
         await AsyncStorage.setItem('user', JSON.stringify(freshUser));
         set({ user: freshUser, isLoading: false });
-      } catch {
-        // Token invalid — clear auth state
-        await AsyncStorage.multiRemove(['token', 'refreshToken', 'user']);
-        set({ user: null, token: null, isLoading: false });
-        return false;
+        return true;
+      } catch (err) {
+        // Only clear if refresh token also failed (already cleared by API interceptor)
+        // Check if tokens still exist - if not, they were cleared by the interceptor
+        const tokenExists = await AsyncStorage.getItem('token');
+        if (!tokenExists) {
+          set({ user: null, token: null, isLoading: false });
+          return false;
+        }
+        
+        // If token still exists but request failed for other reasons, keep the session
+        set({ isLoading: false });
+        return true;
       }
-
-      return true;
     } catch {
       set({ user: null, token: null, isLoading: false });
       return false;
