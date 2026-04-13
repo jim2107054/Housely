@@ -7,6 +7,7 @@ import {
   FlatList,
   Dimensions,
   Animated,
+  ActivityIndicator,
 } from "react-native";
 import { useState, useEffect, useRef } from "react";
 import { Ionicons } from "@expo/vector-icons";
@@ -38,17 +39,35 @@ const Home = () => {
   const [popular, setPopular] = useState([]);
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Location store - for displaying selected location in header
-  const { locationName, isLocationSet, loadLocation } = useLocationStore();
+  const { locationName, isLocationSet, loadLocation, getCoordinates } = useLocationStore();
+
+  useEffect(() => {
+    // Load saved location on mount
+    loadLocation();
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+      setError(null);
       try {
+        console.log('[Home] Fetching home data...');
+        
+        // Get coordinates for nearby API
+        const coords = getCoordinates();
+        console.log('[Home] Using coordinates:', coords);
+        
         const [recRes, nearRes, popRes, locRes] = await Promise.all([
           api.get('/api/houses/recommended'),
-          api.get('/api/houses/nearby'),
+          api.get('/api/houses/nearby', {
+            params: {
+              lat: coords.latitude,
+              lng: coords.longitude,
+            }
+          }),
           api.get('/api/houses/popular'),
           api.get('/api/houses/top-locations'),
         ]);
@@ -68,8 +87,16 @@ const Home = () => {
         setNearby(nearRes.data.houses.map(transformHouse));
         setPopular(popRes.data.houses.map(transformHouse));
         setLocations(locRes.data.locations || []);
+        console.log('[Home] Data loaded successfully');
       } catch (err) {
-        console.error('Error fetching home data:', err);
+        console.error('[Home] Error fetching home data:', err);
+        let errorMessage = 'Failed to load homes';
+        if (err.request) {
+          errorMessage = 'Cannot connect to server';
+        } else if (err.response) {
+          errorMessage = err.response.data?.message || 'Server error';
+        }
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -394,6 +421,33 @@ const Home = () => {
       </View>
     </TouchableOpacity>
   );
+
+  if (loading) {
+    return (
+      <View className="flex-1 bg-white">
+        <Header />
+        <SearchBar />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60 }}>
+          <ActivityIndicator size="large" color="#6941C6" />
+          <Text style={{ marginTop: 12, color: '#A1A5C1', fontSize: 14 }}>Loading properties...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View className="flex-1 bg-white">
+        <Header />
+        <SearchBar />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 60, paddingHorizontal: 40 }}>
+          <Ionicons name="cloud-offline-outline" size={64} color="#A1A5C1" />
+          <Text style={{ marginTop: 12, color: '#252B5C', fontSize: 18, fontWeight: '700' }}>Connection Error</Text>
+          <Text style={{ marginTop: 6, color: '#A1A5C1', fontSize: 14, textAlign: 'center' }}>{error}</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-white">
