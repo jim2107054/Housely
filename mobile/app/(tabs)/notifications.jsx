@@ -5,34 +5,32 @@ import {
   FlatList,
   Image,
   ScrollView,
+  ActivityIndicator,
+  Dimensions,
 } from 'react-native';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import api from '../../services/api';
 
-// Import data (structured like backend API response)
-import { notificationsScreenData } from '../../data/dummyData';
-
-//!api calls - uncomment when connecting backend
-// import api from '../../services/api';
-// useEffect(() => {
-//   const fetchNotifications = async () => {
-//     const response = await api.get('/api/notifications');
-//     setNotifications(response.data.notifications);
-//   };
-//   fetchNotifications();
-// }, []);
+const { width } = Dimensions.get('window');
 
 // Design Tokens
 const COLORS = {
-  primary: '#7B61FF',
+  primary: '#8B5CF6',
+  primaryLight: '#EDE9FE',
   background: '#FFFFFF',
-  screenBackground: '#F5F5F5',
-  textPrimary: '#1A1A1A',
-  textSecondary: '#9E9E9E',
-  border: '#F0F0F0',
-  unreadBg: '#F5F4FF',
+  screenBackground: '#F9FAFB',
+  textPrimary: '#111827',
+  textSecondary: '#6B7280',
+  textMuted: '#9CA3AF',
+  border: '#E5E7EB',
+  unreadBg: '#F3F4F6',
+  success: '#10B981',
+  warning: '#F59E0B',
+  danger: '#EF4444',
+  info: '#3B82F6',
 };
 
 // Helper to format time ago
@@ -44,21 +42,32 @@ const formatTimeAgo = (dateString) => {
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-  if (diffMins < 60) {
-    return `${diffMins}m ago`;
-  } else if (diffHours < 24) {
-    return `${diffHours}h ago`;
-  } else if (diffDays === 1) {
-    return 'Yesterday';
-  } else if (diffDays < 7) {
-    return `${diffDays}d ago`;
-  } else {
-    return notifTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  }
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m`;
+  if (diffHours < 24) return `${diffHours}h`;
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays}d`;
+  return notifTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 };
 
-// Notification Item Component
+// Get icon config based on notification type
+const getNotificationIcon = (type) => {
+  const iconMap = {
+    booking: { name: 'calendar', color: COLORS.success, bg: '#ECFDF5' },
+    message: { name: 'chatbubble-ellipses', color: COLORS.info, bg: '#EFF6FF' },
+    payment: { name: 'card', color: COLORS.warning, bg: '#FFFBEB' },
+    review: { name: 'star', color: COLORS.warning, bg: '#FFFBEB' },
+    reminder: { name: 'time', color: COLORS.primary, bg: COLORS.primaryLight },
+    promo: { name: 'pricetag', color: COLORS.danger, bg: '#FEF2F2' },
+    price_drop: { name: 'trending-down', color: COLORS.success, bg: '#ECFDF5' },
+  };
+  return iconMap[type] || { name: 'notifications', color: COLORS.primary, bg: COLORS.primaryLight };
+};
+
+// Notification Item Component (Redesigned)
 const NotificationItem = ({ notification, onPress, onMarkRead }) => {
+  const iconConfig = getNotificationIcon(notification.type);
+
   return (
     <TouchableOpacity
       onPress={() => {
@@ -66,60 +75,84 @@ const NotificationItem = ({ notification, onPress, onMarkRead }) => {
         onPress(notification);
       }}
       style={{
-        backgroundColor: notification.isRead ? COLORS.background : COLORS.unreadBg,
-        paddingVertical: 14,
-        paddingHorizontal: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: COLORS.border,
+        backgroundColor: COLORS.background,
+        marginHorizontal: 16,
+        marginVertical: 6,
+        borderRadius: 16,
+        padding: 14,
         flexDirection: 'row',
+        alignItems: 'flex-start',
+        elevation: notification.isRead ? 0 : 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 4,
+        borderWidth: notification.isRead ? 1 : 0,
+        borderColor: COLORS.border,
       }}
+      activeOpacity={0.7}
     >
       {/* Icon or Image */}
-      <View
-        style={{
-          width: 48,
-          height: 48,
-          borderRadius: notification.senderImage || notification.propertyImage ? 24 : 12,
-          backgroundColor: notification.senderImage || notification.propertyImage ? 'transparent' : `${notification.iconColor}20`,
-          justifyContent: 'center',
-          alignItems: 'center',
-          marginRight: 12,
-          overflow: 'hidden',
-        }}
-      >
-        {notification.senderImage ? (
+      <View style={{ marginRight: 12 }}>
+        {notification.senderImage || notification.propertyImage ? (
           <Image
-            source={{ uri: notification.senderImage }}
-            style={{ width: 48, height: 48, borderRadius: 24 }}
-            resizeMode="cover"
-          />
-        ) : notification.propertyImage ? (
-          <Image
-            source={{ uri: notification.propertyImage }}
-            style={{ width: 48, height: 48, borderRadius: 12 }}
+            source={{ uri: notification.senderImage || notification.propertyImage }}
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: notification.senderImage ? 26 : 12,
+              borderWidth: 2,
+              borderColor: notification.isRead ? COLORS.border : COLORS.primary,
+            }}
             resizeMode="cover"
           />
         ) : (
-          <Ionicons name={notification.icon} size={24} color={notification.iconColor} />
+          <View
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: 16,
+              backgroundColor: iconConfig.bg,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <Ionicons name={iconConfig.name} size={26} color={iconConfig.color} />
+          </View>
+        )}
+        {!notification.isRead && (
+          <View
+            style={{
+              position: 'absolute',
+              top: -2,
+              right: -2,
+              width: 12,
+              height: 12,
+              borderRadius: 6,
+              backgroundColor: COLORS.primary,
+              borderWidth: 2,
+              borderColor: COLORS.background,
+            }}
+          />
         )}
       </View>
 
       {/* Content */}
       <View style={{ flex: 1 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
           <Text
             style={{
-              fontSize: 14,
-              fontWeight: notification.isRead ? '500' : 'bold',
+              fontSize: 15,
+              fontWeight: notification.isRead ? '600' : '700',
               color: COLORS.textPrimary,
               flex: 1,
-              paddingRight: 8,
+              marginRight: 8,
             }}
-            numberOfLines={1}
+            numberOfLines={2}
           >
             {notification.title}
           </Text>
-          <Text style={{ fontSize: 11, color: COLORS.textSecondary }}>
+          <Text style={{ fontSize: 11, color: COLORS.textMuted, fontWeight: '500' }}>
             {formatTimeAgo(notification.timestamp)}
           </Text>
         </View>
@@ -127,7 +160,6 @@ const NotificationItem = ({ notification, onPress, onMarkRead }) => {
           style={{
             fontSize: 13,
             color: COLORS.textSecondary,
-            marginTop: 4,
             lineHeight: 18,
           }}
           numberOfLines={2}
@@ -135,122 +167,146 @@ const NotificationItem = ({ notification, onPress, onMarkRead }) => {
           {notification.message}
         </Text>
       </View>
-
-      {/* Unread Indicator */}
-      {!notification.isRead && (
-        <View
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: 4,
-            backgroundColor: COLORS.primary,
-            position: 'absolute',
-            top: 14,
-            right: 16,
-          }}
-        />
-      )}
     </TouchableOpacity>
   );
 };
 
-// Filter Pills Component
+// Filter Pills Component (Redesigned)
 const FilterPills = ({ activeFilter, setActiveFilter }) => {
   const filters = [
-    { id: 'all', label: 'All' },
-    { id: 'unread', label: 'Unread' },
-    { id: 'booking', label: 'Bookings' },
-    { id: 'message', label: 'Messages' },
-    { id: 'promo', label: 'Promos' },
+    { id: 'all', label: 'All', icon: 'apps' },
+    { id: 'unread', label: 'Unread', icon: 'mail-unread' },
+    { id: 'booking', label: 'Bookings', icon: 'calendar' },
+    { id: 'message', label: 'Messages', icon: 'chatbubbles' },
+    { id: 'promo', label: 'Offers', icon: 'pricetag' },
   ];
 
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12 }}
+      contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 14, gap: 8 }}
     >
-      {filters.map((filter) => (
-        <TouchableOpacity
-          key={filter.id}
-          onPress={() => setActiveFilter(filter.id)}
-          style={{
-            paddingHorizontal: 16,
-            paddingVertical: 8,
-            borderRadius: 20,
-            backgroundColor: activeFilter === filter.id ? COLORS.primary : '#F0F0F0',
-            marginRight: 8,
-          }}
-        >
-          <Text
+      {filters.map((filter) => {
+        const isActive = activeFilter === filter.id;
+        return (
+          <TouchableOpacity
+            key={filter.id}
+            onPress={() => setActiveFilter(filter.id)}
             style={{
-              color: activeFilter === filter.id ? '#FFFFFF' : COLORS.textSecondary,
-              fontSize: 13,
-              fontWeight: '500',
+              flexDirection: 'row',
+              alignItems: 'center',
+              paddingHorizontal: 16,
+              paddingVertical: 10,
+              borderRadius: 12,
+              backgroundColor: isActive ? COLORS.primary : COLORS.background,
+              borderWidth: 1.5,
+              borderColor: isActive ? COLORS.primary : COLORS.border,
+              marginRight: 8,
+              elevation: isActive ? 2 : 0,
+              shadowColor: COLORS.primary,
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: isActive ? 0.2 : 0,
+              shadowRadius: 4,
             }}
+            activeOpacity={0.7}
           >
-            {filter.label}
-          </Text>
-        </TouchableOpacity>
-      ))}
+            <Ionicons
+              name={filter.icon}
+              size={16}
+              color={isActive ? '#FFFFFF' : COLORS.textSecondary}
+              style={{ marginRight: 6 }}
+            />
+            <Text
+              style={{
+                color: isActive ? '#FFFFFF' : COLORS.textSecondary,
+                fontSize: 14,
+                fontWeight: isActive ? '700' : '600',
+              }}
+            >
+              {filter.label}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
     </ScrollView>
   );
 };
 
-// Empty State Component
+// Empty State Component (Redesigned)
 const EmptyState = ({ filter }) => (
   <View
     style={{
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      paddingHorizontal: 32,
-      paddingTop: 80,
+      paddingHorizontal: 40,
+      paddingTop: 100,
     }}
   >
     <View
       style={{
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        backgroundColor: '#F5F4F8',
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        backgroundColor: COLORS.primaryLight,
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: 24,
       }}
     >
-      <Ionicons name="notifications-off" size={36} color={COLORS.primary} />
+      <Ionicons
+        name={filter === 'unread' ? 'checkmark-done-circle' : 'notifications-off'}
+        size={56}
+        color={COLORS.primary}
+      />
     </View>
     <Text
       style={{
-        fontSize: 16,
-        fontWeight: 'bold',
+        fontSize: 20,
+        fontWeight: '700',
         color: COLORS.textPrimary,
         textAlign: 'center',
+        marginBottom: 8,
       }}
     >
-      {filter === 'unread' ? 'All Caught Up!' : 'No Notifications'}
+      {filter === 'unread' ? 'All Caught Up!' : 'No Notifications Yet'}
     </Text>
     <Text
       style={{
-        fontSize: 13,
+        fontSize: 14,
         color: COLORS.textSecondary,
         textAlign: 'center',
-        marginTop: 8,
-        lineHeight: 18,
+        lineHeight: 20,
       }}
     >
       {filter === 'unread'
-        ? 'You have read all your notifications.'
-        : 'You don\'t have any notifications yet. We\'ll notify you when something arrives.'}
+        ? 'You\'ve read all your notifications.\nGreat job staying organized!'
+        : 'We\'ll notify you when something\nimportant happens.'}
     </Text>
   </View>
 );
 
 const Notifications = () => {
   const router = useRouter();
-  const [notifications, setNotifications] = useState(notificationsScreenData);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [activeFilter, setActiveFilter] = useState('all');
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get('/api/notifications');
+        setNotifications(response.data.notifications || []);
+      } catch (err) {
+        console.error('Error fetching notifications:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchNotifications();
+  }, []);
 
   // Get unread count
   const unreadCount = notifications.filter((n) => !n.isRead).length;
@@ -263,15 +319,25 @@ const Notifications = () => {
   });
 
   // Mark notification as read
-  const handleMarkRead = (id) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-    );
+  const handleMarkRead = async (id) => {
+    try {
+      await api.patch(`/api/notifications/${id}/read`);
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+      );
+    } catch (err) {
+      console.error('Error marking notification as read:', err);
+    }
   };
 
   // Mark all as read
-  const handleMarkAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+  const handleMarkAllRead = async () => {
+    try {
+      await api.patch('/api/notifications/read-all');
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    } catch (err) {
+      console.error('Error marking all as read:', err);
+    }
   };
 
   // Handle notification press
@@ -304,75 +370,94 @@ const Notifications = () => {
       {/* Header */}
       <View
         style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          paddingHorizontal: 16,
-          paddingVertical: 12,
           backgroundColor: COLORS.background,
-          position: 'relative',
+          paddingHorizontal: 20,
+          paddingVertical: 16,
+          borderBottomWidth: 1,
+          borderBottomColor: COLORS.border,
+          elevation: 2,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: 0.05,
+          shadowRadius: 3,
         }}
       >
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={{
-            position: 'absolute',
-            left: 16,
-            padding: 8,
-          }}
-        >
-          <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
-        </TouchableOpacity>
-        <Text
-          style={{
-            fontSize: 18,
-            fontWeight: '600',
-            color: COLORS.textPrimary,
-          }}
-        >
-          Notifications
-        </Text>
-        {unreadCount > 0 && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <TouchableOpacity
-            onPress={handleMarkAllRead}
+            onPress={() => router.back()}
             style={{
-              position: 'absolute',
-              right: 16,
-              padding: 8,
+              width: 40,
+              height: 40,
+              borderRadius: 12,
+              backgroundColor: COLORS.screenBackground,
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
           >
-            <Text style={{ fontSize: 14, color: COLORS.primary, fontWeight: '500' }}>
-              Mark all read
-            </Text>
+            <Ionicons name="arrow-back" size={22} color={COLORS.textPrimary} />
           </TouchableOpacity>
-        )}
+
+          <View style={{ flex: 1, alignItems: 'center', paddingHorizontal: 12 }}>
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: '700',
+                color: COLORS.textPrimary,
+              }}
+            >
+              Notifications
+            </Text>
+            {unreadCount > 0 && (
+              <View
+                style={{
+                  backgroundColor: COLORS.primary,
+                  borderRadius: 12,
+                  paddingHorizontal: 8,
+                  paddingVertical: 2,
+                  marginTop: 4,
+                }}
+              >
+                <Text style={{ color: '#FFF', fontSize: 11, fontWeight: '700' }}>
+                  {unreadCount} New
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {unreadCount > 0 ? (
+            <TouchableOpacity
+              onPress={handleMarkAllRead}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 12,
+                backgroundColor: COLORS.primaryLight,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Ionicons name="checkmark-done" size={20} color={COLORS.primary} />
+            </TouchableOpacity>
+          ) : (
+            <View style={{ width: 40 }} />
+          )}
+        </View>
       </View>
 
-      {/* Unread Badge */}
-      {unreadCount > 0 && (
-        <View
-          style={{
-            backgroundColor: COLORS.primary,
-            paddingHorizontal: 16,
-            paddingVertical: 10,
-            flexDirection: 'row',
-            alignItems: 'center',
-          }}
-        >
-          <Ionicons name="notifications" size={18} color="#FFFFFF" />
-          <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '500', marginLeft: 8 }}>
-            You have {unreadCount} unread notification{unreadCount !== 1 ? 's' : ''}
-          </Text>
-        </View>
-      )}
-
       {/* Filter Pills */}
-      <View style={{ backgroundColor: COLORS.background }}>
+      <View style={{ backgroundColor: COLORS.background, paddingBottom: 4 }}>
         <FilterPills activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
       </View>
 
       {/* Notifications List */}
-      {filteredNotifications.length === 0 ? (
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={{ marginTop: 12, color: COLORS.textSecondary, fontSize: 14 }}>
+            Loading notifications...
+          </Text>
+        </View>
+      ) : filteredNotifications.length === 0 ? (
         <EmptyState filter={activeFilter} />
       ) : (
         <FlatList
@@ -385,7 +470,7 @@ const Notifications = () => {
               onMarkRead={handleMarkRead}
             />
           )}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          contentContainerStyle={{ paddingVertical: 8, paddingBottom: 24 }}
           showsVerticalScrollIndicator={false}
         />
       )}

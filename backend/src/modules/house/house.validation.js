@@ -8,8 +8,8 @@ export const createHouseSchema = z.object({
     description: z.string().max(5000).optional(),
     listingType: z.enum(['RENT', 'SALE']),
     propertyType: z.enum(propertyTypes),
-    rentPerMonth: z.number().positive().optional(),
-    salePrice: z.number().positive().optional(),
+    rentPerMonth: z.number().positive().nullable().optional(),
+    salePrice: z.number().positive().nullable().optional(),
     address: z.string().min(1).max(500),
     city: z.string().min(1).max(100),
     area: z.string().max(100).optional(),
@@ -32,6 +32,10 @@ export const createHouseSchema = z.object({
     video: z.object({ url: z.string().url() }).optional(),
     publicFacilities: z
       .object({
+        wifi: z.boolean().optional(),
+        water: z.boolean().optional(),
+        electricity: z.boolean().optional(),
+        parking: z.boolean().optional(),
         mosqueDistance: z.number().positive().optional(),
         hospitalDistance: z.number().positive().optional(),
         shoppingMallDistance: z.number().positive().optional(),
@@ -73,6 +77,10 @@ export const updateHouseSchema = z.object({
     video: z.object({ url: z.string().url() }).nullable().optional(),
     publicFacilities: z
       .object({
+        wifi: z.boolean().optional(),
+        water: z.boolean().optional(),
+        electricity: z.boolean().optional(),
+        parking: z.boolean().optional(),
         mosqueDistance: z.number().positive().nullable().optional(),
         hospitalDistance: z.number().positive().nullable().optional(),
         shoppingMallDistance: z.number().positive().nullable().optional(),

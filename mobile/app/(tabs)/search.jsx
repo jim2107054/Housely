@@ -16,14 +16,9 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Import data (structured like backend API response)
-import { searchResults as mockSearchResults } from '../../data/dummyData';
+import api from '../../services/api';
 
-//!api calls - uncomment when connecting backend
-// import api from '../../services/api';
-// const searchProperties = async (query) => {
-//   const response = await api.get(`/api/houses/search?q=${query}`);
-//   return response.data.houses;
-// };
+
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -581,14 +576,19 @@ const SearchScreen = () => {
     }
   };
 
-  const performSearch = (searchQuery) => {
-    const lowerQuery = searchQuery.toLowerCase();
-    const filtered = mockSearchResults.filter(
-      (item) =>
-        item.name.toLowerCase().includes(lowerQuery) ||
-        item.location.toLowerCase().includes(lowerQuery)
-    );
-    setResults(filtered);
+  const performSearch = async (searchQuery) => {
+    try {
+      const response = await api.get(`/api/houses?search=${searchQuery}`);
+      const transformed = response.data.houses.map(h => ({
+        id: h.id,
+        name: h.name,
+        location: `${h.area}, ${h.city}`,
+      }));
+      setResults(transformed);
+    } catch (err) {
+      console.error('Error performing search:', err);
+      setResults([]);
+    }
   };
 
   const handleClear = () => {

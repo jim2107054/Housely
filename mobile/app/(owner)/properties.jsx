@@ -1,26 +1,18 @@
 import {
   View,
   Text,
-  ScrollView,
   Image,
   TouchableOpacity,
   FlatList,
+  ActivityIndicator,
 } from "react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ownerHouses } from "../../data/dummyData";
+import api from "../../services/api";
 
-//!api calls - uncomment when connecting backend
-// import api from "../../services/api";
-// useEffect(() => {
-//   const fetchProperties = async () => {
-//     const response = await api.get('/api/houses/my-houses');
-//     setProperties(response.data.houses);
-//   };
-//   fetchProperties();
-// }, []);
+
 
 const COLORS = {
   primary: "#7B61FF",
@@ -41,7 +33,38 @@ const statusColors = {
 const OwnerProperties = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [properties] = useState(ownerHouses);
+  const [properties, setProperties] = useState([]);
+  const [loading, setLoading] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchProperties = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        console.log('[Properties] Fetching properties...');
+        const response = await api.get('/api/houses/my-houses');
+        const transformedHouses = response.data.houses.map(h => ({
+          ...h,
+          name: h.name,
+          city: h.city,
+          area: h.area,
+          price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
+          rating: h.rating || 4.5,
+          image: h.images?.[0]?.url || 'https://via.placeholder.com/150',
+          status: h.status || 'AVAILABLE',
+        }));
+        setProperties(transformedHouses);
+      } catch (err) {
+        console.error('[Properties] Error fetching agent houses:', err);
+        setError(err.request ? 'Cannot connect to server' : 'Failed to load properties');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProperties();
+  }, []);
 
   const renderProperty = ({ item }) => {
     const statusStyle = statusColors[item.status] || statusColors.AVAILABLE;
@@ -142,33 +165,39 @@ const OwnerProperties = () => {
         </Text>
       </View>
 
-      <FlatList
-        data={properties}
-        keyExtractor={(item) => item.id}
-        renderItem={renderProperty}
-        contentContainerStyle={{ paddingTop: 16, paddingBottom: 30 }}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={{ alignItems: "center", marginTop: 60 }}>
-            <Ionicons name="home-outline" size={60} color="#E0E0E0" />
-            <Text style={{ fontSize: 16, color: COLORS.textSecondary, marginTop: 12 }}>
-              No properties listed yet
-            </Text>
-            <TouchableOpacity
-              onPress={() => router.push("/(owner)/addProperty")}
-              style={{
-                marginTop: 16,
-                backgroundColor: COLORS.primary,
-                paddingHorizontal: 24,
-                paddingVertical: 12,
-                borderRadius: 12,
-              }}
-            >
-              <Text style={{ color: "#fff", fontWeight: "600" }}>Add Property</Text>
-            </TouchableOpacity>
-          </View>
-        }
-      />
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      ) : (
+        <FlatList
+          data={properties}
+          keyExtractor={(item) => item.id}
+          renderItem={renderProperty}
+          contentContainerStyle={{ paddingTop: 16, paddingBottom: 30 }}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={{ alignItems: "center", marginTop: 60 }}>
+              <Ionicons name="home-outline" size={60} color="#E0E0E0" />
+              <Text style={{ fontSize: 16, color: COLORS.textSecondary, marginTop: 12 }}>
+                No properties listed yet
+              </Text>
+              <TouchableOpacity
+                onPress={() => router.push("/(owner)/addProperty")}
+                style={{
+                  marginTop: 16,
+                  backgroundColor: COLORS.primary,
+                  paddingHorizontal: 24,
+                  paddingVertical: 12,
+                  borderRadius: 12,
+                }}
+              >
+                <Text style={{ color: "#fff", fontWeight: "600" }}>Add Property</Text>
+              </TouchableOpacity>
+            </View>
+          }
+        />
+      )}
     </View>
   );
 };

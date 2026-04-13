@@ -11,17 +11,11 @@ import {
 import { useState, useRef, useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { chatMessages, chatConversations } from "../../data/dummyData";
+import api from "../../services/api";
+import useAuthStore from "../../store/authStore";
+import { ActivityIndicator } from "react-native";
 
-//!api calls - uncomment when connecting backend
-// import api from "../../services/api";
-// useEffect(() => {
-//   const fetchMessages = async () => {
-//     const response = await api.get(`/api/messages/${id}`);
-//     setMessages(response.data.messages);
-//   };
-//   fetchMessages();
-// }, [id]);
+
 
 const COLORS = {
   primary: "#7B61FF",
@@ -35,15 +29,42 @@ const OwnerChatConversation = () => {
   const params = useLocalSearchParams();
   const { id, name, avatar } = params;
   const scrollViewRef = useRef(null);
+  const { user } = useAuthStore();
 
-  const [messages, setMessages] = useState(chatMessages[id] || []);
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [newMessage, setNewMessage] = useState("");
 
-  const conversation = chatConversations.find((c) => c.id === id) || {
+  const conversation = {
     name: name || "Unknown",
     avatar: avatar || "https://randomuser.me/api/portraits/men/1.jpg",
     online: false,
   };
+
+  useEffect(() => {
+    const fetchMessages = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get(`/api/conversations/${id}/messages`);
+        const transformed = response.data.messages.map(m => ({
+          id: m.id,
+          senderId: m.senderId,
+          text: m.content,
+          timestamp: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isMe: m.senderId === user.id,
+        }));
+        setMessages(transformed);
+        
+        // Mark as read
+        await api.patch(`/api/conversations/${id}/read`);
+      } catch (err) {
+        console.error('Error fetching owner messages:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMessages();
+  }, [id]);
 
   useEffect(() => {
     setTimeout(() => {
@@ -51,31 +72,29 @@ const OwnerChatConversation = () => {
     }, 100);
   }, [messages]);
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (newMessage.trim() === "") return;
 
-    const message = {
-      id: `m${messages.length + 1}`,
-      senderId: "owner",
-      text: newMessage.trim(),
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      isMe: true,
-    };
-
-    setMessages((prev) => [...prev, message]);
+    const text = newMessage.trim();
     setNewMessage("");
 
-    // Simulate tenant reply
-    setTimeout(() => {
-      const reply = {
-        id: `m${messages.length + 2}`,
-        senderId: "tenant",
-        text: "Thanks for your response! I appreciate it.",
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        isMe: false,
-      };
-      setMessages((prev) => [...prev, reply]);
-    }, 1000);
+    // Optimistic update
+    const tempId = `temp-${Date.now()}`;
+    const messageObj = {
+      id: tempId,
+      senderId: user.id,
+      text: text,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isMe: true,
+    };
+    setMessages((prev) => [...prev, messageObj]);
+
+    try {
+      await api.post(`/api/conversations/${id}/messages`, { content: text });
+    } catch (err) {
+      console.error('Error sending message:', err);
+      setMessages((prev) => prev.filter(m => m.id !== tempId));
+    }
   };
 
   return (
@@ -113,54 +132,59 @@ const OwnerChatConversation = () => {
         </View>
       </View>
 
-      {/* Messages */}
-      <ScrollView
-        ref={scrollViewRef}
-        style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 16, paddingBottom: 8 }}
-        showsVerticalScrollIndicator={false}
-      >
-        {messages.map((msg) => (
-          <View
-            key={msg.id}
-            style={{
-              alignSelf: msg.isMe ? "flex-end" : "flex-start",
-              maxWidth: "78%",
-              marginBottom: 10,
-            }}
-          >
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      ) : (
+        <ScrollView
+          ref={scrollViewRef}
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: 16, paddingBottom: 8 }}
+          showsVerticalScrollIndicator={false}
+        >
+          {messages.map((msg) => (
             <View
+              key={msg.id}
               style={{
-                backgroundColor: msg.isMe ? COLORS.primary : "#fff",
-                borderRadius: 16,
-                borderTopRightRadius: msg.isMe ? 4 : 16,
-                borderTopLeftRadius: msg.isMe ? 16 : 4,
-                paddingHorizontal: 14,
-                paddingVertical: 10,
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.04,
-                shadowRadius: 2,
-                elevation: 1,
+                alignSelf: msg.isMe ? "flex-end" : "flex-start",
+                maxWidth: "78%",
+                marginBottom: 10,
               }}
             >
-              <Text style={{ fontSize: 15, color: msg.isMe ? "#fff" : COLORS.textPrimary, lineHeight: 20 }}>
-                {msg.text}
+              <View
+                style={{
+                  backgroundColor: msg.isMe ? COLORS.primary : "#fff",
+                  borderRadius: 16,
+                  borderTopRightRadius: msg.isMe ? 4 : 16,
+                  borderTopLeftRadius: msg.isMe ? 16 : 4,
+                  paddingHorizontal: 14,
+                  paddingVertical: 10,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: 0.04,
+                  shadowRadius: 2,
+                  elevation: 1,
+                }}
+              >
+                <Text style={{ fontSize: 15, color: msg.isMe ? "#fff" : COLORS.textPrimary, lineHeight: 20 }}>
+                  {msg.text}
+                </Text>
+              </View>
+              <Text
+                style={{
+                  fontSize: 11,
+                  color: COLORS.textSecondary,
+                  marginTop: 4,
+                  alignSelf: msg.isMe ? "flex-end" : "flex-start",
+                }}
+              >
+                {msg.timestamp}
               </Text>
             </View>
-            <Text
-              style={{
-                fontSize: 11,
-                color: COLORS.textSecondary,
-                marginTop: 4,
-                alignSelf: msg.isMe ? "flex-end" : "flex-start",
-              }}
-            >
-              {msg.timestamp}
-            </Text>
-          </View>
-        ))}
-      </ScrollView>
+          ))}
+        </ScrollView>
+      )}
 
       {/* Input */}
       <View
