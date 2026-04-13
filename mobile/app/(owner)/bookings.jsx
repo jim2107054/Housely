@@ -4,9 +4,9 @@ import {
   Image,
   TouchableOpacity,
   FlatList,
+  ActivityIndicator,
 } from "react-native";
 import { useEffect, useState } from "react";
-import { ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -37,20 +37,26 @@ const statusConfig = {
 };
 
 const OwnerBookings = () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState("PENDING");
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchBookings = async () => {
       setLoading(true);
+      setError(null);
       try {
+        console.log('[Bookings] Fetching bookings...');
         const response = await api.get('/api/bookings/agent/all');
         setBookings(response.data.bookings || []);
       } catch (err) {
-        console.error('Error fetching agent bookings:', err);
+        console.error('[Bookings] Error fetching agent bookings:', err);
+        setError(err.request ? 'Cannot connect to server' : 'Failed to load bookings');
       } finally {
         setLoading(false);
       }

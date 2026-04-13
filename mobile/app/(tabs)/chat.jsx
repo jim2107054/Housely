@@ -25,11 +25,14 @@ const Chat = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchConversations = async () => {
       setLoading(true);
+      setError(null);
       try {
+        console.log('[Chat] Fetching conversations...');
         const response = await api.get('/api/conversations');
         const transformedConversations = response.data.conversations.map(c => {
           const otherUser = c.user1Id === user.id ? c.user2 : c.user1;
@@ -45,7 +48,8 @@ const Chat = () => {
         });
         setConversations(transformedConversations);
       } catch (err) {
-        console.error('Error fetching conversations:', err);
+        console.error('[Chat] Error fetching conversations:', err);
+        setError(err.request ? 'Cannot connect to server' : 'Failed to load conversations');
       } finally {
         setLoading(false);
       }

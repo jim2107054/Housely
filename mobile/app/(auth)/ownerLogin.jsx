@@ -38,7 +38,8 @@ const OwnerLogin = () => {
       duration: 250,
       useNativeDriver: true,
     }).start(() => {
-      router.replace("/(owner)");
+      // Navigate to login screen with AGENT role
+      router.push({ pathname: "/(auth)", params: { role: "AGENT" } });
     });
   };
 

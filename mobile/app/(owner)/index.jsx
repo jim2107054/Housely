@@ -5,9 +5,9 @@ import {
   Image,
   TouchableOpacity,
   Dimensions,
+  ActivityIndicator,
 } from "react-native";
 import { useEffect, useState } from "react";
-import { ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -35,15 +35,35 @@ const OwnerDashboard = () => {
   const { user } = useAuthStore();
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchDashboard = async () => {
       setLoading(true);
+      setError(null);
       try {
+        console.log('[Owner Dashboard] Fetching dashboard data...');
         const response = await api.get('/api/houses/agent/dashboard');
+        console.log('[Owner Dashboard] Success:', response.data);
         setDashboardData(response.data);
       } catch (err) {
-        console.error('Error fetching dashboard:', err);
+        console.error('[Owner Dashboard] Error fetching dashboard:', err);
+        
+        // Detailed error handling
+        let errorMessage = 'Failed to load dashboard';
+        
+        if (err.response) {
+          // Server responded with error
+          errorMessage = err.response.data?.message || `Server error: ${err.response.status}`;
+        } else if (err.request) {
+          // Network error - no response received
+          errorMessage = 'Cannot connect to server. Please check:\n• Backend server is running\n• Your network connection\n• API URL in config.js';
+        } else {
+          // Request setup error
+          errorMessage = err.message || 'Unknown error occurred';
+        }
+        
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -103,6 +123,55 @@ const OwnerDashboard = () => {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: COLORS.background }}>
         <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={{ marginTop: 12, color: COLORS.textSecondary }}>Loading dashboard...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: COLORS.background, paddingHorizontal: 30 }}>
+        <Ionicons name="alert-circle-outline" size={64} color={COLORS.warning} />
+        <Text style={{ fontSize: 18, fontWeight: "700", color: COLORS.textPrimary, marginTop: 16, textAlign: "center" }}>
+          Connection Error
+        </Text>
+        <Text style={{ fontSize: 14, color: COLORS.textSecondary, marginTop: 8, textAlign: "center", lineHeight: 20 }}>
+          {error}
+        </Text>
+        <TouchableOpacity
+          onPress={() => {
+            setError(null);
+            setLoading(true);
+            const fetchDashboard = async () => {
+              try {
+                const response = await api.get('/api/houses/agent/dashboard');
+                setDashboardData(response.data);
+              } catch (err) {
+                let errorMessage = 'Failed to load dashboard';
+                if (err.response) {
+                  errorMessage = err.response.data?.message || `Server error: ${err.response.status}`;
+                } else if (err.request) {
+                  errorMessage = 'Cannot connect to server. Please check:\n• Backend server is running\n• Your network connection\n• API URL in config.js';
+                } else {
+                  errorMessage = err.message || 'Unknown error occurred';
+                }
+                setError(errorMessage);
+              } finally {
+                setLoading(false);
+              }
+            };
+            fetchDashboard();
+          }}
+          style={{
+            marginTop: 20,
+            backgroundColor: COLORS.primary,
+            paddingHorizontal: 24,
+            paddingVertical: 12,
+            borderRadius: 8,
+          }}
+        >
+          <Text style={{ color: "#fff", fontWeight: "600", fontSize: 15 }}>Retry</Text>
+        </TouchableOpacity>
       </View>
     );
   }

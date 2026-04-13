@@ -5,28 +5,32 @@ import {
   FlatList,
   Image,
   ScrollView,
+  ActivityIndicator,
+  Dimensions,
 } from 'react-native';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-
-// Import data (structured like backend API response)
 import api from '../../services/api';
-import { useEffect } from 'react';
-import { ActivityIndicator } from 'react-native';
 
-
+const { width } = Dimensions.get('window');
 
 // Design Tokens
 const COLORS = {
-  primary: '#7B61FF',
+  primary: '#8B5CF6',
+  primaryLight: '#EDE9FE',
   background: '#FFFFFF',
-  screenBackground: '#F5F5F5',
-  textPrimary: '#1A1A1A',
-  textSecondary: '#9E9E9E',
-  border: '#F0F0F0',
-  unreadBg: '#F5F4FF',
+  screenBackground: '#F9FAFB',
+  textPrimary: '#111827',
+  textSecondary: '#6B7280',
+  textMuted: '#9CA3AF',
+  border: '#E5E7EB',
+  unreadBg: '#F3F4F6',
+  success: '#10B981',
+  warning: '#F59E0B',
+  danger: '#EF4444',
+  info: '#3B82F6',
 };
 
 // Helper to format time ago

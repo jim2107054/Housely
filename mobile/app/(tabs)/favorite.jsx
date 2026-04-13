@@ -23,11 +23,14 @@ const Favorite = () => {
   const router = useRouter();
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchFavorites = async () => {
       setLoading(true);
+      setError(null);
       try {
+        console.log('[Favorites] Fetching favorites...');
         const response = await api.get('/api/houses/favorites');
         const transformedFavorites = response.data.houses.map(h => ({
           ...h,
@@ -41,7 +44,8 @@ const Favorite = () => {
         }));
         setFavorites(transformedFavorites);
       } catch (err) {
-        console.error('Error fetching favorites:', err);
+        console.error('[Favorites] Error fetching favorites:', err);
+        setError(err.request ? 'Cannot connect to server' : 'Failed to load favorites');
       } finally {
         setLoading(false);
       }

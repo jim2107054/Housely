@@ -1,13 +1,12 @@
 import {
   View,
   Text,
-  ScrollView,
   Image,
   TouchableOpacity,
   FlatList,
+  ActivityIndicator,
 } from "react-native";
 import { useEffect, useState } from "react";
-import { ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -36,11 +35,15 @@ const OwnerProperties = () => {
   const insets = useSafeAreaInsets();
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchProperties = async () => {
       setLoading(true);
+      setError(null);
       try {
+        console.log('[Properties] Fetching properties...');
         const response = await api.get('/api/houses/my-houses');
         const transformedHouses = response.data.houses.map(h => ({
           ...h,
@@ -54,7 +57,8 @@ const OwnerProperties = () => {
         }));
         setProperties(transformedHouses);
       } catch (err) {
-        console.error('Error fetching agent houses:', err);
+        console.error('[Properties] Error fetching agent houses:', err);
+        setError(err.request ? 'Cannot connect to server' : 'Failed to load properties');
       } finally {
         setLoading(false);
       }
