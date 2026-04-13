@@ -1,4 +1,4 @@
-import { View, Text, Image, TouchableOpacity, ScrollView } from 'react-native'
+import { View, Text, Image, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native'
 import React from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -7,7 +7,7 @@ import useAuthStore from '../../store/authStore'
 import Toast from 'react-native-toast-message'
 
 const Profile = () => {
-  const { user, logout } = useAuthStore();
+  const { user, logout, isLoading } = useAuthStore();
 
   const menuItems = [
     {
@@ -81,6 +81,12 @@ const Profile = () => {
         </Text>
       </View>
 
+      {isLoading ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color="#6C5CE7" />
+          <Text style={{ marginTop: 12, color: '#888', fontSize: 14 }}>Loading profile...</Text>
+        </View>
+      ) : (
       <ScrollView className="flex-1">
         {/* Profile Section */}
         <View className="items-center py-8 px-4">
@@ -90,7 +96,7 @@ const Profile = () => {
             className="relative mb-4"
           >
             <Image
-              source={require('../../assets/images/profileImage.png')}
+              source={user?.avatar ? { uri: user.avatar } : require('../../assets/images/profileImage.png')}
               className="w-[100px] h-[100px] rounded-full"
             />
             <View className="absolute bottom-0 right-0 bg-[#6C5CE7] rounded-[15px] w-[30px] h-[30px] justify-center items-center border-2 border-white">
@@ -141,6 +147,7 @@ const Profile = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      )}
     </SafeAreaView>
   )
 }

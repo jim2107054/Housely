@@ -6,25 +6,39 @@ import {
   TouchableOpacity,
   FlatList,
 } from "react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import api from "../../services/api";
 
-// Import data (structured like backend API response)
-import { topLocationsScreen as topLocationsData } from "../../data/dummyData";
 
-//!api calls - uncomment when connecting backend
-// import api from "../../services/api";
-// useEffect(() => {
-//   const fetchLocations = async () => {
-//     const response = await api.get('/api/locations/top');
-//     setLocations(response.data.locations);
-//   };
-//   fetchLocations();
-// }, []);
 
 const TopLocations = () => {
   const router = useRouter();
+  const [locations, setLocations] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchLocations = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get('/api/houses/top-locations');
+        const transformed = response.data.locations.map((loc, index) => ({
+          id: String(index),
+          name: loc.city,
+          properties: loc._count.id,
+          image: { uri: `https://source.unsplash.com/featured/?${loc.city},city` }
+        }));
+        setLocations(transformed);
+      } catch (err) {
+        console.error('Error fetching top locations:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLocations();
+  }, []);
 
   // Header Component
   const Header = () => (
@@ -69,13 +83,19 @@ const TopLocations = () => {
   return (
     <View className="flex-1 bg-white">
       <Header />
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {topLocationsData.map((item) => (
-          <LocationCard key={item.id} item={item} />
-        ))}
-        {/* Bottom spacing */}
-        <View className="h-24" />
-      </ScrollView>
+      {loading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#6C5CE7" />
+        </View>
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {locations.map((item) => (
+            <LocationCard key={item.id} item={item} />
+          ))}
+          {/* Bottom spacing */}
+          <View className="h-24" />
+        </ScrollView>
+      )}
     </View>
   );
 };

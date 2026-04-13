@@ -6,21 +6,15 @@ import {
   TextInput,
   FlatList,
 } from "react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ownerConversations, chatConversations } from "../../data/dummyData";
+import api from "../../services/api";
+import useAuthStore from "../../store/authStore";
 
-//!api calls - uncomment when connecting backend
-// import api from "../../services/api";
-// useEffect(() => {
-//   const fetchConversations = async () => {
-//     const response = await api.get('/api/messages/conversations');
-//     setConversations(response.data.conversations);
-//   };
-//   fetchConversations();
-// }, []);
+
 
 const COLORS = {
   primary: "#7B61FF",
@@ -33,9 +27,37 @@ const COLORS = {
 const OwnerMessages = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { user } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState("");
-  // Use chatConversations (screen-ready format) for display
-  const [conversations] = useState(chatConversations);
+  const [conversations, setConversations] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchConversations = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get('/api/conversations');
+        const transformed = response.data.conversations.map(c => {
+          const otherParticipant = c.participants.find(p => p.user.id !== user.id)?.user;
+          return {
+            id: c.id,
+            name: otherParticipant?.name || 'Unknown User',
+            avatar: otherParticipant?.avatar || 'https://via.placeholder.com/150',
+            lastMessage: c.lastMessage?.content || 'No messages yet',
+            timestamp: c.lastMessage ? new Date(c.lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+            unread: c._count?.messages || 0, // Simplified unread
+            online: false,
+          };
+        });
+        setConversations(transformed);
+      } catch (err) {
+        console.error('Error fetching owner conversations:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchConversations();
+  }, []);
 
   const filteredConversations = conversations.filter(
     (chat) =>
@@ -159,20 +181,26 @@ const OwnerMessages = () => {
         </View>
       </View>
 
-      <FlatList
-        data={filteredConversations}
-        keyExtractor={(item) => item.id}
-        renderItem={renderConversation}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={{ alignItems: "center", marginTop: 60 }}>
-            <Ionicons name="chatbubbles-outline" size={60} color="#E0E0E0" />
-            <Text style={{ fontSize: 16, color: COLORS.textSecondary, marginTop: 12 }}>
-              No conversations yet
-            </Text>
-          </View>
-        }
-      />
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      ) : (
+        <FlatList
+          data={filteredConversations}
+          keyExtractor={(item) => item.id}
+          renderItem={renderConversation}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={{ alignItems: "center", marginTop: 60 }}>
+              <Ionicons name="chatbubbles-outline" size={60} color="#E0E0E0" />
+              <Text style={{ fontSize: 16, color: COLORS.textSecondary, marginTop: 12 }}>
+                No conversations yet
+              </Text>
+            </View>
+          }
+        />
+      )}
     </View>
   );
 };

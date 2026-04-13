@@ -11,17 +11,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 // Import data (structured like backend API response)
-import { recentlyViewedScreenData } from '../../data/dummyData';
+import api from '../../services/api';
+import { useEffect } from 'react';
+import { ActivityIndicator } from 'react-native';
 
-//!api calls - uncomment when connecting backend
-// import api from '../../services/api';
-// useEffect(() => {
-//   const fetchRecentlyViewed = async () => {
-//     const response = await api.get('/api/houses/recently-viewed');
-//     setRecentItems(response.data.recentlyViewed);
-//   };
-//   fetchRecentlyViewed();
-// }, []);
+
 
 // Design Tokens
 const COLORS = {
@@ -271,7 +265,33 @@ const EmptyState = () => (
 
 const RecentViewed = () => {
   const router = useRouter();
-  const [recentItems, setRecentItems] = useState(recentlyViewedScreenData);
+  const [recentItems, setRecentItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchRecentlyViewed = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get('/api/users/me/recent-viewed');
+        const transformedItems = response.data.houses.map(h => ({
+          ...h,
+          name: h.name,
+          location: `${h.area}, ${h.city}`,
+          price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
+          priceType: h.listingType === 'RENT' ? 'month' : 'total',
+          image: h.images?.[0]?.url || 'https://via.placeholder.com/150',
+          rating: h.rating || 4.5,
+          viewedAt: h.viewedAt,
+        }));
+        setRecentItems(transformedItems);
+      } catch (err) {
+        console.error('Error fetching recently viewed:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRecentlyViewed();
+  }, []);
 
   // Group items by time period
   const groupedItems = groupByTimePeriod(recentItems);
@@ -412,7 +432,11 @@ const RecentViewed = () => {
       </View>
 
       {/* Content */}
-      {recentItems.length === 0 ? (
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      ) : recentItems.length === 0 ? (
         <EmptyState />
       ) : (
         <FlatList

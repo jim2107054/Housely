@@ -4,26 +4,16 @@ import {
   Image,
   TouchableOpacity,
   FlatList,
+  ActivityIndicator,
 } from "react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
-import { ownerBookings } from "../../data/dummyData";
+import api from "../../services/api";
 
-//!api calls - uncomment when connecting backend
-// import api from "../../services/api";
-// useEffect(() => {
-//   const fetchBookings = async () => {
-//     const response = await api.get('/api/bookings/agent-bookings');
-//     setBookings(response.data.bookings);
-//   };
-//   fetchBookings();
-// }, []);
-// const handleUpdateStatus = async (bookingId, status) => {
-//   await api.patch(`/api/bookings/${bookingId}/status`, { status });
-// };
+
 
 const COLORS = {
   primary: "#7B61FF",
@@ -47,24 +37,57 @@ const statusConfig = {
 };
 
 const OwnerBookings = () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState("PENDING");
-  const [bookings, setBookings] = useState(ownerBookings);
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchBookings = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        console.log('[Bookings] Fetching bookings...');
+        const response = await api.get('/api/bookings/agent/all');
+        setBookings(response.data.bookings || []);
+      } catch (err) {
+        console.error('[Bookings] Error fetching agent bookings:', err);
+        setError(err.request ? 'Cannot connect to server' : 'Failed to load bookings');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBookings();
+  }, []);
 
   const filteredBookings = bookings.filter((b) => b.status === activeTab);
 
-  const handleAction = (bookingId, action) => {
-    setBookings((prev) =>
-      prev.map((b) =>
-        b.id === bookingId ? { ...b, status: action === "accept" ? "CONFIRMED" : "CANCELLED" } : b
-      )
-    );
-    Toast.show({
-      type: "success",
-      text1: action === "accept" ? "Booking Accepted" : "Booking Declined",
-      text2: action === "accept" ? "The tenant has been notified." : "The booking has been cancelled.",
-    });
+  const handleAction = async (bookingId, action) => {
+    const newStatus = action === "accept" ? "CONFIRMED" : "CANCELLED";
+    try {
+      await api.patch(`/api/bookings/agent/${bookingId}/status`, { status: newStatus });
+      setBookings((prev) =>
+        prev.map((b) =>
+          b.id === bookingId ? { ...b, status: newStatus } : b
+        )
+      );
+      Toast.show({
+        type: "success",
+        text1: action === "accept" ? "Booking Accepted" : "Booking Declined",
+        text2: action === "accept" ? "The tenant has been notified." : "The booking has been cancelled.",
+      });
+    } catch (err) {
+      console.error('Error updating booking status:', err);
+      Toast.show({
+        type: "error",
+        text1: "Update Failed",
+        text2: "Please try again later.",
+      });
+    }
   };
 
   const renderBooking = ({ item }) => {
@@ -207,21 +230,27 @@ const OwnerBookings = () => {
         })}
       </View>
 
-      <FlatList
-        data={filteredBookings}
-        keyExtractor={(item) => item.id}
-        renderItem={renderBooking}
-        contentContainerStyle={{ paddingTop: 4, paddingBottom: 30 }}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={{ alignItems: "center", marginTop: 60 }}>
-            <Ionicons name="calendar-outline" size={60} color="#E0E0E0" />
-            <Text style={{ fontSize: 16, color: COLORS.textSecondary, marginTop: 12 }}>
-              No {activeTab.toLowerCase()} bookings
-            </Text>
-          </View>
-        }
-      />
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      ) : (
+        <FlatList
+          data={filteredBookings}
+          keyExtractor={(item) => item.id}
+          renderItem={renderBooking}
+          contentContainerStyle={{ paddingTop: 4, paddingBottom: 30 }}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={{ alignItems: "center", marginTop: 60 }}>
+              <Ionicons name="calendar-outline" size={60} color="#E0E0E0" />
+              <Text style={{ fontSize: 16, color: COLORS.textSecondary, marginTop: 12 }}>
+                No {activeTab.toLowerCase()} bookings
+              </Text>
+            </View>
+          }
+        />
+      )}
     </View>
   );
 };

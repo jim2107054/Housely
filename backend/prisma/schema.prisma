@@ -59,6 +59,7 @@ model User {
   password     String?
   phoneNumber  String?      @unique
   name         String?
+  bio          String?
   dateOfBirth  DateTime?
   avatar       String?
   role         Role         @default(USER)
@@ -165,6 +166,10 @@ model HouseVideo {
 model PublicFacility {
   id                   String @id @default(cuid())
   houseId              String @unique
+  wifi                 Boolean @default(false)
+  water                Boolean @default(false)
+  electricity          Boolean @default(false)
+  parking              Boolean @default(false)
   mosqueDistance        Float?
   hospitalDistance      Float?
   shoppingMallDistance  Float?

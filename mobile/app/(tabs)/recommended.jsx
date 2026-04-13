@@ -5,34 +5,53 @@ import {
   Image,
   TouchableOpacity,
 } from "react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-
-// Import SVG icons
 import LocationIcon from "../../assets/images/home-icons/Location.svg";
+import api from "../../services/api";
 
-// Import data (structured like backend API response)
-import { recommendedPropertiesScreen as recommendedProperties } from "../../data/dummyData";
 
-//!api calls - uncomment when connecting backend
-// import api from "../../services/api";
-// useEffect(() => {
-//   const fetchRecommended = async () => {
-//     const response = await api.get('/api/houses?sortBy=recommended');
-//     setProperties(response.data.houses);
-//   };
-//   fetchRecommended();
-// }, []);
 
 const Recommended = () => {
   const router = useRouter();
-  const [favorites, setFavorites] = useState(["1", "5"]);
+  const [properties, setProperties] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const toggleFavorite = (id) => {
-    setFavorites((prev) =>
-      prev.includes(id) ? prev.filter((fId) => fId !== id) : [...prev, id]
-    );
+  useEffect(() => {
+    const fetchRecommended = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get('/api/houses/recommended');
+        const transformed = response.data.houses.map(h => ({
+          ...h,
+          name: h.name,
+          location: `${h.area}, ${h.city}`,
+          price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
+          image: h.images?.[0]?.url || 'https://via.placeholder.com/150',
+          rating: h.rating || 4.5,
+          isFavorite: h.favorites?.length > 0,
+        }));
+        setProperties(transformed);
+      } catch (err) {
+        console.error('Error fetching recommended properties:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRecommended();
+  }, []);
+
+  const toggleFavorite = async (id) => {
+    try {
+      const response = await api.post(`/api/houses/${id}/favorite`);
+      setProperties(prev => prev.map(p => 
+        p.id === id ? { ...p, isFavorite: response.data.isFavorite } : p
+      ));
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
+    }
   };
 
   // Header Component
@@ -92,9 +111,9 @@ const Recommended = () => {
         className="ml-2"
       >
         <Ionicons
-          name={favorites.includes(item.id) ? "heart" : "heart-outline"}
+          name={item.isFavorite ? "heart" : "heart-outline"}
           size={24}
-          color={favorites.includes(item.id) ? "#FF6B6B" : "#DADADA"}
+          color={item.isFavorite ? "#FF6B6B" : "#DADADA"}
         />
       </TouchableOpacity>
     </TouchableOpacity>
@@ -103,13 +122,19 @@ const Recommended = () => {
   return (
     <View className="flex-1 bg-white">
       <Header />
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {recommendedProperties.map((item) => (
-          <RecommendedCard key={item.id} item={item} />
-        ))}
-        {/* Bottom spacing */}
-        <View className="h-24" />
-      </ScrollView>
+      {loading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#6C5CE7" />
+        </View>
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {properties.map((item) => (
+            <RecommendedCard key={item.id} item={item} />
+          ))}
+          {/* Bottom spacing */}
+          <View className="h-24" />
+        </ScrollView>
+      )}
     </View>
   );
 };
