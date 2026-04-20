@@ -66,7 +66,7 @@ export default function PaymentsPage() {
       accessorKey: "user",
       header: "User",
       cell: ({ row }) => {
-        const user = row.original.booking.user;
+        const user = row.original.user;
         return (
           <div className="flex items-center gap-3">
             <Avatar className="w-8 h-8">
@@ -87,11 +87,11 @@ export default function PaymentsPage() {
       accessorKey: "property",
       header: "Property",
       cell: ({ row }) => {
-        const house = row.original.booking.house;
+        const booking = row.original.booking;
+        if (!booking) return <span className="text-gray-400">—</span>;
         return (
           <div>
-            <p className="font-medium">{house.name}</p>
-            <p className="text-sm text-gray-500">{house.city}</p>
+            <p className="font-medium">{booking.house.name}</p>
           </div>
         );
       },
@@ -117,7 +117,7 @@ export default function PaymentsPage() {
         return (
           <span
             className={`font-semibold ${
-              status === "SUCCESS"
+              status === "COMPLETED"
                 ? "text-green-600"
                 : status === "FAILED"
                 ? "text-red-600"
