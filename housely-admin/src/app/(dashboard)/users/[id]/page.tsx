@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -102,9 +103,9 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                 <div className="flex gap-2 mb-4">
                   <StatusBadge type="role" value={user.role} />
                   {user.isVerified && (
-                    <StatusBadge type="house" value="AVAILABLE" className="bg-green-100 text-green-800">
+                    <Badge className="bg-green-100 text-green-800">
                       Verified
-                    </StatusBadge>
+                    </Badge>
                   )}
                 </div>
               </div>
