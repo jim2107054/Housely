@@ -45,9 +45,9 @@ export interface Booking {
   paymentStatus: "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
   notes: string | null;
   createdAt: string;
-  user: { id: string; username: string; name: string | null; avatar: string | null; email: string };
-  agent: { id: string; username: string; name: string | null; avatar: string | null };
-  house: { id: string; name: string; city: string; images: { url: string }[]; agent: { id: string; username: string; name: string | null; avatar: string | null } };
+  user: { id: string; username: string; name: string | null; avatar: string | null; email: string; phoneNumber: string | null };
+  agent: { id: string; username: string; name: string | null; avatar: string | null; email: string };
+  house: { id: string; name: string; city: string; images: { url: string }[]; agent: { id: string; username: string; name: string | null; avatar: string | null; email: string } };
   payments: Payment[];
 }
 
