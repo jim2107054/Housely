@@ -58,8 +58,8 @@ export default function BookingDetailPage({ params }: { params: { id: string } }
     updateStatus.mutate({ bookingId: booking.id, status });
   };
 
-  const startDate = new Date(booking.startDate);
-  const endDate = new Date(booking.endDate);
+  const startDate = new Date(booking.checkIn);
+  const endDate = new Date(booking.checkOut);
   const duration = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
 
   return (
@@ -181,14 +181,14 @@ export default function BookingDetailPage({ params }: { params: { id: string } }
                   <p className="text-sm text-gray-500 mb-1">Check-in</p>
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-gray-600" />
-                    <span className="font-medium">{formatDate(booking.startDate)}</span>
+                    <span className="font-medium">{formatDate(booking.checkIn)}</span>
                   </div>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Check-out</p>
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-gray-600" />
-                    <span className="font-medium">{formatDate(booking.endDate)}</span>
+                    <span className="font-medium">{formatDate(booking.checkOut)}</span>
                   </div>
                 </div>
               </div>
