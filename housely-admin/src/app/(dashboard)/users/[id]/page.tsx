@@ -192,7 +192,7 @@ export default function UserDetailPage({ params }: { params: { id: string } }) {
                 <Label htmlFor="role">User Role</Label>
                 <Select
                   value={selectedRole}
-                  onValueChange={setSelectedRole}
+                  onValueChange={(value) => value && setSelectedRole(value as "ADMIN" | "USER" | "AGENT")}
                   disabled={updateRole.isPending}
                 >
                   <SelectTrigger>
