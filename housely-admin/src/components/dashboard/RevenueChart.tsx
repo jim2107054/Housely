@@ -22,7 +22,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
             <XAxis dataKey="date" tick={{ fontSize: 12 }} />
             <YAxis tick={{ fontSize: 12 }} />
             <Tooltip
-              formatter={(value: number) => formatCurrency(value)}
+              formatter={(value) => (value !== undefined && value !== null ? formatCurrency(Number(value)) : "N/A")}
               contentStyle={{ fontSize: 12 }}
             />
             <Line
