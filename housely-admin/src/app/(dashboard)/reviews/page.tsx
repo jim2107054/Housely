@@ -79,7 +79,7 @@ export default function ReviewsPage() {
         {[5, 4, 3, 2, 1].map((rating) => (
           <Button
             key={rating}
-            variant={filters.minRating === String(rating) ? "default" : "outline"}
+            variant={filters.minRating === rating ? "default" : "outline"}
             size="sm"
             onClick={() => setRatingFilter(rating)}
           >
