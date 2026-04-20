@@ -72,7 +72,7 @@ export interface Review {
   comment: string | null;
   createdAt: string;
   user: { id: string; username: string; name: string | null; avatar: string | null };
-  house: { id: string; name: string; city: string; agent: { id: string; username: string; name: string | null } };
+  house: { id: string; name: string; city: string; agent: { id: string; username: string; name: string | null; avatar: string | null } };
   media: { id: string; url: string; type: string }[];
 }
 
