@@ -209,25 +209,6 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
               </div>
             </CardContent>
           </Card>
-
-          {/* Facilities */}
-          {house.facilities && house.facilities.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Facilities & Amenities</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {house.facilities.map((facility, i) => (
-                    <Badge key={i} variant="secondary" className="flex items-center gap-1">
-                      <CheckCircle className="w-3 h-3" />
-                      {facility}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
 
         {/* Sidebar */}
