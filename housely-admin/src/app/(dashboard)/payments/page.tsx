@@ -50,7 +50,7 @@ export default function PaymentsPage() {
       cell: ({ row }) => {
         const status = row.original.status;
         let icon;
-        if (status === "SUCCESS") icon = <CheckCircle className="w-4 h-4 text-green-500" />;
+        if (status === "COMPLETED") icon = <CheckCircle className="w-4 h-4 text-green-500" />;
         else if (status === "FAILED") icon = <XCircle className="w-4 h-4 text-red-500" />;
         else icon = <Clock className="w-4 h-4 text-amber-500" />;
 
