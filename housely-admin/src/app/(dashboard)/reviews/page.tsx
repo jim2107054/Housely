@@ -161,7 +161,7 @@ export default function ReviewsPage() {
                           className="w-20 h-20 rounded overflow-hidden bg-gray-100 relative"
                         >
                           <Image
-                            src={mediaUrl}
+                            src={mediaUrl.url}
                             alt={`Review media ${i + 1}`}
                             fill
                             className="object-cover"
