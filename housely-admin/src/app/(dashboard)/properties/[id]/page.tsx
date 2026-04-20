@@ -120,7 +120,7 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
                   <div className="flex items-center gap-2 text-gray-600">
                     <MapPin className="w-4 h-4" />
                     <span>
-                      {house.area}, {house.city}, {house.country}
+                      {house.area && `${house.area}, `}{house.city}
                     </span>
                   </div>
                 </div>
