@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import { useQuery } from "@tanstack/react-query";
 import { useUpdatePropertyStatus, useDeleteProperty } from "@/hooks/useProperties";
-import { api } from "@/lib/api";
+import api from "@/lib/api";
 import { formatCurrency, formatDate, getInitials } from "@/lib/utils";
 import {
   ArrowLeft,
