@@ -157,14 +157,12 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
                   <Bath className="w-5 h-5 text-gray-600" />
                   <span>{house.bathrooms} Baths</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Square className="w-5 h-5 text-gray-600" />
-                  <span>{house.area} sqft</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Home className="w-5 h-5 text-gray-600" />
-                  <span>{house.floors} Floors</span>
-                </div>
+                {house.sizeInSqft && (
+                  <div className="flex items-center gap-2">
+                    <Square className="w-5 h-5 text-gray-600" />
+                    <span>{house.sizeInSqft} sqft</span>
+                  </div>
+                )}
               </div>
 
               <Separator />
