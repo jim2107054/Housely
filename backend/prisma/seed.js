@@ -183,6 +183,32 @@ async function main() {
     prisma.user.deleteMany(),
   ]);
 
+  // ─── Create Admin User ───
+  const adminPassword = await bcrypt.hash('admin123', 10);
+  const adminUser = await prisma.user.create({
+    data: {
+      username: 'admin',
+      email: 'admin@housely.dev',
+      password: adminPassword,
+      name: 'Admin',
+      phoneNumber: '+8801700000000',
+      avatar: 'https://picsum.photos/seed/admin/300/300',
+      role: 'ADMIN',
+      isVerified: true,
+    },
+  });
+  await prisma.notificationSettings.create({
+    data: {
+      userId: adminUser.id,
+      pushEnabled: true,
+      emailEnabled: true,
+      smsEnabled: false,
+      bookingUpdates: true,
+      promotions: false,
+    },
+  });
+  console.log('✅ Admin user created:', adminUser.email);
+
   // ─── Create house owners (agents) ───
   const owners = [];
   for (const owner of OWNER_DATA) {
