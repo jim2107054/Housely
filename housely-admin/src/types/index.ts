@@ -16,6 +16,7 @@ export interface User {
 export interface House {
   id: string;
   name: string;
+  description: string | null;
   city: string;
   area: string | null;
   address: string;
