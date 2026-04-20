@@ -10,6 +10,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
+// Import data (structured like backend API response)
+import api from '../../services/api';
+import { useEffect } from 'react';
+import { ActivityIndicator } from 'react-native';
+
+
+
 // Design Tokens
 const COLORS = {
   primary: '#7B61FF',
@@ -21,60 +28,6 @@ const COLORS = {
   pending: '#FF9800',
   failed: '#F44336',
 };
-
-// Mock Payment History Data
-const paymentHistoryData = [
-  {
-    id: '1',
-    propertyName: 'Batavia Apartments',
-    propertyImage: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&q=80',
-    amount: 620,
-    date: '12 Aug 2024',
-    status: 'completed',
-    paymentMethod: 'Credit Card',
-    transactionId: 'TXN-2024-001234',
-  },
-  {
-    id: '2',
-    propertyName: 'Takatea Homestay',
-    propertyImage: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400&q=80',
-    amount: 450,
-    date: '08 Aug 2024',
-    status: 'completed',
-    paymentMethod: 'Bank Transfer',
-    transactionId: 'TXN-2024-001189',
-  },
-  {
-    id: '3',
-    propertyName: 'Villa Paradise',
-    propertyImage: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=400&q=80',
-    amount: 890,
-    date: '01 Aug 2024',
-    status: 'pending',
-    paymentMethod: 'Credit Card',
-    transactionId: 'TXN-2024-001102',
-  },
-  {
-    id: '4',
-    propertyName: 'Sunset Apartment',
-    propertyImage: 'https://images.unsplash.com/photo-1600607687644-c7171b42498f?w=400&q=80',
-    amount: 280,
-    date: '25 Jul 2024',
-    status: 'failed',
-    paymentMethod: 'Debit Card',
-    transactionId: 'TXN-2024-001045',
-  },
-  {
-    id: '5',
-    propertyName: 'Green Valley Resort',
-    propertyImage: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400&q=80',
-    amount: 320,
-    date: '20 Jul 2024',
-    status: 'completed',
-    paymentMethod: 'E-Wallet',
-    transactionId: 'TXN-2024-000998',
-  },
-];
 
 // Status Badge Component
 const StatusBadge = ({ status }) => {
@@ -160,7 +113,7 @@ const PaymentCard = ({ payment, onPress }) => {
       {/* Top Row with Property Info */}
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <Image
-          source={{ uri: payment.propertyImage }}
+          source={{ uri: payment.booking?.house?.images?.[0]?.url || 'https://via.placeholder.com/150' }}
           style={{
             width: 56,
             height: 56,
@@ -177,7 +130,7 @@ const PaymentCard = ({ payment, onPress }) => {
             }}
             numberOfLines={1}
           >
-            {payment.propertyName}
+            {payment.booking?.house?.name || "Unknown Property"}
           </Text>
           <Text
             style={{
@@ -186,10 +139,10 @@ const PaymentCard = ({ payment, onPress }) => {
               marginTop: 2,
             }}
           >
-            {payment.date}
+            {new Date(payment.createdAt).toLocaleDateString()}
           </Text>
         </View>
-        <StatusBadge status={payment.status} />
+        <StatusBadge status={payment.status.toLowerCase()} />
       </View>
 
       {/* Divider */}
@@ -205,10 +158,10 @@ const PaymentCard = ({ payment, onPress }) => {
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <View>
           <Text style={{ fontSize: 11, color: COLORS.textSecondary }}>
-            {payment.paymentMethod}
+            {payment.method || "Payment"}
           </Text>
           <Text style={{ fontSize: 10, color: COLORS.textSecondary, marginTop: 2 }}>
-            {payment.transactionId}
+            {payment.transactionId || payment.id}
           </Text>
         </View>
         <Text
@@ -226,13 +179,13 @@ const PaymentCard = ({ payment, onPress }) => {
 };
 
 // Summary Card Component
-const SummaryCard = () => {
-  const totalPaid = paymentHistoryData
-    .filter((p) => p.status === 'completed')
+const SummaryCard = ({ payments }) => {
+  const totalPaid = payments
+    .filter((p) => p.status === 'COMPLETED')
     .reduce((sum, p) => sum + p.amount, 0);
   
-  const pendingAmount = paymentHistoryData
-    .filter((p) => p.status === 'pending')
+  const pendingAmount = payments
+    .filter((p) => p.status === 'PENDING')
     .reduce((sum, p) => sum + p.amount, 0);
 
   return (
@@ -257,7 +210,7 @@ const SummaryCard = () => {
             Completed
           </Text>
           <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '600', marginTop: 2 }}>
-            {paymentHistoryData.filter((p) => p.status === 'completed').length} transactions
+            {payments.filter((p) => p.status === 'COMPLETED').length} transactions
           </Text>
         </View>
         <View style={{ flex: 1 }}>
@@ -265,7 +218,7 @@ const SummaryCard = () => {
             Pending
           </Text>
           <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '600', marginTop: 2 }}>
-            ${pendingAmount}
+            ${pendingAmount.toLocaleString()}
           </Text>
         </View>
       </View>
@@ -275,12 +228,29 @@ const SummaryCard = () => {
 
 const PaymentHistory = () => {
   const router = useRouter();
+  const [payments, setPayments] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
+
+  useEffect(() => {
+    const fetchPayments = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get('/api/users/me/payment-history');
+        setPayments(response.data.payments || []);
+      } catch (err) {
+        console.error('Error fetching payments:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPayments();
+  }, []);
 
   const filteredPayments =
     filterStatus === 'all'
-      ? paymentHistoryData
-      : paymentHistoryData.filter((p) => p.status === filterStatus);
+      ? payments
+      : payments.filter((p) => p.status.toLowerCase() === filterStatus.toLowerCase());
 
   const FilterPill = ({ status, label }) => (
     <TouchableOpacity
@@ -340,37 +310,43 @@ const PaymentHistory = () => {
         </Text>
       </View>
 
-      <FlatList
-        data={filteredPayments}
-        keyExtractor={(item) => item.id}
-        ListHeaderComponent={() => (
-          <>
-            <SummaryCard />
-            
-            {/* Filter Pills */}
-            <View
-              style={{
-                flexDirection: 'row',
-                paddingHorizontal: 16,
-                marginBottom: 8,
-              }}
-            >
-              <FilterPill status="all" label="All" />
-              <FilterPill status="completed" label="Completed" />
-              <FilterPill status="pending" label="Pending" />
-              <FilterPill status="failed" label="Failed" />
-            </View>
-          </>
-        )}
-        renderItem={({ item }) => (
-          <PaymentCard
-            payment={item}
-            onPress={() => console.log('Payment details:', item.transactionId)}
-          />
-        )}
-        contentContainerStyle={{ paddingBottom: 100 }}
-        showsVerticalScrollIndicator={false}
-      />
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      ) : (
+        <FlatList
+          data={filteredPayments}
+          keyExtractor={(item) => item.id}
+          ListHeaderComponent={() => (
+            <>
+              <SummaryCard payments={payments} />
+              
+              {/* Filter Pills */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  paddingHorizontal: 16,
+                  marginBottom: 8,
+                }}
+              >
+                <FilterPill status="all" label="All" />
+                <FilterPill status="completed" label="Completed" />
+                <FilterPill status="pending" label="Pending" />
+                <FilterPill status="failed" label="Failed" />
+              </View>
+            </>
+          )}
+          renderItem={({ item }) => (
+            <PaymentCard
+              payment={item}
+              onPress={() => console.log('Payment details:', item.transactionId)}
+            />
+          )}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
     </SafeAreaView>
   );
 };

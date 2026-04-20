@@ -53,6 +53,8 @@ export const createReview = async (userId, data) => {
 // ─── Get Reviews for House ───
 
 export const getHouseReviews = async (houseId, { sortBy = 'newest', page = 1, limit = 20 }) => {
+  page = Number(page);
+  limit = Number(limit);
   const skip = (page - 1) * limit;
 
   // Check house exists
@@ -205,6 +207,28 @@ export const getUserReviews = async (userId, { page = 1, limit = 20 }) => {
       take: limit,
     }),
     prisma.review.count({ where: { userId } }),
+  ]);
+
+  return {
+    reviews,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  };
+};
+export const getAgentReviews = async (agentId, { page = 1, limit = 20 } = {}) => {
+  const skip = (page - 1) * limit;
+
+  const [reviews, total] = await Promise.all([
+    prisma.review.findMany({
+      where: { house: { agentId } },
+      include: {
+        ...reviewInclude,
+        house: { select: { id: true, name: true, city: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prisma.review.count({ where: { house: { agentId } } }),
   ]);
 
   return {

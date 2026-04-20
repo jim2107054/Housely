@@ -5,70 +5,61 @@ import {
   Image,
   TouchableOpacity,
 } from "react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-
-// Import SVG icons
 import LocationIcon from "../../assets/images/home-icons/Location.svg";
+import api from "../../services/api";
+import useLocationStore from "../../store/locationStore";
 
-// Sample data for nearby properties
-const nearbyProperties = [
-  {
-    id: "1",
-    name: "Maharani Villa Yogyakarta",
-    location: "Benhil, Jl. Bendungan Hilir Karet",
-    price: 320,
-    rating: 4.5,
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400",
-    isFavorite: false,
-  },
-  {
-    id: "2",
-    name: "Apartement Landmark",
-    location: "Jl. Tentara Pelajar No.47",
-    price: 320,
-    rating: 4.7,
-    image: "https://images.unsplash.com/photo-1600607687644-c7171b42498f?w=400",
-    isFavorite: true,
-  },
-  {
-    id: "3",
-    name: "Green Valley Resort",
-    location: "Jl. Sudirman No.123",
-    price: 450,
-    rating: 4.8,
-    image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400",
-    isFavorite: false,
-  },
-  {
-    id: "4",
-    name: "City Center Apartment",
-    location: "Jl. Gatot Subroto No.89",
-    price: 280,
-    rating: 4.6,
-    image: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400",
-    isFavorite: false,
-  },
-  {
-    id: "5",
-    name: "Riverside Villa",
-    location: "Jl. Raya Bogor No.56",
-    price: 390,
-    rating: 4.9,
-    image: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=400",
-    isFavorite: true,
-  },
-];
+
 
 const Nearby = () => {
   const router = useRouter();
-  const [favorites, setFavorites] = useState(["2", "5"]);
+  const { getCoordinates } = useLocationStore();
+  const [properties, setProperties] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const toggleFavorite = (id) => {
-    setFavorites((prev) =>
-      prev.includes(id) ? prev.filter((fId) => fId !== id) : [...prev, id]
-    );
+  useEffect(() => {
+    const fetchNearby = async () => {
+      setLoading(true);
+      try {
+        const coords = getCoordinates();
+        const response = await api.get('/api/houses/nearby', {
+          params: {
+            lat: coords.latitude,
+            lng: coords.longitude,
+          }
+        });
+        const transformed = response.data.houses.map(h => ({
+          ...h,
+          name: h.name,
+          location: `${h.area}, ${h.city}`,
+          price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
+          image: h.images?.[0]?.url || 'https://via.placeholder.com/150',
+          rating: h.rating || 4.5,
+          isFavorite: h.favorites?.length > 0,
+        }));
+        setProperties(transformed);
+      } catch (err) {
+        console.error('Error fetching nearby properties:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchNearby();
+  }, []);
+
+  const toggleFavorite = async (id) => {
+    try {
+      const response = await api.post(`/api/houses/${id}/favorite`);
+      setProperties(prev => prev.map(p => 
+        p.id === id ? { ...p, isFavorite: response.data.isFavorite } : p
+      ));
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
+    }
   };
 
   // Header Component
@@ -128,9 +119,9 @@ const Nearby = () => {
         className="ml-2"
       >
         <Ionicons
-          name={favorites.includes(item.id) ? "heart" : "heart-outline"}
+          name={item.isFavorite ? "heart" : "heart-outline"}
           size={24}
-          color={favorites.includes(item.id) ? "#FF6B6B" : "#DADADA"}
+          color={item.isFavorite ? "#FF6B6B" : "#DADADA"}
         />
       </TouchableOpacity>
     </TouchableOpacity>
@@ -139,13 +130,19 @@ const Nearby = () => {
   return (
     <View className="flex-1 bg-white">
       <Header />
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {nearbyProperties.map((item) => (
-          <NearbyCard key={item.id} item={item} />
-        ))}
-        {/* Bottom spacing */}
-        <View className="h-24" />
-      </ScrollView>
+      {loading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#6C5CE7" />
+        </View>
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {properties.map((item) => (
+            <NearbyCard key={item.id} item={item} />
+          ))}
+          {/* Bottom spacing */}
+          <View className="h-24" />
+        </ScrollView>
+      )}
     </View>
   );
 };

@@ -54,3 +54,12 @@ export const getMyReviews = async (req, res, next) => {
     next(err);
   }
 };
+
+export const getAgentReviews = async (req, res, next) => {
+  try {
+    const result = await reviewService.getAgentReviews(req.user.id, req.query);
+    return success(res, result, 'Reviews retrieved successfully');
+  } catch (err) {
+    next(err);
+  }
+};

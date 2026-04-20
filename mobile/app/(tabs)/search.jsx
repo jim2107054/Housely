@@ -15,6 +15,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// Import data (structured like backend API response)
+import api from '../../services/api';
+
+
+
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // Design Tokens
@@ -38,15 +43,6 @@ const COLORS = {
 
 // Storage Keys
 const RECENT_SEARCHES_KEY = 'housely_recent_searches';
-
-// Mock Search Results
-const mockSearchResults = [
-  { id: '1', name: 'Greenhost Boutique Hotel', location: 'Yogyakarta, Indonesia' },
-  { id: '2', name: 'Grand Keisha Yogyakarta', location: 'Yogyakarta, Indonesia' },
-  { id: '3', name: 'Jogja Village', location: 'Yogyakarta, Indonesia' },
-  { id: '4', name: 'Ambarrukmo Plaza', location: 'Yogyakarta, Indonesia' },
-  { id: '5', name: 'Hyatt Regency Yogyakarta', location: 'Yogyakarta, Indonesia' },
-];
 
 // Default Filter State
 const defaultFilters = {
@@ -580,14 +576,19 @@ const SearchScreen = () => {
     }
   };
 
-  const performSearch = (searchQuery) => {
-    const lowerQuery = searchQuery.toLowerCase();
-    const filtered = mockSearchResults.filter(
-      (item) =>
-        item.name.toLowerCase().includes(lowerQuery) ||
-        item.location.toLowerCase().includes(lowerQuery)
-    );
-    setResults(filtered);
+  const performSearch = async (searchQuery) => {
+    try {
+      const response = await api.get(`/api/houses?search=${searchQuery}`);
+      const transformed = response.data.houses.map(h => ({
+        id: h.id,
+        name: h.name,
+        location: `${h.area}, ${h.city}`,
+      }));
+      setResults(transformed);
+    } catch (err) {
+      console.error('Error performing search:', err);
+      setResults([]);
+    }
   };
 
   const handleClear = () => {

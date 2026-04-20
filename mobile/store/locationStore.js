@@ -83,10 +83,10 @@ const useLocationStore = create((set, get) => ({
         longitude: selectedLocation.longitude,
       };
     }
-    // Default to Yogyakarta if no location set
+    // Default to Dhaka, Bangladesh if no location set
     return {
-      latitude: -7.7956,
-      longitude: 110.3695,
+      latitude: 23.8103,
+      longitude: 90.4125,
     };
   },
 }));

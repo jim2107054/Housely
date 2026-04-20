@@ -1,4 +1,4 @@
-﻿import {
+import {
   View,
   Text,
   ScrollView,
@@ -8,6 +8,7 @@
   FlatList,
   Dimensions,
   Modal,
+  ActivityIndicator,
 } from "react-native";
 import { useState, useMemo } from "react";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,38 +19,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import LocationIcon from "../../assets/images/home-icons/Location.svg";
 import FilterIcon from "../../assets/images/home-icons/Filter.svg";
 
-// Import data
-import {
-  allProperties,
-  recommendedProperties,
-  nearbyPropertiesRow1,
-  nearbyPropertiesRow2,
-  popularProperties,
-} from "../../data/properties";
+// Import data (structured like backend API response)
+import api from "../../services/api";
+import { useEffect } from "react";
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = (width - 52) / 2; // Two cards per row with gaps
 
-// Combine all properties into one array
-const getAllHouses = () => {
-  const combined = [
-    ...allProperties,
-    ...recommendedProperties.map(p => ({ ...p, priceType: p.priceType || "month" })),
-    ...nearbyPropertiesRow1.map(p => ({ ...p, priceType: "month" })),
-    ...nearbyPropertiesRow2.map(p => ({ ...p, priceType: "month" })),
-    ...popularProperties,
-  ];
-  
-  // Remove duplicates by id
-  const uniqueMap = new Map();
-  combined.forEach(property => {
-    if (!uniqueMap.has(property.id)) {
-      uniqueMap.set(property.id, property);
-    }
-  });
-  
-  return Array.from(uniqueMap.values());
-};
+
 
 const categories = [
   { id: "all", name: "All", icon: "apps" },
@@ -74,43 +51,56 @@ const Explore = () => {
   const [viewMode, setViewMode] = useState("grid"); // grid or list
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [sortBy, setSortBy] = useState("default");
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 1000 });
+  const [priceRange, setPriceRange] = useState({ min: 0, max: 100000 });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [houses, setHouses] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const allHouses = useMemo(() => getAllHouses(), []);
+  useEffect(() => {
+    const fetchHouses = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        console.log('[Explore] Fetching houses...');
+        const params = {
+          q: searchQuery,
+          propertyType: selectedCategory !== "all" ? selectedCategory.toUpperCase() : undefined,
+          sortBy: sortBy === "default" ? "newest" : sortBy === "price_low" ? "price_asc" : sortBy === "price_high" ? "price_desc" : "most_popular",
+          minPrice: priceRange.min,
+          maxPrice: priceRange.max,
+        };
+        const response = await api.get('/api/filter', { params });
+        console.log('[Explore] Found', response.data.houses?.length || 0, 'houses');
+        const transformedHouses = response.data.houses.map(h => ({
+          id: h.id,
+          name: h.name,
+          location: `${h.area}, ${h.city}`,
+          price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
+          priceType: h.listingType === 'RENT' ? 'month' : 'total',
+          rating: h.rating || 4.5,
+          image: h.images?.[0]?.url || 'https://via.placeholder.com/300',
+          type: h.propertyType,
+        }));
+        setHouses(transformedHouses);
+      } catch (err) {
+        console.error('[Explore] Error fetching houses:', err);
+        setError('Failed to load properties. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Filter and sort properties
-  const filteredProperties = useMemo(() => {
-    let result = [...allHouses];
+    const timer = setTimeout(() => {
+      fetchHouses();
+    }, 500); // Debounce search
+
+    return () => clearTimeout(timer);
+  }, [selectedCategory, searchQuery, sortBy, priceRange]);
+
+  const filteredProperties = houses;
     
-    // Category filter
-    if (selectedCategory !== "all") {
-      result = result.filter(
-        p => p.type?.toLowerCase() === selectedCategory.toLowerCase()
-      );
-    }
-    
-    // Price range filter
-    result = result.filter(
-      p => p.price >= priceRange.min && p.price <= priceRange.max
-    );
-    
-    // Sort
-    switch (sortBy) {
-      case "price_low":
-        result.sort((a, b) => a.price - b.price);
-        break;
-      case "price_high":
-        result.sort((a, b) => b.price - a.price);
-        break;
-      case "rating":
-        result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        break;
-      default:
-        break;
-    }
-    
-    return result;
-  }, [allHouses, selectedCategory, sortBy, priceRange]);
+
 
   const toggleFavorite = (id) => {
     setFavorites((prev) =>
@@ -125,20 +115,25 @@ const Explore = () => {
         Explore
       </Text>
       
-      {/* Search Bar - Matching Home Screen Style */}
-      <TouchableOpacity 
-        className="flex-row items-center"
-        onPress={() => router.push("/(tabs)/search")}
-        activeOpacity={0.7}
-      >
+      {/* Search Bar - Functional */}
+      <View className="flex-row items-center gap-2">
         <View className="flex-1 flex-row items-center bg-cardBackground rounded-xl py-3 px-4 border border-border">
           <Ionicons name="search-outline" size={24} color="#6941C6" />
-          <Text className="flex-1 ml-3 text-textHint font-poppins text-base">
-            Search Property
-          </Text>
-          <FilterIcon width={24} height={24} color="#6941C6" />
+          <TextInput
+            className="flex-1 ml-3 text-textPrimary font-poppins text-base"
+            placeholder="Search Property"
+            placeholderTextColor="#A1A5C1"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
         </View>
-      </TouchableOpacity>
+        <TouchableOpacity
+          className="w-12 h-12 rounded-xl bg-primary items-center justify-center"
+          onPress={() => setShowFilterModal(true)}
+        >
+          <Ionicons name="options-outline" size={24} color="#FFFFFF" />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -407,7 +402,7 @@ const Explore = () => {
               className="flex-1 py-4 rounded-xl border border-primary"
               onPress={() => {
                 setSortBy("default");
-                setPriceRange({ min: 0, max: 1000 });
+                setPriceRange({ min: 0, max: 100000 });
               }}
             >
               <Text className="text-primary font-poppins-semibold text-center">
@@ -443,7 +438,8 @@ const Explore = () => {
         onPress={() => {
           setSearchQuery("");
           setSortBy("default");
-          setPriceRange({ min: 0, max: 1000 });
+          setPriceRange({ min: 0, max: 100000 });
+          setSelectedCategory("all");
         }}
       >
         <Text className="text-white font-poppins-semibold">Clear all filters</Text>
@@ -457,7 +453,27 @@ const Explore = () => {
       <CategoryFilter />
       <ResultsBar />
       
-      {filteredProperties.length === 0 ? (
+      {loading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#6941C6" />
+          <Text className="text-textSecondary font-poppins mt-3">Loading properties...</Text>
+        </View>
+      ) : error ? (
+        <View className="flex-1 items-center justify-center px-10">
+          <Ionicons name="cloud-offline-outline" size={64} color="#A1A5C1" />
+          <Text className="text-textPrimary font-poppins-bold text-lg mt-4">Connection Error</Text>
+          <Text className="text-textSecondary font-poppins text-sm text-center mt-2">{error}</Text>
+          <TouchableOpacity 
+            className="mt-6 px-6 py-3 bg-primary rounded-xl"
+            onPress={() => {
+              setError(null);
+              setLoading(true);
+            }}
+          >
+            <Text className="text-white font-poppins-semibold">Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : filteredProperties.length === 0 ? (
         <EmptyState />
       ) : viewMode === "grid" ? (
         <FlatList

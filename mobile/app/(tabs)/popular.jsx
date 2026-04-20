@@ -5,75 +5,54 @@ import {
   Image,
   TouchableOpacity,
 } from "react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-
-// Import SVG icons
 import LocationIcon from "../../assets/images/home-icons/Location.svg";
+import api from "../../services/api";
 
-// Sample data for popular properties
-const popularProperties = [
-  {
-    id: "1",
-    name: "Takatea Homestay",
-    location: "Jl. Tentara Pelajar No.47, RW.001",
-    price: 120,
-    priceType: "night",
-    rating: 4.5,
-    image: require("../../assets/images/popular/Rectangle 11.png"),
-    isFavorite: false,
-  },
-  {
-    id: "2",
-    name: "Maharani Villa Yogyakarta",
-    location: "Benhil, Jl. Bendungan Hilir Karet...",
-    price: 320,
-    priceType: "month",
-    rating: 4.5,
-    image: require("../../assets/images/popular/Rectangle 12.png"),
-    isFavorite: true,
-  },
-  {
-    id: "3",
-    name: "Bali Komang Guest",
-    location: "Nusa Penida, Bali",
-    price: 180,
-    priceType: "night",
-    rating: 4.5,
-    image: require("../../assets/images/popular/Rectangle 13.png"),
-    isFavorite: false,
-  },
-  {
-    id: "4",
-    name: "Batavia Apartments",
-    location: "Benhil, Jl. Bendungan Hilir Karet...",
-    price: 120,
-    priceType: "night",
-    rating: 4.5,
-    image: require("../../assets/images/popular/Rectangle 14.png"),
-    isFavorite: false,
-  },
-  {
-    id: "5",
-    name: "Manhattan Hotel",
-    location: "Jl. Prof. DR. Satrio No.Kav.19-24, RT.7/...",
-    price: 230,
-    priceType: "night",
-    rating: 4.5,
-    image: require("../../assets/images/popular/Rectangle 15.png"),
-    isFavorite: true,
-  },
-];
+
 
 const Popular = () => {
   const router = useRouter();
-  const [favorites, setFavorites] = useState(["2", "5"]);
+  const [properties, setProperties] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const toggleFavorite = (id) => {
-    setFavorites((prev) =>
-      prev.includes(id) ? prev.filter((fId) => fId !== id) : [...prev, id]
-    );
+  useEffect(() => {
+    const fetchPopular = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get('/api/houses/popular');
+        const transformed = response.data.houses.map(h => ({
+          ...h,
+          name: h.name,
+          location: `${h.area}, ${h.city}`,
+          price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
+          priceType: h.listingType === 'RENT' ? 'month' : 'total',
+          image: h.images?.[0]?.url || 'https://via.placeholder.com/150',
+          rating: h.rating || 4.5,
+          isFavorite: h.favorites?.length > 0,
+        }));
+        setProperties(transformed);
+      } catch (err) {
+        console.error('Error fetching popular properties:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPopular();
+  }, []);
+
+  const toggleFavorite = async (id) => {
+    try {
+      const response = await api.post(`/api/houses/${id}/favorite`);
+      setProperties(prev => prev.map(p => 
+        p.id === id ? { ...p, isFavorite: response.data.isFavorite } : p
+      ));
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
+    }
   };
 
   // Header Component
@@ -98,7 +77,7 @@ const Popular = () => {
       onPress={() => router.push({ pathname: "/(tabs)/propertyDetails", params: { id: item.id } })}
     >
       <Image
-        source={item.image}
+        source={{ uri: item.image }}
         className="w-20 h-20 rounded-xl"
         resizeMode="cover"
       />
@@ -134,9 +113,9 @@ const Popular = () => {
         className="p-2"
       >
         <Ionicons
-          name={favorites.includes(item.id) ? "heart" : "heart-outline"}
+          name={item.isFavorite ? "heart" : "heart-outline"}
           size={22}
-          color={favorites.includes(item.id) ? "#FF6B6B" : "#DADADA"}
+          color={item.isFavorite ? "#FF6B6B" : "#DADADA"}
         />
       </TouchableOpacity>
     </TouchableOpacity>
@@ -145,13 +124,19 @@ const Popular = () => {
   return (
     <View className="flex-1 bg-white">
       <Header />
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {popularProperties.map((item) => (
-          <PopularCard key={item.id} item={item} />
-        ))}
-        {/* Bottom spacing */}
-        <View className="h-24" />
-      </ScrollView>
+      {loading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#6C5CE7" />
+        </View>
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {properties.map((item) => (
+            <PopularCard key={item.id} item={item} />
+          ))}
+          {/* Bottom spacing */}
+          <View className="h-24" />
+        </ScrollView>
+      )}
     </View>
   );
 };

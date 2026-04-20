@@ -8,189 +8,132 @@ import {
   Modal,
   Linking,
   Share,
-  Platform,
+  ActivityIndicator,
+  StatusBar,
+  FlatList,
 } from "react-native";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { WebView } from "react-native-webview";
+import api from "../../services/api";
+import { useEffect } from "react";
 
-// Import SVG icons
-import LocationIcon from "../../assets/images/home-icons/Location.svg";
+const { width, height } = Dimensions.get("window");
+const AUTO_SCROLL_INTERVAL = 4000;
 
-const { width } = Dimensions.get("window");
-
-// Sample property data (this would typically come from an API or route params)
-const propertiesData = {
-  "1": {
-    id: "1",
-    name: "House of Mormon",
-    location: "Denpasar, Bali",
-    price: 310,
-    priceType: "month",
-    rating: 4.5,
-    images: [
-      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800",
-      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400",
-      "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=400",
-      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400",
-    ],
-    bedrooms: 3,
-    bathrooms: 2,
-    area: 1880,
-    buildYear: 2020,
-    parking: "1 Indoor",
-    status: "For Rent",
-    description:
-      "Lorem ipsum is simply dummy text of the printing and typesetting industry. 1500s, when an unknown printer took a type specimen book. Lorem ipsum is simply dummy text of the printing and typesetting industry.",
-    agent: {
-      name: "Esther Howard",
-      role: "Real Estate Agent",
-      image: "https://randomuser.me/api/portraits/women/44.jpg",
-      phone: "+1234567890",
-    },
-    facilities: ["Hospital", "Gas stations", "Mall", "Mosque"],
-    coordinates: {
-      latitude: -8.4095,
-      longitude: 115.1889,
-    },
-    reviews: [
-      {
-        id: "1",
-        name: "Theresa Webb",
-        rating: 4,
-        comment:
-          "Lorem ipsum is simply dummy text of the printing and typesetting industry. 1500s.",
-        image: "https://randomuser.me/api/portraits/women/65.jpg",
-      },
-      {
-        id: "2",
-        name: "Alex Johnson",
-        rating: 5,
-        comment: "Amazing property with great amenities. Highly recommended!",
-        image: "https://randomuser.me/api/portraits/men/32.jpg",
-      },
-    ],
-    totalReviews: 152,
-  },
-  "2": {
-    id: "2",
-    name: "Ayana Homestay",
-    location: "Imogiri, Yogyakarta",
-    price: 310,
-    priceType: "month",
-    rating: 4.8,
-    images: [
-      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800",
-      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400",
-      "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=400",
-      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400",
-    ],
-    bedrooms: 4,
-    bathrooms: 3,
-    area: 2200,
-    buildYear: 2019,
-    parking: "2 Indoor",
-    status: "For Rent",
-    description:
-      "Beautiful homestay with modern amenities and stunning views. Perfect for families looking for a comfortable stay with all the facilities needed.",
-    agent: {
-      name: "John Smith",
-      role: "Property Manager",
-      image: "https://randomuser.me/api/portraits/men/45.jpg",
-      phone: "+1987654321",
-    },
-    facilities: ["Hospital", "School", "Mall", "Park"],
-    coordinates: {
-      latitude: -7.9361,
-      longitude: 110.3634,
-    },
-    reviews: [
-      {
-        id: "1",
-        name: "Sarah Williams",
-        rating: 5,
-        comment: "Excellent property! Very clean and well maintained.",
-        image: "https://randomuser.me/api/portraits/women/22.jpg",
-      },
-    ],
-    totalReviews: 89,
-  },
-  "3": {
-    id: "3",
-    name: "Bali Komang Guest",
-    location: "Nusa Penida, Bali",
-    price: 280,
-    priceType: "month",
-    rating: 4.7,
-    images: [
-      "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800",
-      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400",
-      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400",
-      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400",
-    ],
-    bedrooms: 2,
-    bathrooms: 2,
-    area: 1500,
-    buildYear: 2021,
-    parking: "1 Outdoor",
-    status: "For Rent",
-    description:
-      "Cozy guest house in the heart of Nusa Penida with easy access to famous beaches and attractions.",
-    agent: {
-      name: "Made Komang",
-      role: "Local Host",
-      image: "https://randomuser.me/api/portraits/men/55.jpg",
-      phone: "+6281234567890",
-    },
-    facilities: ["Beach", "Restaurant", "ATM", "Pharmacy"],
-    coordinates: {
-      latitude: -8.7275,
-      longitude: 115.5444,
-    },
-    reviews: [
-      {
-        id: "1",
-        name: "Michael Brown",
-        rating: 4,
-        comment: "Great location and friendly host!",
-        image: "https://randomuser.me/api/portraits/men/75.jpg",
-      },
-    ],
-    totalReviews: 124,
-  },
-};
-
-// Default property for fallback
-const defaultProperty = propertiesData["1"];
-
-const PropertyDetails = () => {
+const PropertyDetailsNew = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const propertyId = params.id || "1";
-  const property = propertiesData[propertyId] || defaultProperty;
+  const propertyId = params.id;
+  const scrollViewRef = useRef(null);
+  const imageScrollRef = useRef(null);
+  const autoScrollTimer = useRef(null);
 
+  const [property, setProperty] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
 
-  // Toggle favorite
-  const toggleFavorite = () => {
-    setIsFavorite((prev) => !prev);
+  useEffect(() => {
+    const fetchProperty = async () => {
+      if (!propertyId) return;
+      setLoading(true);
+      try {
+        const response = await api.get(`/api/houses/${propertyId}`);
+        const h = response.data.house;
+        
+        const facilities = [];
+        if (h.publicFacilities) {
+          if (h.publicFacilities.hospitalDistance) facilities.push({ name: "Hospital", distance: h.publicFacilities.hospitalDistance, icon: "medkit" });
+          if (h.publicFacilities.shoppingMallDistance) facilities.push({ name: "Mall", distance: h.publicFacilities.shoppingMallDistance, icon: "cart" });
+          if (h.publicFacilities.mosqueDistance) facilities.push({ name: "Mosque", distance: h.publicFacilities.mosqueDistance, icon: "business" });
+          if (h.publicFacilities.marketDistance) facilities.push({ name: "Market", distance: h.publicFacilities.marketDistance, icon: "basket" });
+        }
+        if (h.hasWifi) facilities.push({ name: "WiFi", icon: "wifi" });
+        if (h.hasParking) facilities.push({ name: "Parking", icon: "car" });
+
+        setProperty({
+          id: h.id,
+          name: h.name,
+          location: `${h.area}, ${h.city}`,
+          price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
+          priceType: h.listingType === 'RENT' ? 'month' : 'total',
+          rating: h.rating || 4.5,
+          images: h.images?.map(img => img.url) || [],
+          bedrooms: h.bedrooms,
+          bathrooms: h.bathrooms,
+          area: h.sizeInSqft,
+          buildYear: h.buildYear,
+          status: h.listingType === 'RENT' ? 'For Rent' : 'For Sale',
+          description: h.description,
+          agent: {
+            name: h.agent?.name || "Unknown Agent",
+            role: h.agent?.role === "AGENT" ? "Real Estate Agent" : "Property Owner",
+            image: h.agent?.avatar || "https://randomuser.me/api/portraits/men/1.jpg",
+            phone: h.agent?.phoneNumber || "+000000000",
+          },
+          facilities,
+          totalReviews: h._count?.reviews || 0,
+          coordinates: {
+            latitude: h.latitude || -8.4095,
+            longitude: h.longitude || 115.1889,
+          }
+        });
+      } catch (err) {
+        console.error('Error fetching property details:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProperty();
+  }, [propertyId]);
+
+  // Auto-scroll images
+  const startAutoScroll = useCallback(() => {
+    if (!property?.images?.length || property.images.length <= 1) return;
+    stopAutoScroll();
+    autoScrollTimer.current = setInterval(() => {
+      setSelectedImageIndex((prev) => {
+        const next = (prev + 1) % property.images.length;
+        imageScrollRef.current?.scrollToOffset({ offset: next * width, animated: true });
+        return next;
+      });
+    }, AUTO_SCROLL_INTERVAL);
+  }, [property?.images?.length]);
+
+  const stopAutoScroll = useCallback(() => {
+    if (autoScrollTimer.current) {
+      clearInterval(autoScrollTimer.current);
+      autoScrollTimer.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (property?.images?.length > 1) {
+      startAutoScroll();
+    }
+    return () => stopAutoScroll();
+  }, [property?.images?.length, startAutoScroll, stopAutoScroll]);
+
+  const onImageScrollBegin = () => stopAutoScroll();
+  const onImageScrollEnd = (e) => {
+    const index = Math.round(e.nativeEvent.contentOffset.x / width);
+    setSelectedImageIndex(index);
+    startAutoScroll();
   };
 
-  // Share property
+  const toggleFavorite = () => setIsFavorite((prev) => !prev);
+
   const handleShare = async (platform) => {
     const shareMessage = `Check out this property: ${property.name} in ${property.location} - $${property.price}/${property.priceType}`;
     const shareUrl = `https://housely.app/property/${property.id}`;
 
     if (platform === "native") {
       try {
-        await Share.share({
-          message: `${shareMessage}\n${shareUrl}`,
-          title: property.name,
-        });
+        await Share.share({ message: `${shareMessage}\n${shareUrl}`, title: property.name });
       } catch (error) {
         console.log("Error sharing:", error);
       }
@@ -198,63 +141,21 @@ const PropertyDetails = () => {
       let url = "";
       const encodedMessage = encodeURIComponent(shareMessage);
       const encodedUrl = encodeURIComponent(shareUrl);
-
       switch (platform) {
-        case "facebook":
-          url = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
-          break;
-        case "instagram":
-          // Instagram doesn't have a direct share URL, open the app
-          url = `instagram://`;
-          break;
-        case "twitter":
-          url = `https://twitter.com/intent/tweet?text=${encodedMessage}&url=${encodedUrl}`;
-          break;
-        case "whatsapp":
-          url = `whatsapp://send?text=${encodedMessage} ${encodedUrl}`;
-          break;
-        case "linkedin":
-          url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
-          break;
-        case "pinterest":
-          url = `https://pinterest.com/pin/create/button/?url=${encodedUrl}&description=${encodedMessage}`;
-          break;
+        case "facebook": url = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`; break;
+        case "whatsapp": url = `whatsapp://send?text=${encodedMessage} ${encodedUrl}`; break;
+        case "twitter": url = `https://twitter.com/intent/tweet?text=${encodedMessage}&url=${encodedUrl}`; break;
       }
-
-      try {
-        await Linking.openURL(url);
-      } catch (error) {
-        console.log("Error opening URL:", error);
-      }
+      try { await Linking.openURL(url); } catch (error) { console.log("Error opening URL:", error); }
     }
-
     setShowShareModal(false);
   };
 
-  // Call agent
-  const callAgent = () => {
-    Linking.openURL(`tel:${property.agent.phone}`);
-  };
+  const callAgent = () => Linking.openURL(`tel:${property.agent.phone}`);
 
-  // Get facility icon
-  const getFacilityIcon = (facility) => {
-    const icons = {
-      Hospital: "medkit",
-      "Gas stations": "car",
-      Mall: "cart",
-      Mosque: "business",
-      School: "school",
-      Park: "leaf",
-      Beach: "water",
-      Restaurant: "restaurant",
-      ATM: "cash",
-      Pharmacy: "medical",
-    };
-    return icons[facility] || "location";
-  };
-
-  // OpenStreetMap HTML for WebView
-  const mapHtml = `
+  const getMapHtml = () => {
+    if (!property?.coordinates) return "";
+    return `
     <!DOCTYPE html>
     <html>
     <head>
@@ -265,12 +166,10 @@ const PropertyDetails = () => {
         body { margin: 0; padding: 0; }
         #map { width: 100%; height: 100vh; }
         .custom-marker {
-          background: #7F56D9;
-          border: 3px solid white;
-          border-radius: 50%;
-          width: 20px;
-          height: 20px;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          border: 4px solid white; border-radius: 50%;
+          width: 32px; height: 32px;
+          box-shadow: 0 8px 16px rgba(102, 126, 234, 0.4);
         }
       </style>
     </head>
@@ -278,312 +177,385 @@ const PropertyDetails = () => {
       <div id="map"></div>
       <script>
         const map = L.map('map').setView([${property.coordinates.latitude}, ${property.coordinates.longitude}], 15);
-        
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap contributors'
         }).addTo(map);
-
-        // Custom marker icon
-        const customIcon = L.divIcon({
-          className: 'custom-marker',
-          iconSize: [20, 20],
-          iconAnchor: [10, 10]
-        });
-
+        const customIcon = L.divIcon({ className: 'custom-marker', iconSize: [32, 32], iconAnchor: [16, 16] });
         L.marker([${property.coordinates.latitude}, ${property.coordinates.longitude}], {icon: customIcon})
-          .addTo(map)
-          .bindPopup('<b>${property.name}</b><br>${property.location}');
+          .addTo(map).bindPopup('<b>${property.name}</b><br>${property.location}').openPopup();
       </script>
     </body>
-    </html>
-  `;
+    </html>`;
+  };
 
-  // Header Component
-  const Header = () => (
-    <View className="absolute top-0 left-0 right-0 z-10 flex-row items-center justify-between px-5 pt-4">
-      <TouchableOpacity
-        onPress={() => router.back()}
-        className="w-10 h-10 rounded-full bg-white items-center justify-center shadow-sm"
-      >
-        <Ionicons name="arrow-back" size={22} color="#252B5C" />
-      </TouchableOpacity>
-      <Text className="text-lg font-poppins-semibold text-textPrimary">
-        Details
-      </Text>
-      <View className="flex-row items-center gap-2">
-        <TouchableOpacity
-          onPress={() => setShowShareModal(true)}
-          className="w-10 h-10 rounded-full bg-white items-center justify-center shadow-sm"
-        >
-          <Ionicons name="share-social-outline" size={20} color="#252B5C" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={toggleFavorite}
-          className="w-10 h-10 rounded-full bg-white items-center justify-center shadow-sm"
-        >
-          <Ionicons
-            name={isFavorite ? "heart" : "heart-outline"}
-            size={20}
-            color={isFavorite ? "#FF6B6B" : "#252B5C"}
-          />
-        </TouchableOpacity>
+  // ─── Loading Skeleton ───
+  const LoadingSkeleton = () => (
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+      <StatusBar barStyle="dark-content" />
+      {/* Image skeleton */}
+      <View style={{ width, height: height * 0.45, backgroundColor: '#F0F0F0' }}>
+        {/* Back button */}
+        <View style={{ position: 'absolute', top: StatusBar.currentHeight || 40, left: 20, zIndex: 10 }}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={{
+              width: 44, height: 44, borderRadius: 14,
+              backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center',
+              elevation: 4,
+            }}
+          >
+            <Ionicons name="arrow-back" size={22} color="#1A1A1A" />
+          </TouchableOpacity>
+        </View>
+        {/* Shimmer placeholder */}
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color="#7F56D9" />
+        </View>
+      </View>
+      {/* Content skeleton */}
+      <View style={{ padding: 20, marginTop: -24, backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24 }}>
+        <View style={{ height: 24, width: '70%', backgroundColor: '#F0F0F0', borderRadius: 8, marginBottom: 12 }} />
+        <View style={{ height: 16, width: '50%', backgroundColor: '#F0F0F0', borderRadius: 8, marginBottom: 20 }} />
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          {[1,2,3,4].map(i => (
+            <View key={i} style={{ flex: 1, height: 80, backgroundColor: '#F8F5FF', borderRadius: 16 }} />
+          ))}
+        </View>
+        <View style={{ height: 16, width: '90%', backgroundColor: '#F0F0F0', borderRadius: 8, marginTop: 24 }} />
+        <View style={{ height: 16, width: '80%', backgroundColor: '#F0F0F0', borderRadius: 8, marginTop: 8 }} />
+        <View style={{ height: 16, width: '60%', backgroundColor: '#F0F0F0', borderRadius: 8, marginTop: 8 }} />
       </View>
     </View>
   );
 
-  // Image Gallery Component
-  const ImageGallery = () => (
-    <View className="px-5 mb-4">
-      {/* Main Image */}
-      <View className="rounded-3xl overflow-hidden mb-3">
-        <Image
-          source={{ uri: property.images[selectedImageIndex] }}
-          className="w-full h-56"
-          resizeMode="cover"
-        />
-      </View>
-      {/* Thumbnail Images */}
-      <ScrollView
+  // ─── Image Carousel ───
+  const HeroCarousel = () => (
+    <View style={{ height: height * 0.45 }}>
+      <FlatList
+        ref={imageScrollRef}
+        data={property.images}
         horizontal
+        pagingEnabled
         showsHorizontalScrollIndicator={false}
-        className="flex-row"
-      >
-        {property.images.map((image, index) => (
-          <TouchableOpacity
+        onScrollBeginDrag={onImageScrollBegin}
+        onMomentumScrollEnd={onImageScrollEnd}
+        keyExtractor={(_, i) => String(i)}
+        renderItem={({ item }) => (
+          <View style={{ width }}>
+            <Image source={{ uri: item }} style={{ width, height: height * 0.45 }} resizeMode="cover" />
+            {/* Bottom gradient overlay */}
+            <View style={{
+              position: 'absolute', bottom: 0, left: 0, right: 0, height: 120,
+              backgroundColor: 'transparent',
+            }}>
+              <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.0)' }} />
+              <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.15)' }} />
+              <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)' }} />
+              <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' }} />
+            </View>
+          </View>
+        )}
+      />
+
+      {/* Pagination Dots */}
+      <View style={{
+        position: 'absolute', bottom: 16, left: 0, right: 0,
+        flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6,
+      }}>
+        {property.images.map((_, index) => (
+          <View
             key={index}
-            onPress={() => setSelectedImageIndex(index)}
-            className={`mr-2 rounded-xl overflow-hidden border-2 ${
-              selectedImageIndex === index
-                ? "border-primary"
-                : "border-transparent"
-            }`}
+            style={{
+              height: 8,
+              width: selectedImageIndex === index ? 28 : 8,
+              borderRadius: 4,
+              backgroundColor: selectedImageIndex === index ? '#FFFFFF' : 'rgba(255,255,255,0.4)',
+            }}
+          />
+        ))}
+      </View>
+
+      {/* Image Counter */}
+      <View style={{
+        position: 'absolute', bottom: 16, right: 20,
+        backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 12,
+        paddingHorizontal: 10, paddingVertical: 4,
+      }}>
+        <Text style={{ color: '#FFF', fontSize: 12, fontWeight: '600' }}>
+          {selectedImageIndex + 1}/{property.images.length}
+        </Text>
+      </View>
+
+      {/* Floating Header */}
+      <View style={{
+        position: 'absolute', top: 0, left: 0, right: 0,
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        paddingHorizontal: 20, paddingTop: StatusBar.currentHeight || 40,
+      }}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={{
+            width: 44, height: 44, borderRadius: 14,
+            backgroundColor: 'rgba(255,255,255,0.9)',
+            alignItems: 'center', justifyContent: 'center', elevation: 8,
+          }}
+        >
+          <Ionicons name="arrow-back" size={22} color="#1A1A1A" />
+        </TouchableOpacity>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <TouchableOpacity
+            onPress={() => setShowShareModal(true)}
+            style={{
+              width: 44, height: 44, borderRadius: 14,
+              backgroundColor: 'rgba(255,255,255,0.9)',
+              alignItems: 'center', justifyContent: 'center', elevation: 8,
+            }}
           >
-            <Image
-              source={{ uri: image }}
-              className="w-16 h-12"
-              resizeMode="cover"
+            <Ionicons name="share-social" size={20} color="#1A1A1A" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={toggleFavorite}
+            style={{
+              width: 44, height: 44, borderRadius: 14,
+              backgroundColor: isFavorite ? '#FF6B6B' : 'rgba(255,255,255,0.9)',
+              alignItems: 'center', justifyContent: 'center', elevation: 8,
+            }}
+          >
+            <Ionicons
+              name={isFavorite ? "heart" : "heart-outline"} size={20}
+              color={isFavorite ? "#FFF" : "#1A1A1A"}
             />
           </TouchableOpacity>
-        ))}
-      </ScrollView>
+        </View>
+      </View>
+
+      {/* Status Badge */}
+      <View style={{
+        position: 'absolute', top: (StatusBar.currentHeight || 40) + 56, right: 20,
+        backgroundColor: property.priceType === 'month' ? '#10B981' : '#3B82F6',
+        borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6, elevation: 6,
+      }}>
+        <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 13 }}>
+          {property.status}
+        </Text>
+      </View>
     </View>
   );
 
-  // Property Title & Price Component
-  const PropertyTitlePrice = () => (
-    <View className="flex-row items-center justify-between px-5 mb-4">
-      <View className="flex-1">
-        <Text className="text-xl font-poppins-bold text-textPrimary">
+  // ─── Property Info Card ───
+  const PropertyHeader = () => (
+    <View style={{
+      paddingHorizontal: 20, paddingTop: 24, paddingBottom: 16,
+      backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24,
+      marginTop: -24, elevation: 10,
+    }}>
+      {/* Name + Rating row */}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+        <Text style={{ fontSize: 24, fontWeight: '800', color: '#1A1A1A', flex: 1, marginRight: 12 }}>
           {property.name}
         </Text>
-        <View className="flex-row items-center mt-1">
-          <View className="w-5 h-5 rounded-full bg-primary items-center justify-center">
-            <LocationIcon width={12} height={12} />
-          </View>
-          <Text className="text-textSecondary font-poppins text-sm ml-2">
-            {property.location}
+        <View style={{
+          flexDirection: 'row', alignItems: 'center',
+          backgroundColor: '#FFFBEB', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6,
+        }}>
+          <Ionicons name="star" size={16} color="#FFC107" />
+          <Text style={{ fontSize: 15, fontWeight: '700', color: '#1A1A1A', marginLeft: 4 }}>
+            {property.rating}
+          </Text>
+          <Text style={{ fontSize: 12, color: '#9E9E9E', marginLeft: 2 }}>
+            ({property.totalReviews})
           </Text>
         </View>
       </View>
-      <View>
-        <Text className="text-xl font-poppins-bold text-primary">
-          ${property.price}
-          <Text className="text-sm font-poppins text-textSecondary">
-            /{property.priceType}
-          </Text>
+
+      {/* Location */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+        <Ionicons name="location" size={18} color="#7F56D9" />
+        <Text style={{ marginLeft: 6, color: '#6B7280', fontSize: 15 }}>
+          {property.location}
         </Text>
       </View>
-    </View>
-  );
 
-  // Property Details Grid Component
-  const PropertyDetailsGrid = () => (
-    <View className="px-5 mb-4">
-      <Text className="text-base font-poppins-semibold text-textPrimary mb-3">
-        Property Details
-      </Text>
-      <View className="flex-row flex-wrap">
-        {/* Bedrooms */}
-        <View className="w-1/3 mb-3">
-          <Text className="text-xs text-textSecondary font-poppins">
-            Bedrooms
+      {/* Price */}
+      <View style={{
+        backgroundColor: '#F8F5FF', borderRadius: 16, padding: 16,
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+      }}>
+        <View>
+          <Text style={{ color: '#9E9E9E', fontSize: 12, marginBottom: 4 }}>Price</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+            <Text style={{ color: '#7F56D9', fontSize: 28, fontWeight: '800' }}>
+              ${property.price?.toLocaleString()}
+            </Text>
+            <Text style={{ color: '#7F56D9', fontSize: 15, fontWeight: '500', opacity: 0.6 }}>
+              /{property.priceType}
+            </Text>
+          </View>
+        </View>
+        <View style={{
+          backgroundColor: '#7F56D9', borderRadius: 12,
+          paddingHorizontal: 14, paddingVertical: 8,
+        }}>
+          <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 13 }}>
+            {property.status}
           </Text>
-          <View className="flex-row items-center mt-1">
-            <Ionicons name="bed-outline" size={16} color="#7F56D9" />
-            <Text className="text-sm font-poppins-semibold text-textPrimary ml-1">
-              {property.bedrooms}
-            </Text>
-          </View>
-        </View>
-        {/* Bathrooms */}
-        <View className="w-1/3 mb-3">
-          <Text className="text-xs text-textSecondary font-poppins">
-            Bathubs
-          </Text>
-          <View className="flex-row items-center mt-1">
-            <Ionicons name="water-outline" size={16} color="#7F56D9" />
-            <Text className="text-sm font-poppins-semibold text-textPrimary ml-1">
-              {property.bathrooms}
-            </Text>
-          </View>
-        </View>
-        {/* Area */}
-        <View className="w-1/3 mb-3">
-          <Text className="text-xs text-textSecondary font-poppins">Area</Text>
-          <View className="flex-row items-center mt-1">
-            <Ionicons name="resize-outline" size={16} color="#7F56D9" />
-            <Text className="text-sm font-poppins-semibold text-textPrimary ml-1">
-              {property.area.toLocaleString()} sqft
-            </Text>
-          </View>
-        </View>
-        {/* Build Year */}
-        <View className="w-1/3 mb-3">
-          <Text className="text-xs text-textSecondary font-poppins">Build</Text>
-          <View className="flex-row items-center mt-1">
-            <Ionicons name="calendar-outline" size={16} color="#7F56D9" />
-            <Text className="text-sm font-poppins-semibold text-textPrimary ml-1">
-              {property.buildYear}
-            </Text>
-          </View>
-        </View>
-        {/* Parking */}
-        <View className="w-1/3 mb-3">
-          <Text className="text-xs text-textSecondary font-poppins">
-            Parking
-          </Text>
-          <View className="flex-row items-center mt-1">
-            <Ionicons name="car-outline" size={16} color="#7F56D9" />
-            <Text className="text-sm font-poppins-semibold text-textPrimary ml-1">
-              {property.parking}
-            </Text>
-          </View>
-        </View>
-        {/* Status */}
-        <View className="w-1/3 mb-3">
-          <Text className="text-xs text-textSecondary font-poppins">
-            Status
-          </Text>
-          <View className="flex-row items-center mt-1">
-            <Ionicons name="checkmark-circle-outline" size={16} color="#7F56D9" />
-            <Text className="text-sm font-poppins-semibold text-textPrimary ml-1">
-              {property.status}
-            </Text>
-          </View>
         </View>
       </View>
     </View>
   );
 
-  // Description Component
-  const Description = () => {
-    const shortDescription = property.description.substring(0, 120);
-    const shouldShowReadMore = property.description.length > 120;
-
+  // ─── Quick Stats Row ───
+  const QuickStats = () => {
+    const stats = [
+      { label: 'Beds', value: property.bedrooms, icon: 'bed', color: '#7F56D9' },
+      { label: 'Baths', value: property.bathrooms, icon: 'water', color: '#3B82F6' },
+      { label: 'Sqft', value: property.area?.toLocaleString(), icon: 'resize', color: '#10B981' },
+      { label: 'Built', value: property.buildYear, icon: 'calendar', color: '#F59E0B' },
+    ];
     return (
-      <View className="px-5 mb-4">
-        <Text className="text-base font-poppins-semibold text-textPrimary mb-2">
-          Description
-        </Text>
-        <Text className="text-sm text-textSecondary font-poppins leading-5">
-          {showFullDescription ? property.description : shortDescription}
-          {!showFullDescription && shouldShowReadMore && "..."}
-          {shouldShowReadMore && (
-            <Text
-              onPress={() => setShowFullDescription(!showFullDescription)}
-              className="text-primary font-poppins-semibold"
-            >
-              {showFullDescription ? " Show less" : " Read more"}
-            </Text>
-          )}
-        </Text>
+      <View style={{ flexDirection: 'row', paddingHorizontal: 20, paddingVertical: 16, gap: 10 }}>
+        {stats.map((stat, i) => (
+          <View key={i} style={{
+            flex: 1, alignItems: 'center', backgroundColor: '#F9FAFB',
+            borderRadius: 16, paddingVertical: 14, paddingHorizontal: 4,
+          }}>
+            <View style={{
+              width: 40, height: 40, borderRadius: 12,
+              backgroundColor: stat.color, alignItems: 'center', justifyContent: 'center', marginBottom: 8,
+            }}>
+              <Ionicons name={stat.icon} size={20} color="#FFF" />
+            </View>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: '#1A1A1A' }}>{stat.value}</Text>
+            <Text style={{ fontSize: 11, color: '#9E9E9E', marginTop: 2 }}>{stat.label}</Text>
+          </View>
+        ))}
       </View>
     );
   };
 
-  // Agent Component
-  const AgentSection = () => (
-    <View className="px-5 mb-4">
-      <Text className="text-base font-poppins-semibold text-textPrimary mb-3">
-        Agent
+  // ─── Description ───
+  const Description = () => {
+    if (!property.description) return null;
+    const shortDesc = property.description.substring(0, 180);
+    const hasMore = property.description.length > 180;
+
+    return (
+      <View style={{ paddingHorizontal: 20, paddingVertical: 16 }}>
+        <Text style={{ fontSize: 18, fontWeight: '700', color: '#1A1A1A', marginBottom: 12 }}>
+          About This Property
+        </Text>
+        <Text style={{ fontSize: 14, color: '#6B7280', lineHeight: 22 }}>
+          {showFullDescription ? property.description : shortDesc}
+          {!showFullDescription && hasMore && "..."}
+        </Text>
+        {hasMore && (
+          <TouchableOpacity onPress={() => setShowFullDescription(!showFullDescription)} style={{ marginTop: 8 }}>
+            <Text style={{ color: '#7F56D9', fontWeight: '700', fontSize: 14 }}>
+              {showFullDescription ? "Show Less" : "Read More"}
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
+
+  // ─── Facilities ───
+  const FacilitiesSection = () => {
+    if (!property.facilities?.length) return null;
+    return (
+      <View style={{ paddingVertical: 16 }}>
+        <Text style={{ fontSize: 18, fontWeight: '700', color: '#1A1A1A', marginBottom: 12, paddingHorizontal: 20 }}>
+          Facilities & Amenities
+        </Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
+          {property.facilities.map((f, i) => (
+            <View key={i} style={{
+              marginRight: 12, backgroundColor: '#FFF', borderRadius: 16, padding: 14,
+              alignItems: 'center', width: 100, borderWidth: 1, borderColor: '#F0F0F0',
+              elevation: 2,
+            }}>
+              <View style={{
+                width: 48, height: 48, borderRadius: 14, backgroundColor: '#F8F5FF',
+                alignItems: 'center', justifyContent: 'center', marginBottom: 8,
+              }}>
+                <Ionicons name={f.icon} size={24} color="#7F56D9" />
+              </View>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: '#1A1A1A', textAlign: 'center' }} numberOfLines={1}>
+                {f.name}
+              </Text>
+              {f.distance && (
+                <Text style={{ fontSize: 11, color: '#9E9E9E', marginTop: 2 }}>{f.distance} km</Text>
+              )}
+            </View>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  };
+
+  // ─── Agent Card ───
+  const AgentCard = () => (
+    <View style={{ paddingHorizontal: 20, paddingVertical: 16 }}>
+      <Text style={{ fontSize: 18, fontWeight: '700', color: '#1A1A1A', marginBottom: 12 }}>
+        Listed By
       </Text>
-      <View className="flex-row items-center justify-between">
-        <View className="flex-row items-center flex-1">
+      <View style={{
+        backgroundColor: '#FFF', borderRadius: 20, padding: 16,
+        borderWidth: 1, borderColor: '#F0F0F0', elevation: 3,
+      }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
           <Image
             source={{ uri: property.agent.image }}
-            className="w-12 h-12 rounded-full"
-            resizeMode="cover"
+            style={{ width: 56, height: 56, borderRadius: 16, borderWidth: 2, borderColor: '#7F56D9' }}
           />
-          <View className="ml-3">
-            <Text className="text-sm font-poppins-semibold text-textPrimary">
+          <View style={{ marginLeft: 14, flex: 1 }}>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: '#1A1A1A' }}>
               {property.agent.name}
             </Text>
-            <Text className="text-xs text-textSecondary font-poppins">
+            <Text style={{ fontSize: 13, color: '#9E9E9E', marginTop: 2 }}>
               {property.agent.role}
             </Text>
           </View>
         </View>
-        <View className="flex-row items-center gap-2">
+        <View style={{ flexDirection: 'row', gap: 10 }}>
           <TouchableOpacity
             onPress={() => router.push({
               pathname: "/(tabs)/chatConversation",
-              params: { 
-                id: property.id, 
-                name: property.agent.name, 
-                avatar: property.agent.image 
-              }
+              params: { id: property.id, name: property.agent.name, avatar: property.agent.image }
             })}
-            className="w-10 h-10 rounded-full bg-cardBackground border border-border items-center justify-center"
+            style={{
+              flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+              backgroundColor: '#F8F5FF', borderRadius: 14, paddingVertical: 12,
+            }}
           >
-            <Ionicons name="chatbubble-ellipses-outline" size={18} color="#7F56D9" />
+            <Ionicons name="chatbubble-ellipses" size={20} color="#7F56D9" />
+            <Text style={{ color: '#7F56D9', fontWeight: '700', marginLeft: 6, fontSize: 14 }}>Message</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={callAgent}
-            className="w-10 h-10 rounded-full bg-primary items-center justify-center"
+            style={{
+              flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+              backgroundColor: '#7F56D9', borderRadius: 14, paddingVertical: 12, elevation: 4,
+            }}
           >
-            <Ionicons name="call" size={18} color="white" />
+            <Ionicons name="call" size={20} color="#FFF" />
+            <Text style={{ color: '#FFF', fontWeight: '700', marginLeft: 6, fontSize: 14 }}>Call Now</Text>
           </TouchableOpacity>
         </View>
       </View>
     </View>
   );
 
-  // Facilities Component
-  const FacilitiesSection = () => (
-    <View className="px-5 mb-4">
-      <Text className="text-base font-poppins-semibold text-textPrimary mb-3">
-        Location & Public Facilities
-      </Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        className="flex-row"
-      >
-        {property.facilities.map((facility, index) => (
-          <View
-            key={index}
-            className="flex-row items-center bg-cardBackground rounded-full px-4 py-2 mr-2"
-          >
-            <Ionicons
-              name={getFacilityIcon(facility)}
-              size={16}
-              color="#7F56D9"
-            />
-            <Text className="text-xs font-poppins-medium text-textPrimary ml-2">
-              {facility}
-            </Text>
-          </View>
-        ))}
-      </ScrollView>
-    </View>
-  );
-
-  // Map Component using OpenStreetMap
+  // ─── Map ───
   const MapSection = () => (
-    <View className="px-5 mb-4">
-      <View className="rounded-2xl overflow-hidden h-40 border border-border">
+    <View style={{ paddingHorizontal: 20, paddingVertical: 16 }}>
+      <Text style={{ fontSize: 18, fontWeight: '700', color: '#1A1A1A', marginBottom: 12 }}>
+        Location
+      </Text>
+      <View style={{ borderRadius: 20, overflow: 'hidden', height: 220, elevation: 4 }}>
         <WebView
-          source={{ html: mapHtml }}
+          source={{ html: getMapHtml() }}
           style={{ flex: 1 }}
           scrollEnabled={false}
           javaScriptEnabled={true}
@@ -593,191 +565,101 @@ const PropertyDetails = () => {
     </View>
   );
 
-  // Reviews Component
-  const ReviewsSection = () => (
-    <View className="px-5 mb-6">
-      <View className="flex-row items-center justify-between mb-3">
-        <Text className="text-base font-poppins-semibold text-textPrimary">
-          Reviews {property.totalReviews}
-        </Text>
-        <TouchableOpacity>
-          <Text className="text-sm text-primary font-poppins-medium">
-            See all
-          </Text>
-        </TouchableOpacity>
-      </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        className="flex-row"
+  // ─── Book Button (simplified) ───
+  const BookNowFooter = () => (
+    <View style={{
+      paddingHorizontal: 20, paddingVertical: 14, backgroundColor: '#FFF',
+      borderTopWidth: 1, borderTopColor: '#F0F0F0', elevation: 10,
+    }}>
+      <TouchableOpacity
+        style={{
+          backgroundColor: '#7F56D9', borderRadius: 16, paddingVertical: 16,
+          alignItems: 'center', justifyContent: 'center', elevation: 8,
+        }}
       >
-        {property.reviews.map((review) => (
-          <View
-            key={review.id}
-            className="bg-cardBackground rounded-xl p-4 mr-3"
-            style={{ width: width * 0.6 }}
-          >
-            <View className="flex-row items-center mb-2">
-              <Image
-                source={{ uri: review.image }}
-                className="w-10 h-10 rounded-full"
-                resizeMode="cover"
-              />
-              <View className="ml-2 flex-1">
-                <Text className="text-sm font-poppins-semibold text-textPrimary">
-                  {review.name}
-                </Text>
-                <View className="flex-row items-center">
-                  {[...Array(5)].map((_, i) => (
-                    <Ionicons
-                      key={i}
-                      name={i < review.rating ? "star" : "star-outline"}
-                      size={12}
-                      color="#FFC42D"
-                    />
-                  ))}
-                </View>
-              </View>
-            </View>
-            <Text
-              className="text-xs text-textSecondary font-poppins"
-              numberOfLines={3}
-            >
-              {review.comment}
-            </Text>
-          </View>
-        ))}
-      </ScrollView>
-    </View>
-  );
-
-  // Rent Now Button
-  const RentButton = () => (
-    <View className="px-5 pb-8">
-      <TouchableOpacity className="bg-primary rounded-xl py-4 items-center">
-        <Text className="text-white font-poppins-semibold text-base">
-          Rent now
+        <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 18 }}>
+          Book This Property
         </Text>
       </TouchableOpacity>
     </View>
   );
 
-  // Share Modal Component
+  // ─── Share Modal ───
   const ShareModal = () => (
-    <Modal
-      visible={showShareModal}
-      transparent={true}
-      animationType="slide"
-      onRequestClose={() => setShowShareModal(false)}
-    >
-      <TouchableOpacity
-        activeOpacity={1}
-        onPress={() => setShowShareModal(false)}
-        className="flex-1 justify-end bg-black/50"
+    <Modal visible={showShareModal} transparent animationType="slide" onRequestClose={() => setShowShareModal(false)}>
+      <TouchableOpacity activeOpacity={1} onPress={() => setShowShareModal(false)}
+        style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}
       >
-        <View className="bg-white rounded-t-3xl px-5 pt-6 pb-10">
-          <Text className="text-lg font-poppins-semibold text-textPrimary text-center mb-6">
-            Share to
+        <View style={{ backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 24, paddingBottom: 40 }}>
+          <Text style={{ fontSize: 18, fontWeight: '700', color: '#1A1A1A', textAlign: 'center', marginBottom: 20 }}>
+            Share Property
           </Text>
-          <View className="flex-row flex-wrap justify-center">
-            {/* Facebook */}
-            <TouchableOpacity
-              onPress={() => handleShare("facebook")}
-              className="items-center mx-4 mb-4"
-            >
-              <View className="w-14 h-14 rounded-full bg-[#1877F2] items-center justify-center mb-2">
-                <Ionicons name="logo-facebook" size={28} color="white" />
-              </View>
-              <Text className="text-xs text-textSecondary font-poppins">
-                Facebook
-              </Text>
-            </TouchableOpacity>
-            {/* Instagram */}
-            <TouchableOpacity
-              onPress={() => handleShare("instagram")}
-              className="items-center mx-4 mb-4"
-            >
-              <View className="w-14 h-14 rounded-full bg-[#E4405F] items-center justify-center mb-2">
-                <Ionicons name="logo-instagram" size={28} color="white" />
-              </View>
-              <Text className="text-xs text-textSecondary font-poppins">
-                Instagram
-              </Text>
-            </TouchableOpacity>
-            {/* Twitter */}
-            <TouchableOpacity
-              onPress={() => handleShare("twitter")}
-              className="items-center mx-4 mb-4"
-            >
-              <View className="w-14 h-14 rounded-full bg-[#1DA1F2] items-center justify-center mb-2">
-                <Ionicons name="logo-twitter" size={28} color="white" />
-              </View>
-              <Text className="text-xs text-textSecondary font-poppins">
-                Twitter
-              </Text>
-            </TouchableOpacity>
-            {/* WhatsApp */}
-            <TouchableOpacity
-              onPress={() => handleShare("whatsapp")}
-              className="items-center mx-4 mb-4"
-            >
-              <View className="w-14 h-14 rounded-full bg-[#25D366] items-center justify-center mb-2">
-                <Ionicons name="logo-whatsapp" size={28} color="white" />
-              </View>
-              <Text className="text-xs text-textSecondary font-poppins">
-                Whatsapp
-              </Text>
-            </TouchableOpacity>
-            {/* LinkedIn */}
-            <TouchableOpacity
-              onPress={() => handleShare("linkedin")}
-              className="items-center mx-4 mb-4"
-            >
-              <View className="w-14 h-14 rounded-full bg-[#0A66C2] items-center justify-center mb-2">
-                <Ionicons name="logo-linkedin" size={28} color="white" />
-              </View>
-              <Text className="text-xs text-textSecondary font-poppins">
-                Linkedin
-              </Text>
-            </TouchableOpacity>
-            {/* Pinterest */}
-            <TouchableOpacity
-              onPress={() => handleShare("pinterest")}
-              className="items-center mx-4 mb-4"
-            >
-              <View className="w-14 h-14 rounded-full bg-[#E60023] items-center justify-center mb-2">
-                <Ionicons name="logo-pinterest" size={28} color="white" />
-              </View>
-              <Text className="text-xs text-textSecondary font-poppins">
-                Pinterest
-              </Text>
-            </TouchableOpacity>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
+            {[
+              { platform: "facebook", icon: "logo-facebook", bg: "#1877F2", label: "Facebook" },
+              { platform: "whatsapp", icon: "logo-whatsapp", bg: "#25D366", label: "WhatsApp" },
+              { platform: "twitter", icon: "logo-twitter", bg: "#1DA1F2", label: "Twitter" },
+              { platform: "native", icon: "share-social", bg: "#E5E7EB", label: "More", iconColor: "#1A1A1A" },
+            ].map(({ platform, icon, bg, label, iconColor }) => (
+              <TouchableOpacity key={platform} onPress={() => handleShare(platform)} style={{ alignItems: 'center' }}>
+                <View style={{
+                  width: 56, height: 56, borderRadius: 16, backgroundColor: bg,
+                  alignItems: 'center', justifyContent: 'center', marginBottom: 6,
+                }}>
+                  <Ionicons name={icon} size={28} color={iconColor || "#FFF"} />
+                </View>
+                <Text style={{ fontSize: 11, color: '#9E9E9E' }}>{label}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
       </TouchableOpacity>
     </Modal>
   );
 
+  if (loading) return <LoadingSkeleton />;
+
+  if (!property) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#FFF", padding: 20 }}>
+        <Ionicons name="home-outline" size={80} color="#DADADA" />
+        <Text style={{ marginTop: 16, fontSize: 20, fontWeight: "700", color: "#1A1A1A", textAlign: "center" }}>
+          Property Not Found
+        </Text>
+        <Text style={{ marginTop: 8, fontSize: 14, color: "#9E9E9E", textAlign: "center" }}>
+          This property may have been removed or doesn't exist.
+        </Text>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={{ marginTop: 24, backgroundColor: "#7F56D9", paddingHorizontal: 32, paddingVertical: 14, borderRadius: 16 }}
+        >
+          <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 16 }}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
-    <View className="flex-1 bg-white">
-      <Header />
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: 60 }}
-      >
-        <ImageGallery />
-        <PropertyTitlePrice />
-        <PropertyDetailsGrid />
+    <View style={{ flex: 1, backgroundColor: '#FFF' }}>
+      <StatusBar barStyle="light-content" />
+      <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false}>
+        <HeroCarousel />
+        <PropertyHeader />
+        <QuickStats />
+        <View style={{ height: 8, backgroundColor: '#F9FAFB' }} />
         <Description />
-        <AgentSection />
+        <View style={{ height: 8, backgroundColor: '#F9FAFB' }} />
         <FacilitiesSection />
+        <View style={{ height: 8, backgroundColor: '#F9FAFB' }} />
+        <AgentCard />
+        <View style={{ height: 8, backgroundColor: '#F9FAFB' }} />
         <MapSection />
-        <ReviewsSection />
-        <RentButton />
+        <View style={{ height: 100 }} />
       </ScrollView>
+      <BookNowFooter />
       <ShareModal />
     </View>
   );
 };
 
-export default PropertyDetails;
+export default PropertyDetailsNew;

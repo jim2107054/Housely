@@ -11,6 +11,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
+// Import data (structured like backend API response)
+import api from '../../services/api';
+import { useEffect } from 'react';
+import { ActivityIndicator } from 'react-native';
+
+
+
 // Design Tokens
 const COLORS = {
   primary: '#7B61FF',
@@ -31,48 +38,6 @@ const COLORS = {
   badgeCancelledBg: '#FFEBEE',
   badgeCancelledText: '#F44336',
 };
-
-// Mock Booking Data
-const upcomingBookings = [
-  {
-    id: '1',
-    name: 'Batavia Apartments',
-    location: 'Jaksel, Jakarta Selatan',
-    dateRange: '08 Aug - 12 Aug',
-    status: 'waiting_payment',
-    image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&q=80',
-  },
-  {
-    id: '2',
-    name: 'Takatea Homestay',
-    location: 'Seminyak, Bali',
-    dateRange: '15 Aug - 20 Aug',
-    status: 'checkin',
-    image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400&q=80',
-  },
-];
-
-const completedBookings = [
-  {
-    id: '3',
-    name: 'Takatea Homestay',
-    location: 'Seminyak, Bali',
-    dateRange: '01 Aug - 05 Aug',
-    status: 'completed',
-    image: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400&q=80',
-  },
-];
-
-const cancelledBookings = [
-  {
-    id: '4',
-    name: 'Tropis Homestay',
-    location: 'Ubud, Bali',
-    dateRange: '25 Jul - 28 Jul',
-    status: 'cancelled',
-    image: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=400&q=80',
-  },
-];
 
 // Status Badge Component
 const StatusBadge = ({ status }) => {
@@ -358,28 +323,64 @@ const ActionRow = ({ icon, label, onPress, isLast }) => {
 const MyBooking = () => {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('upcoming');
-  const [showEmptyState, setShowEmptyState] = useState(false); // Toggle this to test empty state
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchBookings = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get('/api/bookings/my');
+        setBookings(response.data.bookings || []);
+      } catch (err) {
+        console.error('Error fetching bookings:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBookings();
+  }, []);
 
   // Get data based on active tab
   const getBookingData = () => {
+    const transformedBookings = bookings.map(b => ({
+      ...b,
+      image: b.house?.images?.[0]?.url || 'https://via.placeholder.com/150',
+      name: b.house?.name,
+      location: `${b.house?.area}, ${b.house?.city}`,
+      price: b.totalAmount,
+      // mapping backend status to frontend badge types if needed
+      displayStatus: b.status === 'PENDING' ? 'waiting_payment' : 
+                     b.status === 'CONFIRMED' ? 'checkin' : 
+                     b.status === 'COMPLETED' ? 'completed' : 'cancelled'
+    }));
+
     switch (activeTab) {
       case 'upcoming':
-        return showEmptyState ? [] : upcomingBookings;
+        return transformedBookings.filter(b => ['PENDING', 'CONFIRMED'].includes(b.status));
       case 'completed':
-        return completedBookings;
+        return transformedBookings.filter(b => b.status === 'COMPLETED');
       case 'cancelled':
-        return cancelledBookings;
+        return transformedBookings.filter(b => b.status === 'CANCELLED');
       default:
         return [];
     }
   };
 
-  const bookings = getBookingData();
+  const filteredBookings = getBookingData();
 
   // Render content based on tab
   const renderTabContent = () => {
+    if (loading) {
+      return (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      );
+    }
+
     // Empty state for upcoming tab
-    if (activeTab === 'upcoming' && bookings.length === 0) {
+    if (activeTab === 'upcoming' && filteredBookings.length === 0) {
       return <BookingEmptyState setActiveTab={setActiveTab} />;
     }
 
@@ -387,7 +388,7 @@ const MyBooking = () => {
     if (activeTab === 'completed') {
       return (
         <ScrollView showsVerticalScrollIndicator={false}>
-          {bookings.map((booking) => (
+          {filteredBookings.map((booking) => (
             <View key={booking.id}>
               <BookingCard booking={booking} />
               {/* Action Rows */}
@@ -437,7 +438,7 @@ const MyBooking = () => {
     if (activeTab === 'cancelled') {
       return (
         <ScrollView showsVerticalScrollIndicator={false}>
-          {bookings.map((booking) => (
+          {filteredBookings.map((booking) => (
             <View key={booking.id}>
               <BookingCard booking={booking} />
               {/* Action Row */}
@@ -471,7 +472,7 @@ const MyBooking = () => {
     // Default content for upcoming tab with bookings
     return (
       <FlatList
-        data={bookings}
+        data={filteredBookings}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => <BookingCard booking={item} />}
         contentContainerStyle={{ paddingBottom: 100 }}

@@ -20,7 +20,7 @@ const houseListInclude = {
 
 // ─── List Houses (paginated) ───
 
-export const listHouses = async ({ page = 1, limit = 20, sortBy = 'newest' } = {}) => {
+export const listHouses = async ({ page = 1, limit = 20, sortBy = 'newest', search = '' } = {}) => {
   const skip = (page - 1) * limit;
 
   let orderBy;
@@ -38,7 +38,18 @@ export const listHouses = async ({ page = 1, limit = 20, sortBy = 'newest' } = {
       orderBy = { createdAt: 'desc' };
   }
 
-  const where = { status: 'AVAILABLE' };
+  const where = { 
+    status: 'AVAILABLE',
+    ...(search && {
+      OR: [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+        { address: { contains: search, mode: 'insensitive' } },
+        { area: { contains: search, mode: 'insensitive' } },
+        { city: { contains: search, mode: 'insensitive' } },
+      ]
+    })
+  };
 
   const [houses, total] = await Promise.all([
     prisma.house.findMany({ where, include: houseListInclude, orderBy, skip, take: limit }),
@@ -137,6 +148,12 @@ export const getHouseById = async (id) => {
 export const createHouse = async (agentId, data) => {
   const { images, video, publicFacilities, ...houseData } = data;
 
+  // Sync house-level flags with publicFacilities if provided
+  if (publicFacilities) {
+    if (publicFacilities.wifi !== undefined) houseData.hasWifi = publicFacilities.wifi;
+    if (publicFacilities.water !== undefined) houseData.hasWater = publicFacilities.water;
+  }
+
   return prisma.house.create({
     data: {
       ...houseData,
@@ -161,6 +178,12 @@ export const updateHouse = async (agentId, houseId, data) => {
 
   // Build nested update operations
   const updateData = { ...houseData };
+
+  // Sync house-level flags with publicFacilities if provided
+  if (publicFacilities) {
+    if (publicFacilities.wifi !== undefined) updateData.hasWifi = publicFacilities.wifi;
+    if (publicFacilities.water !== undefined) updateData.hasWater = publicFacilities.water;
+  }
 
   if (images) {
     // Replace all images
@@ -233,3 +256,124 @@ export const getShareLink = async (houseId) => {
     title: house.name,
   };
 };
+
+// ─── Get User Favorites ───
+
+export const getFavorites = async (userId) => {
+  const favorites = await prisma.favorite.findMany({
+    where: { userId },
+    include: {
+      house: {
+        include: houseListInclude,
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return favorites.map((f) => f.house);
+};
+
+// ─── Toggle Favorite ───
+
+export const toggleFavorite = async (userId, houseId) => {
+  const house = await prisma.house.findUnique({ where: { id: houseId } });
+  if (!house) {
+    throw Object.assign(new Error('House not found'), { statusCode: 404 });
+  }
+
+  const existing = await prisma.favorite.findUnique({
+    where: {
+      userId_houseId: { userId, houseId },
+    },
+  });
+
+  if (existing) {
+    await prisma.favorite.delete({
+      where: {
+        userId_houseId: { userId, houseId },
+      },
+    });
+    return { isFavorite: false, message: 'Removed from favorites' };
+  } else {
+    await prisma.favorite.create({
+      data: { userId, houseId },
+    });
+    return { isFavorite: true, message: 'Added to favorites' };
+  }
+};
+
+export const getMyHouses = async (agentId) => {
+  return prisma.house.findMany({
+    where: { agentId },
+    include: houseListInclude,
+    orderBy: { createdAt: 'desc' },
+  });
+};
+
+export const getAgentDashboard = async (agentId) => {
+  const now = new Date();
+  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const firstDayOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const firstDayOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const [housesCount, bookings, reviews] = await Promise.all([
+    prisma.house.count({ where: { agentId } }),
+    prisma.booking.findMany({
+      where: { agentId },
+      include: {
+        user: { select: { id: true, name: true, avatar: true } },
+        house: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.review.findMany({
+      where: { house: { agentId } },
+      select: { rating: true },
+    }),
+  ]);
+
+  const totalEarnings = bookings
+    .filter((b) => b.status === 'COMPLETED')
+    .reduce((sum, b) => sum + b.totalAmount, 0);
+
+  const thisMonthEarnings = bookings
+    .filter((b) => b.status === 'COMPLETED' && new Date(b.createdAt) >= firstDayOfMonth)
+    .reduce((sum, b) => sum + b.totalAmount, 0);
+
+  const lastMonthEarnings = bookings
+    .filter((b) => b.status === 'COMPLETED' && new Date(b.createdAt) >= firstDayOfLastMonth && new Date(b.createdAt) < firstDayOfThisMonth)
+    .reduce((sum, b) => sum + b.totalAmount, 0);
+
+  const pendingPayouts = bookings
+    .filter((b) => b.status === 'CONFIRMED' || b.status === 'PENDING')
+    .reduce((sum, b) => sum + b.totalAmount, 0);
+
+  const transactions = bookings.map(b => ({
+    id: b.id,
+    description: `Booking for ${b.house.name}`,
+    amount: b.totalAmount,
+    status: b.status,
+    createdAt: b.createdAt
+  }));
+
+  const avgRating =
+    reviews.length > 0
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+      : 0;
+
+  return {
+    stats: {
+      housesCount,
+      bookingsCount: bookings.length,
+      reviewsCount: reviews.length,
+      avgRating,
+      totalEarnings,
+      thisMonthEarnings,
+      lastMonthEarnings,
+      pendingPayouts,
+    },
+    recentBookings: bookings.slice(0, 5),
+    transactions: transactions.slice(0, 20),
+  };
+};
+

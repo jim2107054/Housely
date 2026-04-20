@@ -39,11 +39,20 @@ const index = () => {
     ]).start();
 
     const timer = setTimeout(() => {
-      router.replace("/(onbording)"); // Navigate to onboarding after 3 seconds
+      // If user is already logged in, skip onboarding entirely
+      if (user && token) {
+        if (user.role === "AGENT") {
+          router.replace("/(owner)");
+        } else {
+          router.replace("/(tabs)");
+        }
+      } else {
+        router.replace("/(onbording)"); // Navigate to onboarding for new/logged-out users
+      }
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [user, token]);
 
   return (
     <View className="flex-1 bg-white items-center justify-center px-6">

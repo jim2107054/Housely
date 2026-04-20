@@ -5,70 +5,53 @@ import {
   Image,
   TouchableOpacity,
 } from "react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-
-// Import SVG icons
 import LocationIcon from "../../assets/images/home-icons/Location.svg";
+import api from "../../services/api";
 
-// Sample data for recommended properties
-const recommendedProperties = [
-  {
-    id: "1",
-    name: "Ayana Homestay",
-    location: "Imogiri, Yogyakarta",
-    price: 310,
-    rating: 4.5,
-    image: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400",
-    isFavorite: true,
-  },
-  {
-    id: "2",
-    name: "Bali Komang Guest",
-    location: "Nusa penida, Bali",
-    price: 280,
-    rating: 4.7,
-    image: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400",
-    isFavorite: false,
-  },
-  {
-    id: "3",
-    name: "Villa Paradise",
-    location: "Seminyak, Bali",
-    price: 450,
-    rating: 4.9,
-    image: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=400",
-    isFavorite: false,
-  },
-  {
-    id: "4",
-    name: "Sunset Villa",
-    location: "Ubud, Bali",
-    price: 380,
-    rating: 4.6,
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400",
-    isFavorite: false,
-  },
-  {
-    id: "5",
-    name: "Ocean View Resort",
-    location: "Kuta, Bali",
-    price: 520,
-    rating: 4.8,
-    image: "https://images.unsplash.com/photo-1600607687644-c7171b42498f?w=400",
-    isFavorite: true,
-  },
-];
+
 
 const Recommended = () => {
   const router = useRouter();
-  const [favorites, setFavorites] = useState(["1", "5"]);
+  const [properties, setProperties] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const toggleFavorite = (id) => {
-    setFavorites((prev) =>
-      prev.includes(id) ? prev.filter((fId) => fId !== id) : [...prev, id]
-    );
+  useEffect(() => {
+    const fetchRecommended = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get('/api/houses/recommended');
+        const transformed = response.data.houses.map(h => ({
+          ...h,
+          name: h.name,
+          location: `${h.area}, ${h.city}`,
+          price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
+          image: h.images?.[0]?.url || 'https://via.placeholder.com/150',
+          rating: h.rating || 4.5,
+          isFavorite: h.favorites?.length > 0,
+        }));
+        setProperties(transformed);
+      } catch (err) {
+        console.error('Error fetching recommended properties:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRecommended();
+  }, []);
+
+  const toggleFavorite = async (id) => {
+    try {
+      const response = await api.post(`/api/houses/${id}/favorite`);
+      setProperties(prev => prev.map(p => 
+        p.id === id ? { ...p, isFavorite: response.data.isFavorite } : p
+      ));
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
+    }
   };
 
   // Header Component
@@ -128,9 +111,9 @@ const Recommended = () => {
         className="ml-2"
       >
         <Ionicons
-          name={favorites.includes(item.id) ? "heart" : "heart-outline"}
+          name={item.isFavorite ? "heart" : "heart-outline"}
           size={24}
-          color={favorites.includes(item.id) ? "#FF6B6B" : "#DADADA"}
+          color={item.isFavorite ? "#FF6B6B" : "#DADADA"}
         />
       </TouchableOpacity>
     </TouchableOpacity>
@@ -139,13 +122,19 @@ const Recommended = () => {
   return (
     <View className="flex-1 bg-white">
       <Header />
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {recommendedProperties.map((item) => (
-          <RecommendedCard key={item.id} item={item} />
-        ))}
-        {/* Bottom spacing */}
-        <View className="h-24" />
-      </ScrollView>
+      {loading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#6C5CE7" />
+        </View>
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {properties.map((item) => (
+            <RecommendedCard key={item.id} item={item} />
+          ))}
+          {/* Bottom spacing */}
+          <View className="h-24" />
+        </ScrollView>
+      )}
     </View>
   );
 };

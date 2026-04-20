@@ -6,52 +6,39 @@ import {
   TouchableOpacity,
   FlatList,
 } from "react-native";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import api from "../../services/api";
 
-// Sample data for top locations
-const topLocationsData = [
-  {
-    id: "1",
-    name: "Malang",
-    properties: 124,
-    image: require("../../assets/images/home-icons/Rectangle 14.png"),
-  },
-  {
-    id: "2",
-    name: "Bali",
-    properties: 256,
-    image: require("../../assets/images/home-icons/Rectangle 15.png"),
-  },
-  {
-    id: "3",
-    name: "Yogyakarta",
-    properties: 189,
-    image: require("../../assets/images/home-icons/Rectangle 16.png"),
-  },
-  {
-    id: "4",
-    name: "Jakarta",
-    properties: 312,
-    image: require("../../assets/images/home-icons/Rectangle 14.png"),
-  },
-  {
-    id: "5",
-    name: "Surabaya",
-    properties: 145,
-    image: require("../../assets/images/home-icons/Rectangle 15.png"),
-  },
-  {
-    id: "6",
-    name: "Bandung",
-    properties: 178,
-    image: require("../../assets/images/home-icons/Rectangle 16.png"),
-  },
-];
+
 
 const TopLocations = () => {
   const router = useRouter();
+  const [locations, setLocations] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchLocations = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get('/api/houses/top-locations');
+        const transformed = response.data.locations.map((loc, index) => ({
+          id: String(index),
+          name: loc.city,
+          properties: loc._count.id,
+          image: { uri: `https://source.unsplash.com/featured/?${loc.city},city` }
+        }));
+        setLocations(transformed);
+      } catch (err) {
+        console.error('Error fetching top locations:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLocations();
+  }, []);
 
   // Header Component
   const Header = () => (
@@ -96,13 +83,19 @@ const TopLocations = () => {
   return (
     <View className="flex-1 bg-white">
       <Header />
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {topLocationsData.map((item) => (
-          <LocationCard key={item.id} item={item} />
-        ))}
-        {/* Bottom spacing */}
-        <View className="h-24" />
-      </ScrollView>
+      {loading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#6C5CE7" />
+        </View>
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {locations.map((item) => (
+            <LocationCard key={item.id} item={item} />
+          ))}
+          {/* Bottom spacing */}
+          <View className="h-24" />
+        </ScrollView>
+      )}
     </View>
   );
 };

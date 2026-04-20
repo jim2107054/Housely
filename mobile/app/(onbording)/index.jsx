@@ -61,7 +61,7 @@ const index = () => {
       duration: 300,
       useNativeDriver: true,
     }).start(() => {
-      router.push("/(auth)");
+      router.push("/(auth)/roleSelection");
     });
   };
 
