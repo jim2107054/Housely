@@ -32,7 +32,7 @@ export interface House {
   hasWifi: boolean;
   hasWater: boolean;
   createdAt: string;
-  agent: { id: string; username: string; name: string | null; avatar: string | null };
+  agent: { id: string; username: string; name: string | null; avatar: string | null; email: string };
   images: { url: string; order: number }[];
   _count: { bookings: number; reviews: number; views: number; favorites: number };
 }
