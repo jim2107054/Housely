@@ -105,7 +105,7 @@ export default function RevenuePage() {
                     <XAxis dataKey="date" tick={{ fontSize: 12 }} />
                     <YAxis tick={{ fontSize: 12 }} />
                     <Tooltip
-                      formatter={(value: number | undefined) => value !== undefined ? formatCurrency(value) : "N/A"}
+                      formatter={(value) => (value !== undefined && value !== null ? formatCurrency(Number(value)) : "N/A")}
                       contentStyle={{ fontSize: 12 }}
                     />
                     <Area
