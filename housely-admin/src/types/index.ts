@@ -60,7 +60,7 @@ export interface Payment {
   status: "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
   description: string | null;
   createdAt: string;
-  user: { id: string; username: string; name: string | null; email: string };
+  user: { id: string; username: string; name: string | null; avatar: string | null; email: string };
   booking: { id: string; house: { id: string; name: string } } | null;
 }
 
