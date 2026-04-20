@@ -21,9 +21,12 @@ export default function ReviewsPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  const minRating = searchParams.get("minRating");
+  const maxRating = searchParams.get("maxRating");
+
   const filters = {
-    minRating: searchParams.get("minRating") || "",
-    maxRating: searchParams.get("maxRating") || "",
+    minRating: minRating ? Number(minRating) : undefined,
+    maxRating: maxRating ? Number(maxRating) : undefined,
     page: Number(searchParams.get("page")) || 1,
   };
 
