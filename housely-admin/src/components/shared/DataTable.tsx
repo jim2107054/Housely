@@ -43,7 +43,7 @@ export function DataTable<TData, TValue>({
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <div className="border rounded-lg bg-white shadow-sm overflow-hidden">
+        <div className="border rounded-lg bg-white shadow-sm">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader className="bg-gray-50">
@@ -91,9 +91,10 @@ export function DataTable<TData, TValue>({
 
   return (
     <div className="space-y-4">
-      <div className="border rounded-lg bg-white shadow-sm overflow-hidden">
+      {/* Desktop / scrollable table view */}
+      <div className="border rounded-lg bg-white shadow-sm">
         <div className="overflow-x-auto">
-          <Table>
+          <Table className="min-w-[640px]">
             <TableHeader className="bg-gray-50">
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
