@@ -176,7 +176,27 @@ export default function PaymentsPage() {
         title="Payments Management"
         description="View all payment transactions"
         actions={
-          <Button variant="outline" size="default" onClick={() => toast.info("Export coming soon")}>
+          <Button variant="default" size="default" onClick={() => {
+            const payments = data?.payments;
+            if (!payments?.length) { toast.error("No data to export"); return; }
+            const headers = ["Status", "User", "Email", "Property", "Amount", "Method", "Transaction ID", "Date"];
+            const rows = payments.map((p: any) => [
+              p.status,
+              p.user?.name || p.user?.username || "",
+              p.user?.email || "",
+              p.booking?.house?.name || "",
+              String(p.amount || 0),
+              p.method || "",
+              p.transactionId || "",
+              p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "",
+            ]);
+            const csv = [headers, ...rows].map((r) => r.map((v: string) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a"); a.href = url; a.download = "payments.csv"; a.click();
+            URL.revokeObjectURL(url);
+            toast.success("Payments exported successfully");
+          }} className="bg-blue-600 hover:bg-blue-700 text-white">
             <Download className="w-4 h-4 mr-2" />
             Export Payments
           </Button>

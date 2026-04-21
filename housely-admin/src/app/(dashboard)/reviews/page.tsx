@@ -60,7 +60,24 @@ export default function ReviewsPage() {
         title="Reviews Management"
         description="Manage all property reviews and ratings"
         actions={
-          <Button variant="outline" size="sm" onClick={() => toast.info("Export coming soon")}>
+          <Button variant="default" size="sm" onClick={() => {
+            const reviews = data?.reviews;
+            if (!reviews?.length) { toast.error("No data to export"); return; }
+            const headers = ["Property", "User", "Rating", "Review", "Date"];
+            const rows = reviews.map((r: any) => [
+              r.house?.name || "",
+              r.user?.name || r.user?.username || "",
+              String(r.rating),
+              r.comment || "",
+              r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "",
+            ]);
+            const csv = [headers, ...rows].map((row) => row.map((v: string) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a"); a.href = url; a.download = "reviews.csv"; a.click();
+            URL.revokeObjectURL(url);
+            toast.success("Reviews exported successfully");
+          }} className="bg-blue-600 hover:bg-blue-700 text-white">
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>
