@@ -8,11 +8,12 @@ import {
   Animated,
   PanResponder,
 } from "react-native";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 import api from "../../services/api";
+import { connectSocket, getSocket } from "../../services/socketService";
 import { useEffect } from "react";
 import { ActivityIndicator } from "react-native";
 import useAuthStore from "../../store/authStore";
@@ -20,7 +21,7 @@ import useAuthStore from "../../store/authStore";
 
 
 const Chat = () => {
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [conversations, setConversations] = useState([]);
@@ -55,7 +56,18 @@ const Chat = () => {
       }
     };
     fetchConversations();
-  }, []);
+
+    // Listen for new messages via socket to refresh conversations list
+    const sock = connectSocket(token);
+    const handleNewMessage = () => {
+      fetchConversations();
+    };
+    sock.on('message:new', handleNewMessage);
+
+    return () => {
+      sock.off('message:new', handleNewMessage);
+    };
+  }, [token]);
 
   // Filter conversations based on search
   const filteredConversations = conversations.filter(

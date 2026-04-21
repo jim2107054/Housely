@@ -8,11 +8,12 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 
 import api from "../../services/api";
+import { connectSocket, disconnectSocket, getSocket } from "../../services/socketService";
 import useAuthStore from "../../store/authStore";
 import { ActivityIndicator } from "react-native";
 
@@ -28,29 +29,26 @@ const ChatConversation = () => {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [newMessage, setNewMessage] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const [otherUserTyping, setOtherUserTyping] = useState(false);
+  const typingTimeoutRef = useRef(null);
 
-  const conversation = {
-    name: name || "Unknown",
-    avatar: avatar || "https://randomuser.me/api/portraits/men/1.jpg",
-    online: false,
-    role: "User",
-  };
+  const { token } = useAuthStore();
+
+  const transformMessage = useCallback((m) => ({
+    id: m.id,
+    senderId: m.senderId,
+    text: m.content,
+    timestamp: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    isMe: m.senderId === user?.id,
+  }), [user?.id]);
 
   useEffect(() => {
     const fetchMessages = async () => {
       setLoading(true);
       try {
         const response = await api.get(`/api/conversations/${id}/messages`);
-        const transformed = response.data.messages.map(m => ({
-          id: m.id,
-          senderId: m.senderId,
-          text: m.content,
-          timestamp: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          isMe: m.senderId === user.id,
-        }));
-        setMessages(transformed);
-        
-        // Mark as read
+        setMessages(response.data.messages.map(transformMessage));
         await api.patch(`/api/conversations/${id}/read`);
       } catch (err) {
         console.error('Error fetching messages:', err);
@@ -59,7 +57,63 @@ const ChatConversation = () => {
       }
     };
     fetchMessages();
-  }, [id]);
+
+    // Connect socket
+    const sock = connectSocket(token);
+    sock.emit('conversation:join', { conversationId: id });
+
+    sock.on('message:received', (msg) => {
+      if (String(msg.conversationId) === String(id)) {
+        setMessages((prev) => {
+          // Avoid duplicates
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          return [...prev, transformMessage(msg)];
+        });
+      }
+    });
+
+    sock.on('typing:start', ({ userId, conversationId }) => {
+      if (String(conversationId) === String(id) && String(userId) !== String(user?.id)) {
+        setOtherUserTyping(true);
+      }
+    });
+
+    sock.on('typing:stop', ({ userId, conversationId }) => {
+      if (String(conversationId) === String(id) && String(userId) !== String(user?.id)) {
+        setOtherUserTyping(false);
+      }
+    });
+
+    return () => {
+      sock.emit('conversation:leave', { conversationId: id });
+      sock.off('message:received');
+      sock.off('typing:start');
+      sock.off('typing:stop');
+    };
+  }, [id, token]);
+
+  const handleTyping = (text) => {
+    setNewMessage(text);
+    const sock = getSocket();
+    if (sock?.connected) {
+      if (!isTyping) {
+        setIsTyping(true);
+        sock.emit('typing:start', { conversationId: id });
+      }
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        setIsTyping(false);
+        sock.emit('typing:stop', { conversationId: id });
+      }, 1500);
+    }
+  };
+
+  const conversation = {
+    name: name || "Unknown",
+    avatar: avatar || "https://randomuser.me/api/portraits/men/1.jpg",
+    online: otherUserTyping,
+    role: "User",
+  };
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -75,6 +129,14 @@ const ChatConversation = () => {
     const text = newMessage.trim();
     setNewMessage("");
 
+    // Stop typing indicator
+    clearTimeout(typingTimeoutRef.current);
+    setIsTyping(false);
+    const sock = getSocket();
+    if (sock?.connected) {
+      sock.emit('typing:stop', { conversationId: id });
+    }
+
     // Optimistic update
     const tempId = `temp-${Date.now()}`;
     const messageObj = {
@@ -87,8 +149,17 @@ const ChatConversation = () => {
     setMessages((prev) => [...prev, messageObj]);
 
     try {
-      const response = await api.post(`/api/conversations/${id}/messages`, { content: text });
-      // Update with real ID from backend if needed, or just let it be
+      if (sock?.connected) {
+        // Send via socket - backend will create the message and broadcast to room
+        sock.emit('message:send', { conversationId: id, content: text, type: 'text' });
+      } else {
+        // Fallback to REST if socket not connected
+        const response = await api.post(`/api/conversations/${id}/messages`, { content: text });
+        // Update temp message with real ID
+        if (response.data?.message) {
+          setMessages((prev) => prev.map((m) => m.id === tempId ? transformMessage(response.data.message) : m));
+        }
+      }
     } catch (err) {
       console.error('Error sending message:', err);
       setMessages((prev) => prev.filter(m => m.id !== tempId));
@@ -184,7 +255,7 @@ const ChatConversation = () => {
           placeholder="Type a message..."
           placeholderTextColor="#A1A5C1"
           value={newMessage}
-          onChangeText={setNewMessage}
+          onChangeText={handleTyping}
           className="flex-1 text-textPrimary font-poppins text-sm"
           multiline
           maxLength={500}
@@ -235,6 +306,15 @@ const ChatConversation = () => {
           {messages.map((message) => (
             <MessageBubble key={message.id} message={message} />
           ))}
+
+          {/* Typing indicator */}
+          {otherUserTyping && (
+            <View className="self-start mb-3 max-w-[80%]">
+              <View className="bg-cardBackground px-4 py-3 rounded-2xl rounded-bl-sm">
+                <Text className="text-textSecondary font-poppins text-sm italic">typing...</Text>
+              </View>
+            </View>
+          )}
         </ScrollView>
       )}
 
