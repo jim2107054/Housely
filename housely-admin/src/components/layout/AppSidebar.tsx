@@ -100,9 +100,9 @@ export function AppSidebar() {
           </div>
         </div>
         <Button
-          variant="outline"
+          variant="destructive"
           size="sm"
-          className="w-full h-9 border-gray-300 hover:bg-gray-100 hover:border-gray-400"
+          className="w-full h-9"
           onClick={handleLogout}
         >
           <LogOut className="w-4 h-4 mr-2" />
