@@ -41,6 +41,29 @@ export default function BookingsPage() {
   const { data, isLoading } = useBookings(filters);
   const updateStatus = useUpdateBookingStatus();
 
+  const handleExportCSV = () => {
+    const bookings = data?.bookings;
+    if (!bookings?.length) { toast.error("No data to export"); return; }
+    const headers = ["Property", "User", "Agent", "Check-in", "Check-out", "Amount", "Status", "Payment"];
+    const rows = bookings.map((b) => [
+      b.house.name,
+      b.user.name || b.user.username,
+      b.house.agent.name || b.house.agent.username,
+      formatDate(b.checkIn),
+      formatDate(b.checkOut),
+      String(b.totalAmount),
+      b.status,
+      b.payments?.[0]?.status || "N/A",
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "bookings.csv"; a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Bookings exported successfully");
+  };
+
   const setFilter = useCallback(
     (key: string, value: string) => {
       const params = new URLSearchParams(searchParams.toString());
@@ -173,11 +196,11 @@ export default function BookingsPage() {
       cell: ({ row }) => {
         const booking = row.original;
         return (
-          <DropdownMenu>
+          <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm">
+              <button className="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-gray-100 focus:outline-none">
                 <MoreHorizontal className="w-4 h-4" />
-              </Button>
+              </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
@@ -224,7 +247,7 @@ export default function BookingsPage() {
         title="Bookings Management"
         description="Manage all property bookings"
         actions={
-          <Button variant="outline" size="sm" onClick={() => toast.info("Export coming soon")}>
+          <Button variant="default" size="sm" onClick={handleExportCSV} className="bg-blue-600 hover:bg-blue-700 text-white">
             <Download className="w-4 h-4 mr-2" />
             Export
           </Button>

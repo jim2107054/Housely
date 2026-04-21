@@ -5,11 +5,18 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,6 +49,41 @@ export default function PropertiesPage() {
   const { data, isLoading } = useProperties(filters);
   const updateStatus = useUpdatePropertyStatus();
   const deleteProperty = useDeleteProperty();
+
+  const [deleteTarget, setDeleteTarget] = useState<House | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  const handleDeleteConfirm = async () => {
+    if (deleteTarget) {
+      await deleteProperty.mutateAsync(deleteTarget.id);
+      setDeleteTarget(null);
+      setDeleteDialogOpen(false);
+    }
+  };
+
+  const handleExportCSV = () => {
+    const houses = data?.houses;
+    if (!houses?.length) { toast.error("No data to export"); return; }
+    const headers = ["Name", "City", "Area", "Type", "Listing", "Price", "Status", "Views", "Bookings"];
+    const rows = houses.map((h) => [
+      h.name,
+      h.city,
+      h.area || "",
+      h.propertyType,
+      h.listingType,
+      h.listingType === "RENT" ? String(h.rentPerMonth || 0) : String(h.salePrice || 0),
+      h.status,
+      String(h._count.views),
+      String(h._count.bookings),
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "properties.csv"; a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Properties exported successfully");
+  };
 
   const setFilter = useCallback(
     (key: string, value: string) => {
@@ -178,11 +220,11 @@ export default function PropertiesPage() {
       cell: ({ row }) => {
         const house = row.original;
         return (
-          <DropdownMenu>
+          <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm">
+              <button className="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-gray-100 focus:outline-none">
                 <MoreHorizontal className="w-4 h-4" />
-              </Button>
+              </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
@@ -200,18 +242,12 @@ export default function PropertiesPage() {
                 {house.status === "AVAILABLE" ? "Mark Unavailable" : "Mark Available"}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <ConfirmDialog
-                trigger={
-                  <button className="relative flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-red-600 outline-none transition-colors hover:bg-accent hover:text-red-700">
-                    Delete Property
-                  </button>
-                }
-                title="Delete Property"
-                description={`Are you sure you want to delete ${house.name}? This action cannot be undone.`}
-                confirmLabel="Delete"
-                variant="destructive"
-                onConfirm={() => deleteProperty.mutate(house.id)}
-              />
+              <DropdownMenuItem
+                className="text-red-600 focus:text-red-700 focus:bg-red-50"
+                onClick={() => { setDeleteTarget(house); setDeleteDialogOpen(true); }}
+              >
+                Delete Property
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         );
@@ -225,7 +261,7 @@ export default function PropertiesPage() {
         title="Properties Management"
         description="Manage all properties and listings"
         actions={
-          <Button variant="outline" size="default" onClick={() => toast.info("Export coming soon")}>
+          <Button variant="default" size="default" onClick={handleExportCSV} className="bg-blue-600 hover:bg-blue-700 text-white">
             <Download className="w-4 h-4 mr-2" />
             Export Properties
           </Button>
@@ -296,6 +332,28 @@ export default function PropertiesPage() {
         pagination={data?.pagination}
         onPageChange={(page) => setFilter("page", String(page))}
       />
+
+      {/* Delete Confirm Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Property</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{deleteTarget?.name}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={deleteProperty.isPending}
+            >
+              {deleteProperty.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
