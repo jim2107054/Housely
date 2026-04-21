@@ -182,28 +182,28 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
                       <Eye className="w-4 h-4" />
                       <span className="text-xs">Views</span>
                     </div>
-                    <p className="text-xl font-bold">{house._count.views}</p>
+                    <p className="text-xl font-bold">{house._count?.views ?? 0}</p>
                   </div>
                   <div>
                     <div className="flex items-center justify-center gap-1 text-gray-600 mb-1">
                       <Calendar className="w-4 h-4" />
                       <span className="text-xs">Bookings</span>
                     </div>
-                    <p className="text-xl font-bold">{house._count.bookings}</p>
+                    <p className="text-xl font-bold">{house._count?.bookings ?? 0}</p>
                   </div>
                   <div>
                     <div className="flex items-center justify-center gap-1 text-gray-600 mb-1">
                       <Heart className="w-4 h-4" />
                       <span className="text-xs">Favorites</span>
                     </div>
-                    <p className="text-xl font-bold">{house._count.favorites}</p>
+                    <p className="text-xl font-bold">{house._count?.favorites ?? 0}</p>
                   </div>
                   <div>
                     <div className="flex items-center justify-center gap-1 text-gray-600 mb-1">
                       <Star className="w-4 h-4" />
                       <span className="text-xs">Reviews</span>
                     </div>
-                    <p className="text-xl font-bold">{house._count.reviews}</p>
+                    <p className="text-xl font-bold">{house._count?.reviews ?? 0}</p>
                   </div>
                 </div>
               </div>
@@ -219,23 +219,29 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
               <CardTitle>Property Agent</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-3 mb-4">
-                <Avatar className="w-12 h-12">
-                  <AvatarImage src={house.agent.avatar || undefined} />
-                  <AvatarFallback>
-                    {getInitials(house.agent.name, house.agent.username)}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-medium">{house.agent.name || house.agent.username}</p>
-                  <p className="text-sm text-gray-500">{house.agent.email}</p>
-                </div>
-              </div>
-              {house.agent.phoneNumber && (
-                <div className="text-sm">
-                  <span className="text-gray-600">Phone: </span>
-                  <span className="font-medium">{house.agent.phoneNumber}</span>
-                </div>
+              {house.agent ? (
+                <>
+                  <div className="flex items-center gap-3 mb-4">
+                    <Avatar className="w-12 h-12">
+                      <AvatarImage src={house.agent.avatar || undefined} />
+                      <AvatarFallback>
+                        {getInitials(house.agent.name, house.agent.username)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium">{house.agent.name || house.agent.username}</p>
+                      <p className="text-sm text-gray-500">{house.agent.email}</p>
+                    </div>
+                  </div>
+                  {house.agent.phoneNumber && (
+                    <div className="text-sm">
+                      <span className="text-gray-600">Phone: </span>
+                      <span className="font-medium">{house.agent.phoneNumber}</span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-gray-500">No agent assigned</p>
               )}
             </CardContent>
           </Card>

@@ -11,16 +11,22 @@ export function formatCurrency(amount: number): string {
   return `৳ ${amount.toLocaleString("en-BD")}`;
 }
 
-export function formatDate(dateString: string): string {
-  return format(new Date(dateString), "dd MMM yyyy");
+export function formatDate(dateString: string | null | undefined): string {
+  if (!dateString) return "—";
+  const d = new Date(dateString);
+  return isNaN(d.getTime()) ? "—" : format(d, "dd MMM yyyy");
 }
 
-export function formatDateTime(dateString: string): string {
-  return format(new Date(dateString), "dd MMM yyyy, HH:mm");
+export function formatDateTime(dateString: string | null | undefined): string {
+  if (!dateString) return "—";
+  const d = new Date(dateString);
+  return isNaN(d.getTime()) ? "—" : format(d, "dd MMM yyyy, HH:mm");
 }
 
-export function formatRelative(dateString: string): string {
-  return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+export function formatRelative(dateString: string | null | undefined): string {
+  if (!dateString) return "—";
+  const d = new Date(dateString);
+  return isNaN(d.getTime()) ? "—" : formatDistanceToNow(d, { addSuffix: true });
 }
 
 export function getInitials(name: string | null, username: string): string {
