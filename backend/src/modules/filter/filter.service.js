@@ -24,12 +24,10 @@ export const filterHouses = async (filters) => {
     area,
     q,
     sortBy = 'newest',
-    page = 1,
-    limit = 20,
   } = filters;
 
-  page = Number(page);
-  limit = Number(limit);
+  let page = Number(filters.page ?? 1);
+  let limit = Math.min(Number(filters.limit ?? 20), 100);
   const skip = (page - 1) * limit;
 
   // ─── Build WHERE clause ───

@@ -17,7 +17,7 @@ const SALT_ROUNDS = 10;
 
 // ─── Register ───
 
-export const register = async ({ username, email, password }) => {
+export const register = async ({ username, email, password, role }) => {
   const existing = await prisma.user.findFirst({
     where: { OR: [{ email }, { username }] },
   });
@@ -29,8 +29,12 @@ export const register = async ({ username, email, password }) => {
 
   const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
+  // Only allow USER or AGENT roles on self-registration (never ADMIN)
+  const allowedRoles = ['USER', 'AGENT'];
+  const userRole = allowedRoles.includes(role) ? role : 'USER';
+
   const user = await prisma.user.create({
-    data: { username, email, password: hashedPassword },
+    data: { username, email, password: hashedPassword, role: userRole },
     select: {
       id: true,
       username: true,
@@ -156,7 +160,13 @@ export const verifyOTPCode = async (identifier, otp) => {
 
 // ─── Reset Password ───
 
-export const resetPassword = async (identifier, newPassword) => {
+export const resetPassword = async (identifier, newPassword, resetToken) => {
+  // Verify the reset token issued after OTP verification
+  const storedToken = await redis.get(`reset:${identifier}`);
+  if (!storedToken || storedToken !== resetToken) {
+    throw Object.assign(new Error('Invalid or expired reset token. Please request a new OTP.'), { statusCode: 400 });
+  }
+
   const user = await prisma.user.findFirst({
     where: { OR: [{ email: identifier }, { phoneNumber: identifier }] },
   });

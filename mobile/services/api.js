@@ -17,6 +17,10 @@ const api = axios.create({
 let isRefreshing = false;
 let failedQueue = [];
 
+// Callback to clear Zustand auth state without a circular import
+let _onAuthFailure = null;
+export const setAuthFailureCallback = (cb) => { _onAuthFailure = cb; };
+
 const processQueue = (error, token = null) => {
   failedQueue.forEach(prom => {
     if (error) {
@@ -135,7 +139,10 @@ api.interceptors.response.use(
           
           // Clear all auth data
           await AsyncStorage.multiRemove(["token", "refreshToken", "user"]);
-          
+
+          // Notify the app to reset auth state and redirect to login
+          if (_onAuthFailure) _onAuthFailure();
+
           return Promise.reject(refreshError);
         }
       }

@@ -60,7 +60,7 @@ export const initializeSocket = (server) => {
 
     // ─── Message Events ───
 
-    socket.on('conversation:join', async (conversationId) => {
+    socket.on('conversation:join', async ({ conversationId }) => {
       try {
         // Verify user is part of conversation
         const conversation = await prisma.conversation.findFirst({
@@ -79,7 +79,7 @@ export const initializeSocket = (server) => {
       }
     });
 
-    socket.on('conversation:leave', (conversationId) => {
+    socket.on('conversation:leave', ({ conversationId }) => {
       socket.leave(`conversation:${conversationId}`);
       console.log(`[Socket] User ${userId} left conversation ${conversationId}`);
     });
@@ -153,7 +153,7 @@ export const initializeSocket = (server) => {
       }
     });
 
-    socket.on('typing:start', (conversationId) => {
+    socket.on('typing:start', ({ conversationId }) => {
       socket.to(`conversation:${conversationId}`).emit('typing:start', {
         conversationId,
         userId,
@@ -161,7 +161,7 @@ export const initializeSocket = (server) => {
       });
     });
 
-    socket.on('typing:stop', (conversationId) => {
+    socket.on('typing:stop', ({ conversationId }) => {
       socket.to(`conversation:${conversationId}`).emit('typing:stop', {
         conversationId,
         userId,

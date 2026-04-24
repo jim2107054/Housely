@@ -1,25 +1,12 @@
 import { useRouter } from "expo-router";
 import { View, Text, Image, TouchableOpacity } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import useAuthStore from "../../store/authStore";
 
 const successReset = () => {
   const router = useRouter();
-  const { user, token } = useAuthStore();
 
-  const handleContinue = async () => {
-    // Set dummy auth data to bypass authentication
-    const dummyUser = { id: 1, username: "testuser", email: "test@test.com" };
-    const dummyToken = "dummy-token-for-testing";
-    
-    await AsyncStorage.setItem("user", JSON.stringify(dummyUser));
-    await AsyncStorage.setItem("token", dummyToken);
-    
-    // Update the auth store
-    useAuthStore.setState({ user: dummyUser, token: dummyToken });
-    
-    // Navigate to home
-    router.replace("/(tabs)");
+  const handleContinue = () => {
+    // Navigate to login so user signs in with the new password
+    router.replace("/(auth)");
   };
   return (
     <View className="flex-1 justify-center items-center px-4">

@@ -9,10 +9,10 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import Toast from "react-native-toast-message";
-import useAuthStore from "../../store/authStore";
 import { ArrowLeft } from "lucide-react-native";
+import api from "../../services/api";
 
 // Extraction to fix input issues and simplify render
 const PasswordInput = ({ label, value, onChangeText, placeholder, showPassword, onToggleShow }) => (
@@ -49,26 +49,47 @@ const PasswordInput = ({ label, value, onChangeText, placeholder, showPassword, 
 );
 
 const ChangePassword = () => {
+  const { identifier, resetToken } = useLocalSearchParams();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-
-  const { isLoading, login } = useAuthStore();
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleChangePassword = async () => {
     if (!newPassword || !confirmPassword) {
-      Toast.show({ type: "error", text1: "Validation Error", text2: "All fields are required" });
+      Toast.show({ type: "error", text1: "Required", text2: "Please fill in both password fields" });
+      return;
+    }
+    if (newPassword.length < 6) {
+      Toast.show({ type: "error", text1: "Too Short", text2: "Password must be at least 6 characters" });
       return;
     }
     if (newPassword !== confirmPassword) {
-      Toast.show({ type: "error", text1: "Validation Error", text2: "Passwords do not match" });
+      Toast.show({ type: "error", text1: "Passwords Don't Match", text2: "New password and confirm password must be the same" });
       return;
     }
-    
-    // Success simulation for now based on user's manual link
-    Toast.show({ type: "success", text1: "Success!", text2: "Password changed successfully" });
-    router.replace("/(auth)/successReset");
+
+    setIsLoading(true);
+    try {
+      await api.post("/api/auth/reset-password", {
+        identifier,
+        resetToken,
+        newPassword,
+        confirmPassword,
+      });
+
+      Toast.show({ type: "success", text1: "Success!", text2: "Password reset successfully" });
+      router.replace("/(auth)/successReset");
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Reset Failed",
+        text2: error.response?.data?.message || "Failed to reset password. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

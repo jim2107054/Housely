@@ -2,55 +2,98 @@ import { useState } from "react";
 import {
   View,
   Text,
-  Image,
   TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Link, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
-import useAuthStore from "../../store/authStore";
-import { ActivityIndicator } from "react-native-paper";
 import { ArrowLeft } from "lucide-react-native";
+import api from "../../services/api";
 
-const forgotPassword = () => {
-  const hasPhone = true; // Set to true if using phone number for reset
-  const hasEmail = true; // Set to true if using email for reset
-  const [phonePress, setPhonePress] = useState(false);
-  const [emailPress, setEmailPress] = useState(false);
-
-  const { isLoading, login } = useAuthStore();
+const ForgotPassword = () => {
+  const [method, setMethod] = useState(null); // null | 'email' | 'phone'
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  // const handleChangePassword = async () => {
-  //   // Implement change password logic here
-  //   const result = await login(newPassword, confirmPassword);
+  const handleContinue = async () => {
+    if (!method) {
+      Toast.show({
+        type: "error",
+        text1: "Select Recovery Method",
+        text2: "Please select Email or Phone to continue",
+        position: "top",
+        visibilityTime: 3000,
+      });
+      return;
+    }
 
-  //   if (!result.success) {
-  //     Toast.show({
-  //       type: "error",
-  //       text1: "Change Password Failed",
-  //       text2: result.message || "An error occurred during password change",
-  //       position: "top",
-  //       visibilityTime: 4000,
-  //     });
-  //   } else {
-  //     Toast.show({
-  //       type: "success",
-  //       text1: "Success!",
-  //       text2: "Logged in successfully",
-  //       position: "top",
-  //       visibilityTime: 3000,
-  //     });
-  //   }
+    const identifier =
+      method === "email" ? email.trim().toLowerCase() : phone.trim();
 
-  //   // On successful login, you might want to navigate to the main app screen
-  //   if (result.success) {
-  //     router.replace("/(auth)/successReset"); // go to success screen after password change
-  //   }
-  // };
+    if (!identifier) {
+      Toast.show({
+        type: "error",
+        text1: "Required",
+        text2: `Please enter your ${method === "email" ? "email address" : "phone number"}`,
+        position: "top",
+        visibilityTime: 3000,
+      });
+      return;
+    }
+
+    if (method === "email" && !/\S+@\S+\.\S+/.test(identifier)) {
+      Toast.show({
+        type: "error",
+        text1: "Invalid Email",
+        text2: "Please enter a valid email address",
+        position: "top",
+        visibilityTime: 3000,
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      if (method === "email") {
+        await api.post("/api/auth/forgot-password/email", { email: identifier });
+      } else {
+        await api.post("/api/auth/forgot-password/phone", {
+          phoneNumber: identifier,
+        });
+      }
+
+      Toast.show({
+        type: "success",
+        text1: "Code Sent",
+        text2: `A 6-digit OTP has been sent to your ${method}`,
+        position: "top",
+        visibilityTime: 3000,
+      });
+
+      router.push({
+        pathname: "/(auth)/verifyPassword",
+        params: { identifier, method },
+      });
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Failed to Send OTP",
+        text2:
+          error.response?.data?.message ||
+          `Could not send OTP to your ${method}`,
+        position: "top",
+        visibilityTime: 4000,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -63,76 +106,83 @@ const forgotPassword = () => {
             <ArrowLeft size={24} color="black" onPress={() => router.back()} />
           </TouchableOpacity>
           <View className="my-8">
-            <View>
-              <Text className="text-start text-2xl font-semibold text-gray-900 mb-2">
-                Forgot Password
-              </Text>
-              <Text className="text-start font-light text-gray-500 mb-6">
-                Select which contact details should we use
-                {"\n"}
-                to reset your password.
-              </Text>
-            </View>
-            {/* Options for resetting password */}
-            {hasPhone && (
-              <TouchableOpacity
-                onPress={() => {
-                  setPhonePress(true);
-                  setEmailPress(false);
-                }}
-                className={`flex-row items-center border ${
-                  phonePress ? "border-secondary" : "border-gray-300"
-                } rounded-lg p-4 mb-4`}
-              >
-                <View className="w-16 h-16 justify-center items-center rounded-full bg-secondary/20">
-                  <Ionicons name="call" size={24} color="#7F56D9" />
-                </View>
-                <View className="ml-4 flex flex-col">
-                  <Text className="text-gray-400 font-semibold">
-                    Via Phone:{" "}
+            <Text className="text-start text-2xl font-semibold text-gray-900 mb-2">
+              Forgot Password
+            </Text>
+            <Text className="text-start font-light text-gray-500 mb-6">
+              Select a recovery method and enter your{"\n"}
+              contact details to reset your password.
+            </Text>
+
+            {/* Via Email Option */}
+            <TouchableOpacity
+              onPress={() => setMethod("email")}
+              className={`flex-row items-center border ${
+                method === "email" ? "border-secondary" : "border-gray-300"
+              } rounded-lg p-4 mb-4`}
+            >
+              <View className="w-16 h-16 justify-center items-center rounded-full bg-secondary/20">
+                <Ionicons name="mail" size={24} color="#7F56D9" />
+              </View>
+              <View className="ml-4 flex-1">
+                <Text className="text-gray-400 font-semibold">Via Email</Text>
+                {method === "email" ? (
+                  <TextInput
+                    className="text-gray-700 text-base font-semibold mt-1 border-b border-gray-300 py-1"
+                    placeholder="Enter your email address"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    value={email}
+                    onChangeText={setEmail}
+                    autoFocus
+                  />
+                ) : (
+                  <Text className="text-gray-500 text-sm mt-1">
+                    Tap to enter your email
                   </Text>
-                  <Text className="text-gray-700 text-lg font-semibold">
-                    +1 *** *** 1234
+                )}
+              </View>
+            </TouchableOpacity>
+
+            {/* Via Phone Option */}
+            <TouchableOpacity
+              onPress={() => setMethod("phone")}
+              className={`flex-row items-center border ${
+                method === "phone" ? "border-secondary" : "border-gray-300"
+              } rounded-lg p-4`}
+            >
+              <View className="w-16 h-16 justify-center items-center rounded-full bg-secondary/20">
+                <Ionicons name="call" size={24} color="#7F56D9" />
+              </View>
+              <View className="ml-4 flex-1">
+                <Text className="text-gray-400 font-semibold">Via Phone</Text>
+                {method === "phone" ? (
+                  <TextInput
+                    className="text-gray-700 text-base font-semibold mt-1 border-b border-gray-300 py-1"
+                    placeholder="Enter your phone number"
+                    keyboardType="phone-pad"
+                    value={phone}
+                    onChangeText={setPhone}
+                    autoFocus
+                  />
+                ) : (
+                  <Text className="text-gray-500 text-sm mt-1">
+                    Tap to enter your phone number
                   </Text>
-                </View>
-              </TouchableOpacity>
-            )}
-            {hasEmail && (
-              <TouchableOpacity
-                onPress={() => {
-                  setEmailPress(true);
-                  setPhonePress(false);
-                }}
-                className={`flex-row items-center border ${
-                  emailPress ? "border-secondary" : "border-gray-300"
-                } rounded-lg p-4`}
-              >
-                <View className="w-16 h-16 justify-center items-center rounded-full bg-secondary/20">
-                  <Ionicons name="mail" size={24} color="#7F56D9" />
-                </View>
-                <View className="ml-4 flex flex-col text-gray-700">
-                  <Text className="text-gray-400 font-semibold">
-                    Via Email:{" "}
-                  </Text>
-                  <Text className="text-gray-700 text-lg font-semibold">
-                    mu***@gmail.com
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            )}
+                )}
+              </View>
+            </TouchableOpacity>
+
             {/* Continue Button */}
             <TouchableOpacity
               className="bg-secondary rounded-lg py-4 mt-8"
-              //! onPress={handleChangePassword}
-              onPress={() => router.push("/(auth)/verifyPassword")}
+              onPress={handleContinue}
+              disabled={isLoading}
+              style={{ opacity: isLoading ? 0.7 : 1 }}
             >
-              {/* Need to fix it */}
               {isLoading ? (
-                <ActivityIndicator
-                  animating={true}
-                  size="small"
-                  color="white"
-                />
+                <ActivityIndicator size="small" color="white" />
               ) : (
                 <Text className="text-white text-center text-lg font-semibold">
                   Continue
@@ -146,4 +196,4 @@ const forgotPassword = () => {
   );
 };
 
-export default forgotPassword;
+export default ForgotPassword;

@@ -6,21 +6,21 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import Toast from "react-native-toast-message";
-import { ActivityIndicator } from "react-native-paper";
 import { ArrowLeft } from "lucide-react-native";
-import useAuthStore from "../../store/authStore";
+import api from "../../services/api";
 
-const verifyPassword = () => {
-  const [otp, setOtp] = useState(["", "", "", ""]);
+const VerifyPassword = () => {
+  const { identifier, method } = useLocalSearchParams();
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [isLoading, setIsLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(60);
   const router = useRouter();
   const inputRefs = useRef([]);
 
-  // Timer for resend code
   useEffect(() => {
     if (resendTimer > 0) {
       const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
@@ -29,21 +29,16 @@ const verifyPassword = () => {
   }, [resendTimer]);
 
   const handleOtpChange = (value, index) => {
-    // Only allow numbers
     if (!/^\d*$/.test(value)) return;
-
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
-
-    // Auto-focus next input
-    if (value && index < 3) {
+    if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
   };
 
   const handleKeyPress = (e, index) => {
-    // Handle backspace to go to previous input
     if (e.nativeEvent.key === "Backspace" && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
@@ -51,12 +46,11 @@ const verifyPassword = () => {
 
   const handleVerify = async () => {
     const otpCode = otp.join("");
-
-    if (otpCode.length !== 4) {
+    if (otpCode.length !== 6) {
       Toast.show({
         type: "error",
-        text1: "Invalid Code",
-        text2: "Please enter the 4-digit code",
+        text1: "Incomplete Code",
+        text2: "Please enter the full 6-digit code",
         position: "top",
         visibilityTime: 3000,
       });
@@ -64,29 +58,32 @@ const verifyPassword = () => {
     }
 
     setIsLoading(true);
-
     try {
-      // TODO: Implement OTP verification API call
-      // const response = await verifyOTP(otpCode);
+      const response = await api.post("/api/auth/verify-otp", {
+        identifier,
+        otp: otpCode,
+      });
 
-      // Simulating API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const resetToken = response.data.resetToken;
 
       Toast.show({
         type: "success",
-        text1: "Success!",
-        text2: "Email verified successfully",
+        text1: "Verified!",
+        text2: "OTP verified successfully",
         position: "top",
-        visibilityTime: 3000,
+        visibilityTime: 2000,
       });
 
-      // Navigate to reset password screen
-      router.push("/(auth)/resetPassword");
+      router.push({
+        pathname: "/(auth)/changePassword",
+        params: { identifier, resetToken },
+      });
     } catch (error) {
       Toast.show({
         type: "error",
         text1: "Verification Failed",
-        text2: error.message || "Invalid verification code",
+        text2:
+          error.response?.data?.message || "Invalid or expired OTP. Try again.",
         position: "top",
         visibilityTime: 4000,
       });
@@ -97,26 +94,31 @@ const verifyPassword = () => {
 
   const handleResendCode = async () => {
     if (resendTimer > 0) return;
-
     setIsLoading(true);
     try {
-      // TODO: Implement resend OTP API call
-      // await resendOTP();
-
+      if (method === "phone") {
+        await api.post("/api/auth/forgot-password/phone", {
+          phoneNumber: identifier,
+        });
+      } else {
+        await api.post("/api/auth/forgot-password/email", {
+          email: identifier,
+        });
+      }
       Toast.show({
         type: "success",
         text1: "Code Sent",
-        text2: "A new code has been sent to your email",
+        text2: `A new code has been sent to your ${method || "email"}`,
         position: "top",
         visibilityTime: 3000,
       });
-
+      setOtp(["", "", "", "", "", ""]);
       setResendTimer(60);
     } catch (error) {
       Toast.show({
         type: "error",
         text1: "Error",
-        text2: "Failed to resend code",
+        text2: "Failed to resend code. Try again.",
         position: "top",
         visibilityTime: 3000,
       });
@@ -124,6 +126,12 @@ const verifyPassword = () => {
       setIsLoading(false);
     }
   };
+
+  const maskedIdentifier = identifier
+    ? method === "phone"
+      ? String(identifier).replace(/(\d{2})\d+(\d{2})$/, "$1****$2")
+      : String(identifier).replace(/(.{2})(.*)(?=@)/, (_, a, b) => a + "*".repeat(b.length))
+    : "";
 
   return (
     <KeyboardAvoidingView
@@ -138,20 +146,21 @@ const verifyPassword = () => {
 
           <View className="my-8">
             <Text className="text-start text-2xl font-semibold text-gray-900 mb-2">
-              Verify your Email
+              Verify your {method === "phone" ? "Phone" : "Email"}
             </Text>
             <Text className="text-start font-light text-gray-500 mb-6">
-              Please enter 6 digit verification code that have been
-              {"\n"}
-              sent to your email address
+              Please enter the 6-digit code sent to{"\n"}
+              <Text className="font-semibold text-gray-700">
+                {maskedIdentifier}
+              </Text>
             </Text>
 
-            {/* OTP Input Fields */}
+            {/* OTP Input Fields — 6 boxes */}
             <View className="flex-row justify-between mb-6">
               {otp.map((digit, index) => (
                 <View
                   key={index}
-                  className="w-16 h-16 border-2 border-gray-800 rounded-xl justify-center items-center bg-white"
+                  className="w-12 h-14 border-2 rounded-xl justify-center items-center bg-white"
                   style={{ borderColor: digit ? "#7F56D9" : "#E5E7EB" }}
                 >
                   <TextInput
@@ -169,20 +178,20 @@ const verifyPassword = () => {
             </View>
 
             {/* Resend Code */}
-            <View className="flex flex-col items-center justify-center mb-8">
+            <View className="flex-col items-center justify-center mb-8">
               <Text className="text-gray-500 text-lg">
                 Don&apos;t receive code?{" "}
               </Text>
               <TouchableOpacity
                 onPress={handleResendCode}
-                disabled={resendTimer > 0}
+                disabled={resendTimer > 0 || isLoading}
               >
                 <Text
                   className="font-semibold"
                   style={{ color: resendTimer > 0 ? "#eb3859" : "#7F56D9" }}
                 >
                   Resend Code
-                  <Text>{resendTimer > 0 && `(${resendTimer}s)`}</Text>
+                  {resendTimer > 0 && ` (${resendTimer}s)`}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -190,16 +199,12 @@ const verifyPassword = () => {
             {/* Verify Button */}
             <TouchableOpacity
               className="bg-secondary rounded-lg py-4"
-              // onPress={handleVerify}
-              onPress={() => router.push("/(auth)/changePassword")}
+              onPress={handleVerify}
               disabled={isLoading}
+              style={{ opacity: isLoading ? 0.7 : 1 }}
             >
               {isLoading ? (
-                <ActivityIndicator
-                  animating={true}
-                  size="small"
-                  color="white"
-                />
+                <ActivityIndicator size="small" color="white" />
               ) : (
                 <Text className="text-white text-center text-lg font-semibold">
                   Verify
@@ -213,4 +218,5 @@ const verifyPassword = () => {
   );
 };
 
-export default verifyPassword;
+export default VerifyPassword;
+

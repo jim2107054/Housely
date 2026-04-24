@@ -12,6 +12,7 @@ import Toast from "react-native-toast-message";
 import { PaperProvider } from "react-native-paper";
 import useAuthStore from "../store/authStore";
 import { useEffect } from "react";
+import { setAuthFailureCallback } from "../services/api";
 
 export default function RootLayout() {
   const router = useRouter();
@@ -21,11 +22,16 @@ export default function RootLayout() {
   //! segments tells us where we are in the navigation tree(ex: auth stack, main app stack, etc)
   // console.log(segments);
 
-  const { checkAuth, user, token } = useAuthStore();
+  const { checkAuth, user, token, logout } = useAuthStore();
 
   //! Firstly check if the user is authenticated
   useEffect(() => {
     checkAuth(); //! it will set the user and token if valid token found in async storage
+
+    // Wire up the API service to clear Zustand state on token refresh failure
+    setAuthFailureCallback(() => {
+      useAuthStore.setState({ user: null, token: null, refreshToken: null });
+    });
   }, []); // only once on mount
 
   useEffect(() => {
@@ -49,14 +55,17 @@ export default function RootLayout() {
           router.replace("/(tabs)");
         }
       }
+      // if a non-AGENT signed-in user somehow reaches the owner area, redirect them out
+      else if (isSignedIn && inOwnerScreen && user.role !== "AGENT" && user.role !== "ADMIN") {
+        router.replace("/(tabs)");
+      }
       //! if user is not signed in and trying to access protected screens, redirect to auth
-      // Allow: (auth), (onbording), index, and (owner) — owner area is open for now
+      // Allow: (auth), (onbording), index — owner area now requires auth too
       else if (
         !isSignedIn &&
         !inAuthScreen &&
         !inOnboarding &&
-        !inIndex &&
-        !inOwnerScreen
+        !inIndex
       ) {
         router.replace("/(auth)");
       }

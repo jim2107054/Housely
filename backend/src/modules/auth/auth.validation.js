@@ -44,6 +44,7 @@ export const resetPasswordSchema = z.object({
   body: z
     .object({
       identifier: z.string().min(1),
+      resetToken: z.string().min(1, 'Reset token is required'),
       newPassword: z.string().min(6).max(128),
       confirmPassword: z.string().min(6).max(128),
     })
