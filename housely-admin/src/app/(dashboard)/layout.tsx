@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 
@@ -7,9 +7,16 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
-  
-  if (!session || session.user.role !== "ADMIN") {
+  const { userId } = await auth();
+
+  if (!userId) {
+    redirect("/login");
+  }
+
+  const user = await currentUser();
+  const role = user?.publicMetadata?.role as string | undefined;
+
+  if (role !== "ADMIN") {
     redirect("/login");
   }
 

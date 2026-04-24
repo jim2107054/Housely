@@ -17,7 +17,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import * as ImagePicker from "expo-image-picker";
-import { Video, ResizeMode } from "expo-av";
+import { VideoView, useVideoPlayer } from "expo-video";
 
 const COLORS = {
   primary: "#7B61FF",
@@ -97,6 +97,19 @@ const ChipSelector = ({ label, options, selected, onSelect }) => (
     </View>
   </View>
 );
+
+// Isolated component so useVideoPlayer hook is stable and not inside a conditional
+const VideoPreview = ({ uri }) => {
+  const player = useVideoPlayer({ uri });
+  return (
+    <VideoView
+      player={player}
+      style={{ width: '100%', height: '100%' }}
+      nativeControls
+      contentFit="cover"
+    />
+  );
+};
 
 const AddProperty = () => {
   const router = useRouter();
@@ -386,12 +399,7 @@ const AddProperty = () => {
             </Text>
             {video ? (
               <View style={{ width: '100%', height: 200, borderRadius: 12, overflow: 'hidden', position: 'relative' }}>
-                <Video
-                  source={{ uri: video }}
-                  style={{ width: '100%', height: '100%' }}
-                  useNativeControls
-                  resizeMode={ResizeMode.COVER}
-                />
+              <VideoPreview uri={video} />
                 <TouchableOpacity
                   onPress={() => setVideo(null)}
                   style={{

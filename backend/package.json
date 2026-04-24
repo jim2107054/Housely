@@ -19,6 +19,8 @@
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage"
   },
   "dependencies": {
+    "@clerk/backend": "^3.3.0",
+    "@clerk/express": "^2.1.7",
     "@prisma/client": "^6.0.0",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.9.0",

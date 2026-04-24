@@ -1,7 +1,6 @@
 import { Server } from 'socket.io';
-import jwt from 'jsonwebtoken';
+import { clerkClient } from '@clerk/express';
 import prisma from '../config/prisma.js';
-import { JWT_ACCESS_SECRET } from '../config/env.js';
 
 // Store active socket connections by user ID
 const activeConnections = new Map();
@@ -16,14 +15,17 @@ const authenticateSocket = async (socket, next) => {
       return next(new Error('Authentication required'));
     }
 
-    const decoded = jwt.verify(token, JWT_ACCESS_SECRET);
+    // Verify Clerk session token
+    const payload = await clerkClient.verifyToken(token);
+    const clerkUserId = payload.sub;
+
     const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
+      where: { clerkId: clerkUserId },
       select: { id: true, username: true, name: true, avatar: true, role: true },
     });
 
     if (!user) {
-      return next(new Error('User not found'));
+      return next(new Error('User not found — please sync your account'));
     }
 
     socket.user = user;
@@ -60,7 +62,7 @@ export const initializeSocket = (server) => {
 
     // ─── Message Events ───
 
-    socket.on('conversation:join', async (conversationId) => {
+    socket.on('conversation:join', async ({ conversationId }) => {
       try {
         // Verify user is part of conversation
         const conversation = await prisma.conversation.findFirst({
@@ -79,7 +81,7 @@ export const initializeSocket = (server) => {
       }
     });
 
-    socket.on('conversation:leave', (conversationId) => {
+    socket.on('conversation:leave', ({ conversationId }) => {
       socket.leave(`conversation:${conversationId}`);
       console.log(`[Socket] User ${userId} left conversation ${conversationId}`);
     });
@@ -153,7 +155,7 @@ export const initializeSocket = (server) => {
       }
     });
 
-    socket.on('typing:start', (conversationId) => {
+    socket.on('typing:start', ({ conversationId }) => {
       socket.to(`conversation:${conversationId}`).emit('typing:start', {
         conversationId,
         userId,
@@ -161,7 +163,7 @@ export const initializeSocket = (server) => {
       });
     });
 
-    socket.on('typing:stop', (conversationId) => {
+    socket.on('typing:stop', ({ conversationId }) => {
       socket.to(`conversation:${conversationId}`).emit('typing:stop', {
         conversationId,
         userId,

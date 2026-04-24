@@ -5,7 +5,6 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable } from "@/components/shared/DataTable";
 import { StatusBadge } from "@/components/shared/StatusBadge";
-import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,6 +64,8 @@ export default function UsersPage() {
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [newRole, setNewRole] = useState<string>("");
+  const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const setFilter = useCallback(
     (key: string, value: string) => {
@@ -83,6 +84,36 @@ export default function UsersPage() {
       setRoleDialogOpen(false);
       setSelectedUser(null);
     }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (deleteTarget) {
+      await deleteUser.mutateAsync(deleteTarget.id);
+      setDeleteTarget(null);
+      setDeleteDialogOpen(false);
+    }
+  };
+
+  const handleExportCSV = () => {
+    const users = data?.users;
+    if (!users?.length) { toast.error("No data to export"); return; }
+    const headers = ["Name", "Username", "Email", "Phone", "Role", "Verified", "Joined"];
+    const rows = users.map((u) => [
+      u.name || "",
+      u.username,
+      u.email,
+      u.phoneNumber || "",
+      u.role,
+      u.isVerified ? "Yes" : "No",
+      formatDate(u.createdAt),
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "users.csv"; a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Users exported successfully");
   };
 
   const columns: ColumnDef<User>[] = [
@@ -140,11 +171,11 @@ export default function UsersPage() {
       cell: ({ row }) => {
         const user = row.original;
         return (
-          <DropdownMenu>
+          <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm">
+              <button className="h-8 w-8 p-0 flex items-center justify-center rounded-md hover:bg-gray-100 focus:outline-none">
                 <MoreHorizontal className="w-4 h-4" />
-              </Button>
+              </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
@@ -164,18 +195,15 @@ export default function UsersPage() {
                 Toggle Verification
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <ConfirmDialog
-                trigger={
-                  <button className="relative flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-red-600 outline-none transition-colors hover:bg-accent hover:text-red-700">
-                    Delete User
-                  </button>
-                }
-                title="Delete User"
-                description={`Are you sure you want to delete ${user.name || user.username}? This action cannot be undone.`}
-                confirmLabel="Delete"
-                variant="destructive"
-                onConfirm={() => deleteUser.mutate(user.id)}
-              />
+              <DropdownMenuItem
+                className="text-red-600 focus:text-red-700 focus:bg-red-50"
+                onClick={() => {
+                  setDeleteTarget(user);
+                  setDeleteDialogOpen(true);
+                }}
+              >
+                Delete User
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         );
@@ -189,7 +217,7 @@ export default function UsersPage() {
         title="Users Management"
         description="Manage all platform users, agents, and administrators"
         actions={
-          <Button variant="outline" size="default" onClick={() => toast.info("Export coming soon")}>
+          <Button variant="default" size="default" onClick={handleExportCSV} className="bg-blue-600 hover:bg-blue-700 text-white">
             <Download className="w-4 h-4 mr-2" />
             Export Users
           </Button>
@@ -265,6 +293,28 @@ export default function UsersPage() {
         pagination={data?.pagination}
         onPageChange={(page) => setFilter("page", String(page))}
       />
+
+      {/* Delete Confirm Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete User</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {deleteTarget?.name || deleteTarget?.username}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={deleteUser.isPending}
+            >
+              {deleteUser.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Role Change Dialog */}
       <Dialog open={roleDialogOpen} onOpenChange={setRoleDialogOpen}>

@@ -23,16 +23,28 @@ import { useState } from "react";
 
 export default function DashboardPage() {
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useAdminStats();
-  const { data: health, isLoading: healthLoading } = useSystemHealth();
-  const { data: revenueData, isLoading: revenueLoading } = useRevenue("monthly");
-  const { data: topAgents, isLoading: agentsLoading } = useTopAgents(5);
-  const { data: topProperties, isLoading: propertiesLoading } = useTopProperties(5);
+  const { data: health, isLoading: healthLoading, refetch: refetchHealth } = useSystemHealth();
+  const { data: revenueData, isLoading: revenueLoading, refetch: refetchRevenue } = useRevenue("monthly");
+  const { data: topAgents, isLoading: agentsLoading, refetch: refetchAgents } = useTopAgents(5);
+  const { data: topProperties, isLoading: propertiesLoading, refetch: refetchProperties } = useTopProperties(5);
 
   const handleRefresh = async () => {
-    await refetchStats();
-    setLastRefresh(new Date());
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        refetchStats(),
+        refetchHealth(),
+        refetchRevenue(),
+        refetchAgents(),
+        refetchProperties(),
+      ]);
+      setLastRefresh(new Date());
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   if (statsLoading || !stats) {
@@ -58,9 +70,9 @@ export default function DashboardPage() {
         title="Dashboard Overview"
         description={`Last updated: ${formatRelative(lastRefresh.toISOString())}`}
         actions={
-          <Button variant="outline" size="default" onClick={handleRefresh}>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Refresh Data
+          <Button variant="outline" size="default" onClick={handleRefresh} disabled={isRefreshing}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
+            {isRefreshing ? "Refreshing..." : "Refresh Data"}
           </Button>
         }
       />

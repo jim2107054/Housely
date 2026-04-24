@@ -1,5 +1,4 @@
 import axios from "axios";
-import { getSession } from "next-auth/react";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -7,22 +6,24 @@ const api = axios.create({
   timeout: 15000,
 });
 
-// Attach token from next-auth session on every request
+// Attach Clerk session token on every request (client-side)
 api.interceptors.request.use(async (config) => {
-  const session = await getSession();
-  if (session?.accessToken) {
-    config.headers.Authorization = `Bearer ${session.accessToken}`;
+  if (typeof window !== "undefined") {
+    // window.Clerk is available after ClerkProvider mounts
+    const token = await (window as typeof window & { Clerk?: { session?: { getToken: () => Promise<string | null> } } }).Clerk?.session?.getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
   }
   return config;
 });
 
-// Handle 401 — sign out
+// Handle 401 — redirect to login
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
-    if (error.response?.status === 401) {
-      const { signOut } = await import("next-auth/react");
-      await signOut({ callbackUrl: "/login" });
+    if (error.response?.status === 401 && typeof window !== "undefined") {
+      window.location.href = "/login";
     }
     return Promise.reject(error);
   }

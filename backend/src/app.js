@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import { clerkMiddleware } from '@clerk/express';
 
 // Swagger documentation
 import { setupSwagger } from './config/swagger.js';
@@ -23,6 +24,7 @@ const app = express();
 
 // ─── Global middleware ───
 app.use(cors());
+app.use(clerkMiddleware());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
