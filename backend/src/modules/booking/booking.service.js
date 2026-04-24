@@ -1,4 +1,6 @@
 import prisma from '../../config/prisma.js';
+import { createContract } from '../contract/contract.service.js';
+import env from '../../config/env.js';
 
 // ─── Shared includes ───
 
@@ -25,6 +27,17 @@ const bookingListInclude = {
 
 export const createBooking = async (userId, data) => {
   const { houseId, checkIn, checkOut, notes } = data;
+
+  // KYC gate — only enforced when KYC_REQUIRED=true
+  if (env.KYC_REQUIRED) {
+    const kyc = await prisma.userKYC.findUnique({ where: { userId } });
+    if (!kyc || kyc.status !== 'APPROVED') {
+      throw Object.assign(
+        new Error('Identity verification (KYC) is required before booking. Please verify your identity first.'),
+        { statusCode: 403 },
+      );
+    }
+  }
 
   // Validate house exists and is available
   const house = await prisma.house.findUnique({
@@ -261,6 +274,13 @@ export const updateBookingStatus = async (agentId, bookingId, status) => {
     data: { status },
     include: bookingDetailInclude,
   });
+
+  // Auto-generate digital contract when booking is confirmed
+  if (status === 'CONFIRMED') {
+    createContract(bookingId).catch((err) =>
+      console.error(`[Contract] Failed to generate contract for booking ${bookingId}:`, err.message),
+    );
+  }
 
   return updatedBooking;
 };

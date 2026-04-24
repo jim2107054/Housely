@@ -43,7 +43,16 @@ export const getMessages = async (req, res, next) => {
 
 export const sendMessage = async (req, res, next) => {
   try {
-    const message = await messageService.sendMessage(req.user.id, req.params.id, req.body);
+    const { message, recipientId } = await messageService.sendMessage(req.user.id, req.params.id, req.body);
+
+    // Broadcast via Socket.IO so the REST path behaves identically to the socket path
+    const io = req.app.get('io');
+    if (io) {
+      const conversationId = req.params.id;
+      io.to(`conversation:${conversationId}`).emit('message:received', message);
+      io.to(`user:${recipientId}`).emit('message:new', { conversationId, message });
+    }
+
     return success(res, message, 'Message sent', 201);
   } catch (err) {
     next(err);

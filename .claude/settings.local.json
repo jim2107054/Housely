@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm -rf /tmp/everything-claude-code)",
+      "Bash(git clone *)",
+      "Read(//tmp/everything-claude-code/.agents/**)",
+      "Read(//tmp/everything-claude-code/**)",
+      "Bash(cp /tmp/everything-claude-code/rules/common/* ~/.claude/rules/)",
+      "Bash(cp /tmp/everything-claude-code/rules/typescript/* ~/.claude/rules/)",
+      "Bash(cp /tmp/everything-claude-code/rules/python/* ~/.claude/rules/)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('DEPS:', list\\(d.get\\('dependencies',{}\\).keys\\(\\)\\)\\); print\\('DEVDEPS:', list\\(d.get\\('devDependencies',{}\\).keys\\(\\)\\)\\)\")",
+      "Bash(git fetch *)",
+      "Bash(git merge *)",
+      "Bash(awk '{print $NF}')",
+      "Bash(npx prisma *)",
+      "Bash(npm install *)"
+    ]
+  }
+}

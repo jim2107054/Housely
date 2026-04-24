@@ -17,7 +17,7 @@ import api from "../../services/api";
 import { connectSocket, getSocket } from "../../services/socketService";
 import useAuthStore from "../../store/authStore";
 
-// ─── Header — defined OUTSIDE to avoid recreation on every render ─────────────
+// ─── Header ──────────────────────────────────────────────────────────────────
 const ConversationHeader = memo(({ name, avatar, isOnline, onBack }) => (
   <View className="flex-row items-center px-4 py-3 bg-white border-b border-border">
     <TouchableOpacity onPress={onBack} className="w-10 h-10 items-center justify-center">
@@ -51,7 +51,7 @@ const ConversationHeader = memo(({ name, avatar, isOnline, onBack }) => (
   </View>
 ));
 
-// ─── Message Bubble — defined OUTSIDE ────────────────────────────────────────
+// ─── Message Bubble ───────────────────────────────────────────────────────────
 const MessageBubble = memo(({ message }) => (
   <View className={`max-w-[80%] mb-3 ${message.isMe ? "self-end" : "self-start"}`}>
     <View
@@ -73,7 +73,7 @@ const MessageBubble = memo(({ message }) => (
   </View>
 ));
 
-// ─── Input Bar — defined OUTSIDE so TextInput never unmounts on state change ─
+// ─── Input Bar ────────────────────────────────────────────────────────────────
 const InputBar = memo(({ value, onChangeText, onSend }) => (
   <View className="flex-row items-center px-4 py-3 bg-white border-t border-border">
     <TouchableOpacity className="w-10 h-10 items-center justify-center">
@@ -104,8 +104,6 @@ const InputBar = memo(({ value, onChangeText, onSend }) => (
   </View>
 ));
 
-
-
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 const ChatConversation = () => {
   const router = useRouter();
@@ -119,6 +117,7 @@ const ChatConversation = () => {
   const [newMessage, setNewMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
+  const [isOnline, setIsOnline] = useState(false);
   const typingTimeoutRef = useRef(null);
 
   const transformMessage = useCallback((m) => ({
@@ -133,33 +132,35 @@ const ChatConversation = () => {
   }), [user?.id]);
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchMessages = async () => {
       setLoading(true);
       try {
         const response = await api.get(`/api/conversations/${id}/messages`);
-        setMessages(response.data.messages.map(transformMessage));
-        await api.patch(`/api/conversations/${id}/read`);
+        if (!cancelled) {
+          setMessages(response.data.messages.map(transformMessage));
+          await api.patch(`/api/conversations/${id}/read`);
+        }
       } catch (err) {
         console.error('Error fetching messages:', err);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
     fetchMessages();
 
-    let sock;
-    const initSocket = async () => {
-      sock = await connectSocket();
-      if (!sock) return;
-
+    // Re-usable function so we can call it on every (re)connect
+    const joinConversation = (sock) => {
       sock.emit('conversation:join', { conversationId: id });
+    };
 
+    const attachListeners = (sock) => {
       sock.on('message:received', (msg) => {
+        if (cancelled) return;
         if (String(msg.conversationId) !== String(id)) return;
         setMessages((prev) => {
-          // Already have the real message — no-op
           if (prev.some((m) => m.id === msg.id)) return prev;
-          // Our own message arriving back from server: replace the latest temp entry
           if (String(msg.senderId) === String(user?.id)) {
             const tempIdx = [...prev].reverse().findIndex(
               (m) => typeof m.id === 'string' && m.id.startsWith('temp-')
@@ -176,30 +177,61 @@ const ChatConversation = () => {
       });
 
       sock.on('typing:start', ({ userId: typingUserId, conversationId }) => {
+        if (cancelled) return;
         if (String(conversationId) === String(id) && String(typingUserId) !== String(user?.id)) {
           setOtherUserTyping(true);
         }
       });
 
       sock.on('typing:stop', ({ userId: typingUserId, conversationId }) => {
+        if (cancelled) return;
         if (String(conversationId) === String(id) && String(typingUserId) !== String(user?.id)) {
           setOtherUserTyping(false);
         }
       });
+
+      sock.on('presence:update', ({ userId: presenceUserId, status }) => {
+        if (cancelled) return;
+        // We don't have the other party's userId directly in params,
+        // but we can infer: any presence update that isn't ours affects isOnline
+        if (String(presenceUserId) !== String(user?.id)) {
+          setIsOnline(status === 'online');
+        }
+      });
+
+      // Re-join conversation room on every reconnection so no events are missed
+      sock.on('connect', () => {
+        if (cancelled) return;
+        joinConversation(sock);
+        sock.emit('presence:online');
+      });
+    };
+
+    const initSocket = async () => {
+      const sock = await connectSocket();
+      if (cancelled || !sock) return;
+
+      joinConversation(sock);
+      sock.emit('presence:online');
+      attachListeners(sock);
     };
     initSocket();
 
     return () => {
+      cancelled = true;
+      clearTimeout(typingTimeoutRef.current);
+      const sock = getSocket();
       if (sock) {
         sock.emit('conversation:leave', { conversationId: id });
         sock.off('message:received');
         sock.off('typing:start');
         sock.off('typing:stop');
+        sock.off('presence:update');
+        sock.off('connect');
       }
     };
   }, [id]);
 
-  // Scroll to bottom on new messages
   useEffect(() => {
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -249,9 +281,8 @@ const ChatConversation = () => {
       if (sock?.connected) {
         sock.emit('message:send', { conversationId: id, content: text, type: 'text' });
       } else {
+        // REST fallback — server will emit socket events server-side
         const response = await api.post(`/api/conversations/${id}/messages`, { content: text });
-        // The success helper spreads the message object at the root of response.data,
-        // so the message fields (id, content, senderId, createdAt) are directly on response.data.
         if (response.data?.id) {
           setMessages((prev) =>
             prev.map((m) => (m.id === tempId ? transformMessage(response.data) : m))
@@ -275,7 +306,7 @@ const ChatConversation = () => {
       <ConversationHeader
         name={name || "Unknown"}
         avatar={avatar || "https://randomuser.me/api/portraits/men/1.jpg"}
-        isOnline={otherUserTyping}
+        isOnline={isOnline}
         onBack={handleBack}
       />
 
@@ -316,4 +347,3 @@ const ChatConversation = () => {
 };
 
 export default ChatConversation;
-

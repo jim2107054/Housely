@@ -194,7 +194,9 @@ export const sendMessage = async (userId, conversationId, { content, type = 'tex
     }),
   ]);
 
-  return message;
+  const recipientId = conversation.userId === userId ? conversation.agentId : conversation.userId;
+
+  return { message, recipientId };
 };
 
 // ─── Mark Messages as Read ───

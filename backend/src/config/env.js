@@ -38,6 +38,12 @@ const env = {
   FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY,
   FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL,
 
+  // Onfido KYC (optional — enables auto-verification)
+  ONFIDO_API_TOKEN: process.env.ONFIDO_API_TOKEN,
+
+  // Feature flags
+  KYC_REQUIRED: process.env.KYC_REQUIRED === 'true',
+
   // App
   APP_URL: process.env.APP_URL || 'http://localhost:3000',
   FRONTEND_DEEP_LINK_BASE: process.env.FRONTEND_DEEP_LINK_BASE || 'housely://house',
