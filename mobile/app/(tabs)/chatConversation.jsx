@@ -250,9 +250,11 @@ const ChatConversation = () => {
         sock.emit('message:send', { conversationId: id, content: text, type: 'text' });
       } else {
         const response = await api.post(`/api/conversations/${id}/messages`, { content: text });
-        if (response.data?.message) {
+        // The success helper spreads the message object at the root of response.data,
+        // so the message fields (id, content, senderId, createdAt) are directly on response.data.
+        if (response.data?.id) {
           setMessages((prev) =>
-            prev.map((m) => (m.id === tempId ? transformMessage(response.data.message) : m))
+            prev.map((m) => (m.id === tempId ? transformMessage(response.data) : m))
           );
         }
       }
