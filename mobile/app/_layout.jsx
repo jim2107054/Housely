@@ -10,69 +10,79 @@ import SafeScreen from "../components/SafeScreen";
 import { StatusBar } from "expo-status-bar";
 import Toast from "react-native-toast-message";
 import { PaperProvider } from "react-native-paper";
+import { ClerkProvider, useAuth } from "@clerk/clerk-expo";
+import * as SecureStore from "expo-secure-store";
 import useAuthStore from "../store/authStore";
 import { useEffect } from "react";
-import { setAuthFailureCallback } from "../services/api";
+import { setTokenProvider } from "../services/api";
+import { setSocketTokenProvider } from "../services/socketService";
 
-export default function RootLayout() {
+// Clerk token cache backed by expo-secure-store
+const tokenCache = {
+  async getToken(key) {
+    return SecureStore.getItemAsync(key);
+  },
+  async saveToken(key, value) {
+    return SecureStore.setItemAsync(key, value);
+  },
+  async clearToken(key) {
+    return SecureStore.deleteItemAsync(key);
+  },
+};
+
+// Inner component so it can use Clerk hooks
+function AppNavigator() {
   const router = useRouter();
   const segments = useSegments();
   const navigationState = useRootNavigationState();
+  const { isSignedIn, isLoaded, getToken } = useAuth();
+  const { user, syncWithBackend, clearUser } = useAuthStore();
 
-  //! segments tells us where we are in the navigation tree(ex: auth stack, main app stack, etc)
-  // console.log(segments);
-
-  const { checkAuth, user, token, logout } = useAuthStore();
-
-  //! Firstly check if the user is authenticated
+  // Provide Clerk token to the axios instance and socket
   useEffect(() => {
-    checkAuth(); //! it will set the user and token if valid token found in async storage
+    setTokenProvider(getToken);
+    setSocketTokenProvider(getToken);
+  }, [getToken]);
 
-    // Wire up the API service to clear Zustand state on token refresh failure
-    setAuthFailureCallback(() => {
-      useAuthStore.setState({ user: null, token: null, refreshToken: null });
-    });
-  }, []); // only once on mount
+  // On sign-in, sync user profile with backend
+  useEffect(() => {
+    if (isLoaded && isSignedIn && !user) {
+      syncWithBackend();
+    }
+    if (isLoaded && !isSignedIn) {
+      clearUser();
+    }
+  }, [isLoaded, isSignedIn]);
 
   useEffect(() => {
-    // Don't navigate until the navigation state is ready
-    if (!navigationState?.key) return;
+    if (!isLoaded || !navigationState?.key) return;
 
     const inAuthScreen = segments[0] === "(auth)";
     const inOwnerScreen = segments[0] === "(owner)";
     const inOnboarding = segments[0] === "(onbording)";
     const inIndex = segments[0] === "index" || segments[0] === undefined;
-    const isSignedIn = user && token;
 
-    // Use setTimeout to ensure navigation happens after render
     const timeout = setTimeout(() => {
-      //! if user is signed in and trying to access auth screens, redirect based on role
-      // But NOT if they're on the ownerLogin screen (which is inside (auth))
       if (isSignedIn && inAuthScreen && segments[1] !== "ownerLogin") {
-        if (user.role === "AGENT") {
+        if (user?.role === "AGENT") {
           router.replace("/(owner)");
         } else {
           router.replace("/(tabs)");
         }
-      }
-      // if a non-AGENT signed-in user somehow reaches the owner area, redirect them out
-      else if (isSignedIn && inOwnerScreen && user.role !== "AGENT" && user.role !== "ADMIN") {
-        router.replace("/(tabs)");
-      }
-      //! if user is not signed in and trying to access protected screens, redirect to auth
-      // Allow: (auth), (onbording), index — owner area now requires auth too
-      else if (
-        !isSignedIn &&
-        !inAuthScreen &&
-        !inOnboarding &&
-        !inIndex
+      } else if (
+        isSignedIn &&
+        inOwnerScreen &&
+        user?.role !== "AGENT" &&
+        user?.role !== "ADMIN"
       ) {
+        router.replace("/(tabs)");
+      } else if (!isSignedIn && !inAuthScreen && !inOnboarding && !inIndex) {
         router.replace("/(auth)");
       }
     }, 0);
 
     return () => clearTimeout(timeout);
-  }, [user, token, segments, navigationState?.key]); //! whenever user or token or segments changes
+  }, [isSignedIn, isLoaded, user, segments, navigationState?.key]);
 
   return (
     <SafeAreaProvider>
@@ -91,5 +101,16 @@ export default function RootLayout() {
       <StatusBar style="dark" />
       <Toast />
     </SafeAreaProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <ClerkProvider
+      publishableKey={process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY}
+      tokenCache={tokenCache}
+    >
+      <AppNavigator />
+    </ClerkProvider>
   );
 }

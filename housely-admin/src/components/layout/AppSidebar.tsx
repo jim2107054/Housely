@@ -17,7 +17,7 @@ import {
   Bell,
   LogOut,
 } from "lucide-react";
-import { signOut, useSession } from "next-auth/react";
+import { useUser, useClerk } from "@clerk/nextjs";
 import { getInitials } from "@/lib/utils";
 
 const navItems = [
@@ -33,10 +33,11 @@ const navItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const { user } = useUser();
+  const { signOut } = useClerk();
 
   const handleLogout = async () => {
-    await signOut({ callbackUrl: "/login" });
+    await signOut({ redirectUrl: "/login" });
   };
 
   return (
@@ -87,16 +88,16 @@ export function AppSidebar() {
       <div className="border-t border-gray-200 p-4">
         <div className="flex items-center gap-3 mb-3 px-2">
           <Avatar className="w-10 h-10 border-2 border-primary/20">
-            <AvatarImage src={session?.user?.image || undefined} />
+            <AvatarImage src={user?.imageUrl || undefined} />
             <AvatarFallback className="bg-primary-100 text-primary-700 font-semibold text-sm">
-              {getInitials(session?.user?.name || null, session?.user?.email?.split("@")[0] || "A")}
+              {getInitials(user?.fullName || null, user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] || "A")}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 overflow-hidden">
             <p className="text-sm font-semibold text-gray-900 truncate">
-              {session?.user?.name || "Admin User"}
+              {user?.fullName || "Admin User"}
             </p>
-            <p className="text-xs text-gray-500 truncate">{session?.user?.email}</p>
+            <p className="text-xs text-gray-500 truncate">{user?.emailAddresses?.[0]?.emailAddress}</p>
           </div>
         </div>
         <Button

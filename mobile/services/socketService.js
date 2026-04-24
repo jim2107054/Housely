@@ -3,15 +3,32 @@ import { API_URL } from '../config';
 
 let socket = null;
 
-export const connectSocket = (token) => {
+// Clerk token provider — set from _layout.jsx after ClerkProvider mounts
+let _getToken = null;
+export const setSocketTokenProvider = (getToken) => {
+  _getToken = getToken;
+};
+
+export const connectSocket = async () => {
   if (socket?.connected) return socket;
   if (socket) {
     socket.disconnect();
     socket = null;
   }
 
+  const initialToken = _getToken ? await _getToken() : null;
+  if (!initialToken) {
+    console.warn('[Socket] No auth token available — socket not connected');
+    return null;
+  }
+
   socket = io(API_URL, {
-    auth: { token },
+    // Use a callback so a fresh token is fetched on every reconnection attempt
+    auth: (cb) => {
+      (_getToken ? _getToken() : Promise.resolve(null))
+        .then((token) => cb({ token }))
+        .catch(() => cb({ token: null }));
+    },
     transports: ['websocket'],
     reconnection: true,
     reconnectionAttempts: 5,

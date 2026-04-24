@@ -32,6 +32,15 @@ All test accounts use the same password: **`password123`**
 - **Role:** USER
 - **Phone:** +8801810002004
 
+### User 5 - Shujon
+- **Email:** `skt104.shujon@gmail.com`
+- **Password:** `password123`
+- **Role:** USER
+- **Phone:** +8801810002005
+- **Password:** `password123`
+- **Role:** USER
+- **Phone:** +8801810002004
+
 ---
 
 ## 🏠 **HOUSE OWNERS (Agents)**
@@ -63,16 +72,27 @@ All test accounts use the same password: **`password123`**
 - **Role:** AGENT
 - **Phone:** +8801710001004
 - **Location:** Zindabazar, Sylhet
+### Owner 5 - Shakoyat Sujon
+- **Email:** `shakoyatsujon@gmail.com`
+- **Password:** `password123`
+- **Role:** AGENT
+- **Phone:** +8801710001005
+- **Location:** Mirpur, Dhaka
+- **Properties:** 8 dummy properties seeded
 
 ---
 
-## 📊 **Database Contents**
+## 👑 **ADMIN**
 
-- ✅ **4 Owners** (Agents)
-- ✅ **4 Renters** (Regular Users)
-- ✅ **32 Properties** (Houses)
-- ✅ **16 Bookings**
-- ✅ **8 Reviews**
+- **Email:** `mdjahidhasanjim277@gmail.com`
+- **Password:** `admin123`
+- **Role:** ADMIN
+
+- ✅ **5 Owners** (Agents)
+- ✅ **5 Renters** (Regular Users)
+- ✅ **40 Properties** (Houses)
+- ✅ **20 Bookings**
+- ✅ **10 Reviews**
 
 ---
 

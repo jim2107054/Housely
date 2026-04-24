@@ -112,7 +112,7 @@ const ChatConversation = () => {
   const params = useLocalSearchParams();
   const { id, name, avatar } = params;
   const scrollViewRef = useRef(null);
-  const { user, token } = useAuthStore();
+  const { user } = useAuthStore();
 
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -147,37 +147,57 @@ const ChatConversation = () => {
     };
     fetchMessages();
 
-    const sock = connectSocket(token);
-    sock.emit('conversation:join', { conversationId: id });
+    let sock;
+    const initSocket = async () => {
+      sock = await connectSocket();
+      if (!sock) return;
 
-    sock.on('message:received', (msg) => {
-      if (String(msg.conversationId) === String(id)) {
+      sock.emit('conversation:join', { conversationId: id });
+
+      sock.on('message:received', (msg) => {
+        if (String(msg.conversationId) !== String(id)) return;
         setMessages((prev) => {
+          // Already have the real message — no-op
           if (prev.some((m) => m.id === msg.id)) return prev;
+          // Our own message arriving back from server: replace the latest temp entry
+          if (String(msg.senderId) === String(user?.id)) {
+            const tempIdx = [...prev].reverse().findIndex(
+              (m) => typeof m.id === 'string' && m.id.startsWith('temp-')
+            );
+            if (tempIdx !== -1) {
+              const realIdx = prev.length - 1 - tempIdx;
+              const updated = [...prev];
+              updated[realIdx] = transformMessage(msg);
+              return updated;
+            }
+          }
           return [...prev, transformMessage(msg)];
         });
-      }
-    });
+      });
 
-    sock.on('typing:start', ({ userId: typingUserId, conversationId }) => {
-      if (String(conversationId) === String(id) && String(typingUserId) !== String(user?.id)) {
-        setOtherUserTyping(true);
-      }
-    });
+      sock.on('typing:start', ({ userId: typingUserId, conversationId }) => {
+        if (String(conversationId) === String(id) && String(typingUserId) !== String(user?.id)) {
+          setOtherUserTyping(true);
+        }
+      });
 
-    sock.on('typing:stop', ({ userId: typingUserId, conversationId }) => {
-      if (String(conversationId) === String(id) && String(typingUserId) !== String(user?.id)) {
-        setOtherUserTyping(false);
-      }
-    });
+      sock.on('typing:stop', ({ userId: typingUserId, conversationId }) => {
+        if (String(conversationId) === String(id) && String(typingUserId) !== String(user?.id)) {
+          setOtherUserTyping(false);
+        }
+      });
+    };
+    initSocket();
 
     return () => {
-      sock.emit('conversation:leave', { conversationId: id });
-      sock.off('message:received');
-      sock.off('typing:start');
-      sock.off('typing:stop');
+      if (sock) {
+        sock.emit('conversation:leave', { conversationId: id });
+        sock.off('message:received');
+        sock.off('typing:start');
+        sock.off('typing:stop');
+      }
     };
-  }, [id, token]);
+  }, [id]);
 
   // Scroll to bottom on new messages
   useEffect(() => {

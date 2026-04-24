@@ -9,12 +9,11 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
 import { ArrowLeft } from "lucide-react-native";
-import api from "../../services/api";
+import { useUser } from "@clerk/clerk-expo";
 
-// Extraction to fix input issues and simplify render
 const PasswordInput = ({ label, value, onChangeText, placeholder, showPassword, onToggleShow }) => (
   <View className="mb-4">
     <Text className="text-lg font-bold text-start text-gray-800 mb-1">
@@ -49,20 +48,21 @@ const PasswordInput = ({ label, value, onChangeText, placeholder, showPassword, 
 );
 
 const ChangePassword = () => {
-  const { identifier, resetToken } = useLocalSearchParams();
+  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { user } = useUser();
   const router = useRouter();
 
   const handleChangePassword = async () => {
-    if (!newPassword || !confirmPassword) {
-      Toast.show({ type: "error", text1: "Required", text2: "Please fill in both password fields" });
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      Toast.show({ type: "error", text1: "Required", text2: "Please fill in all password fields" });
       return;
     }
-    if (newPassword.length < 6) {
-      Toast.show({ type: "error", text1: "Too Short", text2: "Password must be at least 6 characters" });
+    if (newPassword.length < 8) {
+      Toast.show({ type: "error", text1: "Too Short", text2: "Password must be at least 8 characters" });
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -72,21 +72,12 @@ const ChangePassword = () => {
 
     setIsLoading(true);
     try {
-      await api.post("/api/auth/reset-password", {
-        identifier,
-        resetToken,
-        newPassword,
-        confirmPassword,
-      });
-
-      Toast.show({ type: "success", text1: "Success!", text2: "Password reset successfully" });
-      router.replace("/(auth)/successReset");
-    } catch (error) {
-      Toast.show({
-        type: "error",
-        text1: "Reset Failed",
-        text2: error.response?.data?.message || "Failed to reset password. Please try again.",
-      });
+      await user.updatePassword({ currentPassword, newPassword });
+      Toast.show({ type: "success", text1: "Success!", text2: "Password changed successfully" });
+      router.back();
+    } catch (err) {
+      const message = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || "Failed to change password. Please try again.";
+      Toast.show({ type: "error", text1: "Change Failed", text2: message });
     } finally {
       setIsLoading(false);
     }
@@ -105,11 +96,20 @@ const ChangePassword = () => {
           
           <View className="my-8">
             <Text className="text-start text-2xl font-semibold text-gray-900 mb-2">
-              Create New Password
+              Change Password
             </Text>
             <Text className="text-start font-light text-gray-500 mb-6">
-              Please enter a new password to change
+              Enter your current password and choose a new one
             </Text>
+
+            <PasswordInput
+              label="Current Password"
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+              placeholder="Enter current password"
+              showPassword={showPassword}
+              onToggleShow={() => setShowPassword(!showPassword)}
+            />
 
             <PasswordInput
               label="New Password"
@@ -121,7 +121,7 @@ const ChangePassword = () => {
             />
 
             <PasswordInput
-              label="Confirm Password"
+              label="Confirm New Password"
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               placeholder="Confirm new password"
@@ -130,13 +130,13 @@ const ChangePassword = () => {
             />
 
             <TouchableOpacity
-              className="bg-[#7B61FF] rounded-lg py-4 mt-8"
+              className="bg-secondary rounded-lg py-4 mt-4"
               onPress={handleChangePassword}
               disabled={isLoading}
               style={{ opacity: isLoading ? 0.7 : 1 }}
             >
               {isLoading ? (
-                <ActivityIndicator animating={true} size="small" color="white" />
+                <ActivityIndicator size="small" color="white" />
               ) : (
                 <Text className="text-white text-center text-lg font-semibold">
                   Change Password

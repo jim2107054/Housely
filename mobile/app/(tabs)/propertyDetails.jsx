@@ -16,12 +16,33 @@ import { useState, useRef, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { WebView } from "react-native-webview";
-import { Video, ResizeMode } from "expo-av";
+import { VideoView, useVideoPlayer } from "expo-video";
 import api from "../../services/api";
 import { useEffect } from "react";
 
 const { width, height } = Dimensions.get("window");
 const AUTO_SCROLL_INTERVAL = 4000;
+
+// Standalone component so useVideoPlayer hook is stable outside conditional render
+const VideoSection = ({ videoUrl }) => {
+  const player = useVideoPlayer(videoUrl ? { uri: videoUrl } : null);
+  if (!videoUrl) return null;
+  return (
+    <View style={{ paddingHorizontal: 20, paddingVertical: 16 }}>
+      <Text style={{ fontSize: 18, fontWeight: '700', color: '#1A1A1A', marginBottom: 12 }}>
+        Property Video
+      </Text>
+      <View style={{ borderRadius: 20, overflow: 'hidden', backgroundColor: '#000' }}>
+        <VideoView
+          player={player}
+          style={{ width: '100%', height: 220 }}
+          nativeControls
+          contentFit="contain"
+        />
+      </View>
+    </View>
+  );
+};
 
 const PropertyDetailsNew = () => {
   const router = useRouter();
@@ -560,28 +581,6 @@ const PropertyDetailsNew = () => {
     </View>
   );
 
-  // ─── Video Player ───
-  const VideoSection = () => {
-    if (!property.videoUrl) return null;
-    return (
-      <View style={{ paddingHorizontal: 20, paddingVertical: 16 }}>
-        <Text style={{ fontSize: 18, fontWeight: '700', color: '#1A1A1A', marginBottom: 12 }}>
-          Property Video
-        </Text>
-        <View style={{ borderRadius: 20, overflow: 'hidden', backgroundColor: '#000' }}>
-          <Video
-            source={{ uri: property.videoUrl }}
-            style={{ width: '100%', height: 220 }}
-            useNativeControls
-            resizeMode={ResizeMode.CONTAIN}
-            isLooping={false}
-            shouldPlay={false}
-          />
-        </View>
-      </View>
-    );
-  };
-
   // ─── Map ───
   const MapSection = () => (
     <View style={{ paddingHorizontal: 20, paddingVertical: 16 }}>
@@ -685,7 +684,7 @@ const PropertyDetailsNew = () => {
         <View style={{ height: 8, backgroundColor: '#F9FAFB' }} />
         <AgentCard />
         <View style={{ height: 8, backgroundColor: '#F9FAFB' }} />
-        <VideoSection />
+        <VideoSection videoUrl={property.videoUrl} />
         <View style={{ height: 8, backgroundColor: '#F9FAFB' }} />
         <MapSection />
         <BookNowButton />

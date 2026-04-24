@@ -12,84 +12,35 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import Toast from "react-native-toast-message";
 import { ArrowLeft } from "lucide-react-native";
-import api from "../../services/api";
+import { useSignIn } from "@clerk/clerk-expo";
 
 const ForgotPassword = () => {
-  const [method, setMethod] = useState(null); // null | 'email' | 'phone'
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { signIn, isLoaded } = useSignIn();
   const router = useRouter();
 
   const handleContinue = async () => {
-    if (!method) {
-      Toast.show({
-        type: "error",
-        text1: "Select Recovery Method",
-        text2: "Please select Email or Phone to continue",
-        position: "top",
-        visibilityTime: 3000,
-      });
-      return;
-    }
+    if (!isLoaded) return;
 
-    const identifier =
-      method === "email" ? email.trim().toLowerCase() : phone.trim();
-
+    const identifier = email.trim().toLowerCase();
     if (!identifier) {
-      Toast.show({
-        type: "error",
-        text1: "Required",
-        text2: `Please enter your ${method === "email" ? "email address" : "phone number"}`,
-        position: "top",
-        visibilityTime: 3000,
-      });
+      Toast.show({ type: "error", text1: "Required", text2: "Please enter your email address", position: "top", visibilityTime: 3000 });
       return;
     }
-
-    if (method === "email" && !/\S+@\S+\.\S+/.test(identifier)) {
-      Toast.show({
-        type: "error",
-        text1: "Invalid Email",
-        text2: "Please enter a valid email address",
-        position: "top",
-        visibilityTime: 3000,
-      });
+    if (!/\S+@\S+\.\S+/.test(identifier)) {
+      Toast.show({ type: "error", text1: "Invalid Email", text2: "Please enter a valid email address", position: "top", visibilityTime: 3000 });
       return;
     }
 
     setIsLoading(true);
     try {
-      if (method === "email") {
-        await api.post("/api/auth/forgot-password/email", { email: identifier });
-      } else {
-        await api.post("/api/auth/forgot-password/phone", {
-          phoneNumber: identifier,
-        });
-      }
-
-      Toast.show({
-        type: "success",
-        text1: "Code Sent",
-        text2: `A 6-digit OTP has been sent to your ${method}`,
-        position: "top",
-        visibilityTime: 3000,
-      });
-
-      router.push({
-        pathname: "/(auth)/verifyPassword",
-        params: { identifier, method },
-      });
-    } catch (error) {
-      Toast.show({
-        type: "error",
-        text1: "Failed to Send OTP",
-        text2:
-          error.response?.data?.message ||
-          `Could not send OTP to your ${method}`,
-        position: "top",
-        visibilityTime: 4000,
-      });
+      await signIn.create({ strategy: "reset_password_email_code", identifier });
+      Toast.show({ type: "success", text1: "Code Sent", text2: "A 6-digit code has been sent to your email", position: "top", visibilityTime: 3000 });
+      router.push({ pathname: "/(auth)/verifyPassword", params: { identifier } });
+    } catch (err) {
+      const message = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || "Could not send reset code. Please try again.";
+      Toast.show({ type: "error", text1: "Failed to Send Code", text2: message, position: "top", visibilityTime: 4000 });
     } finally {
       setIsLoading(false);
     }
@@ -110,73 +61,32 @@ const ForgotPassword = () => {
               Forgot Password
             </Text>
             <Text className="text-start font-light text-gray-500 mb-6">
-              Select a recovery method and enter your{"\n"}
-              contact details to reset your password.
+              Enter your email address and we'll send you{"\n"}
+              a code to reset your password.
             </Text>
 
-            {/* Via Email Option */}
-            <TouchableOpacity
-              onPress={() => setMethod("email")}
-              className={`flex-row items-center border ${
-                method === "email" ? "border-secondary" : "border-gray-300"
-              } rounded-lg p-4 mb-4`}
-            >
+            {/* Email Option */}
+            <View className="flex-row items-center border border-secondary rounded-lg p-4 mb-8">
               <View className="w-16 h-16 justify-center items-center rounded-full bg-secondary/20">
                 <Ionicons name="mail" size={24} color="#7F56D9" />
               </View>
               <View className="ml-4 flex-1">
                 <Text className="text-gray-400 font-semibold">Via Email</Text>
-                {method === "email" ? (
-                  <TextInput
-                    className="text-gray-700 text-base font-semibold mt-1 border-b border-gray-300 py-1"
-                    placeholder="Enter your email address"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    value={email}
-                    onChangeText={setEmail}
-                    autoFocus
-                  />
-                ) : (
-                  <Text className="text-gray-500 text-sm mt-1">
-                    Tap to enter your email
-                  </Text>
-                )}
+                <TextInput
+                  className="text-gray-700 text-base font-semibold mt-1 border-b border-gray-300 py-1"
+                  placeholder="Enter your email address"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  value={email}
+                  onChangeText={setEmail}
+                />
               </View>
-            </TouchableOpacity>
-
-            {/* Via Phone Option */}
-            <TouchableOpacity
-              onPress={() => setMethod("phone")}
-              className={`flex-row items-center border ${
-                method === "phone" ? "border-secondary" : "border-gray-300"
-              } rounded-lg p-4`}
-            >
-              <View className="w-16 h-16 justify-center items-center rounded-full bg-secondary/20">
-                <Ionicons name="call" size={24} color="#7F56D9" />
-              </View>
-              <View className="ml-4 flex-1">
-                <Text className="text-gray-400 font-semibold">Via Phone</Text>
-                {method === "phone" ? (
-                  <TextInput
-                    className="text-gray-700 text-base font-semibold mt-1 border-b border-gray-300 py-1"
-                    placeholder="Enter your phone number"
-                    keyboardType="phone-pad"
-                    value={phone}
-                    onChangeText={setPhone}
-                    autoFocus
-                  />
-                ) : (
-                  <Text className="text-gray-500 text-sm mt-1">
-                    Tap to enter your phone number
-                  </Text>
-                )}
-              </View>
-            </TouchableOpacity>
+            </View>
 
             {/* Continue Button */}
             <TouchableOpacity
-              className="bg-secondary rounded-lg py-4 mt-8"
+              className="bg-secondary rounded-lg py-4 mt-2"
               onPress={handleContinue}
               disabled={isLoading}
               style={{ opacity: isLoading ? 0.7 : 1 }}
