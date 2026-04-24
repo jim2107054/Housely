@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import { clerkMiddleware } from '@clerk/express';
 
 // Swagger documentation
 import { setupSwagger } from './config/swagger.js';
@@ -14,6 +15,7 @@ import bookingRoutes from './modules/booking/booking.routes.js';
 import reviewRoutes from './modules/review/review.routes.js';
 import messageRoutes from './modules/message/message.routes.js';
 import notificationRoutes from './modules/notification/notification.routes.js';
+import adminRoutes from './modules/admin/admin.routes.js';
 
 // Middlewares
 import { errorHandler } from './middlewares/errorHandler.js';
@@ -22,6 +24,7 @@ const app = express();
 
 // ─── Global middleware ───
 app.use(cors());
+app.use(clerkMiddleware());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -62,6 +65,7 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/conversations', messageRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/admin', adminRoutes);
 
 // ─── Error handler (must be last) ───
 app.use(errorHandler);

@@ -1,6 +1,7 @@
 import { View, Text, Image, Animated } from "react-native";
 import React, { useEffect, useRef } from "react";
 import { useRouter } from "expo-router";
+import { useAuth } from "@clerk/clerk-expo";
 import useAuthStore from "./../store/authStore";
 
 const index = () => {
@@ -9,13 +10,8 @@ const index = () => {
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
 
-  const { user, token, checkAuth } = useAuthStore(); // Initialize auth store
-
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  console.log(user, token);
+  const { isSignedIn, isLoaded } = useAuth();
+  const { user } = useAuthStore();
 
   useEffect(() => {
     // Parallel animations for a smooth entrance
@@ -37,11 +33,14 @@ const index = () => {
         useNativeDriver: true,
       }),
     ]).start();
+  }, []);
+
+  useEffect(() => {
+    if (!isLoaded) return;
 
     const timer = setTimeout(() => {
-      // If user is already logged in, skip onboarding entirely
-      if (user && token) {
-        if (user.role === "AGENT") {
+      if (isSignedIn) {
+        if (user?.role === "AGENT") {
           router.replace("/(owner)");
         } else {
           router.replace("/(tabs)");
@@ -52,7 +51,7 @@ const index = () => {
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, [user, token]);
+  }, [isLoaded, isSignedIn, user]);
 
   return (
     <View className="flex-1 bg-white items-center justify-center px-6">

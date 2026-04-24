@@ -16,11 +16,33 @@ import { useState, useRef, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { WebView } from "react-native-webview";
+import { VideoView, useVideoPlayer } from "expo-video";
 import api from "../../services/api";
 import { useEffect } from "react";
 
 const { width, height } = Dimensions.get("window");
 const AUTO_SCROLL_INTERVAL = 4000;
+
+// Standalone component so useVideoPlayer hook is stable outside conditional render
+const VideoSection = ({ videoUrl }) => {
+  const player = useVideoPlayer(videoUrl ? { uri: videoUrl } : null);
+  if (!videoUrl) return null;
+  return (
+    <View style={{ paddingHorizontal: 20, paddingVertical: 16 }}>
+      <Text style={{ fontSize: 18, fontWeight: '700', color: '#1A1A1A', marginBottom: 12 }}>
+        Property Video
+      </Text>
+      <View style={{ borderRadius: 20, overflow: 'hidden', backgroundColor: '#000' }}>
+        <VideoView
+          player={player}
+          style={{ width: '100%', height: 220 }}
+          nativeControls
+          contentFit="contain"
+        />
+      </View>
+    </View>
+  );
+};
 
 const PropertyDetailsNew = () => {
   const router = useRouter();
@@ -70,6 +92,7 @@ const PropertyDetailsNew = () => {
           status: h.listingType === 'RENT' ? 'For Rent' : 'For Sale',
           description: h.description,
           agent: {
+            id: h.agent?.id,
             name: h.agent?.name || "Unknown Agent",
             role: h.agent?.role === "AGENT" ? "Real Estate Agent" : "Property Owner",
             image: h.agent?.avatar || "https://randomuser.me/api/portraits/men/1.jpg",
@@ -77,6 +100,7 @@ const PropertyDetailsNew = () => {
           },
           facilities,
           totalReviews: h._count?.reviews || 0,
+          videoUrl: h.video?.url || null,
           coordinates: {
             latitude: h.latitude || -8.4095,
             longitude: h.longitude || 115.1889,
@@ -197,13 +221,12 @@ const PropertyDetailsNew = () => {
         {/* Back button */}
         <View style={{ position: 'absolute', top: StatusBar.currentHeight || 40, left: 20, zIndex: 10 }}>
           <TouchableOpacity
-            onPress={() => router.back()}
-            style={{
-              width: 44, height: 44, borderRadius: 14,
-              backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center',
-              elevation: 4,
-            }}
-          >
+          onPress={() => router.back()}
+          style={{
+            width: 36, height: 36, borderRadius: 10,
+            backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
             <Ionicons name="arrow-back" size={22} color="#1A1A1A" />
           </TouchableOpacity>
         </View>
@@ -295,35 +318,35 @@ const PropertyDetailsNew = () => {
         <TouchableOpacity
           onPress={() => router.back()}
           style={{
-            width: 44, height: 44, borderRadius: 14,
+            width: 36, height: 36, borderRadius: 10,
             backgroundColor: 'rgba(255,255,255,0.9)',
-            alignItems: 'center', justifyContent: 'center', elevation: 8,
+            alignItems: 'center', justifyContent: 'center',
           }}
         >
-          <Ionicons name="arrow-back" size={22} color="#1A1A1A" />
+          <Ionicons name="arrow-back" size={20} color="#1A1A1A" />
         </TouchableOpacity>
 
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <TouchableOpacity
             onPress={() => setShowShareModal(true)}
             style={{
-              width: 44, height: 44, borderRadius: 14,
+              width: 36, height: 36, borderRadius: 10,
               backgroundColor: 'rgba(255,255,255,0.9)',
-              alignItems: 'center', justifyContent: 'center', elevation: 8,
+              alignItems: 'center', justifyContent: 'center',
             }}
           >
-            <Ionicons name="share-social" size={20} color="#1A1A1A" />
+            <Ionicons name="share-social" size={18} color="#1A1A1A" />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={toggleFavorite}
             style={{
-              width: 44, height: 44, borderRadius: 14,
+              width: 36, height: 36, borderRadius: 10,
               backgroundColor: isFavorite ? '#FF6B6B' : 'rgba(255,255,255,0.9)',
-              alignItems: 'center', justifyContent: 'center', elevation: 8,
+              alignItems: 'center', justifyContent: 'center',
             }}
           >
             <Ionicons
-              name={isFavorite ? "heart" : "heart-outline"} size={20}
+              name={isFavorite ? "heart" : "heart-outline"} size={18}
               color={isFavorite ? "#FFF" : "#1A1A1A"}
             />
           </TouchableOpacity>
@@ -334,7 +357,7 @@ const PropertyDetailsNew = () => {
       <View style={{
         position: 'absolute', top: (StatusBar.currentHeight || 40) + 56, right: 20,
         backgroundColor: property.priceType === 'month' ? '#10B981' : '#3B82F6',
-        borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6, elevation: 6,
+        borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6,
       }}>
         <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 13 }}>
           {property.status}
@@ -348,7 +371,7 @@ const PropertyDetailsNew = () => {
     <View style={{
       paddingHorizontal: 20, paddingTop: 24, paddingBottom: 16,
       backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24,
-      marginTop: -24, elevation: 10,
+      marginTop: -24,
     }}>
       {/* Name + Rating row */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
@@ -470,10 +493,8 @@ const PropertyDetailsNew = () => {
         </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
           {property.facilities.map((f, i) => (
-            <View key={i} style={{
-              marginRight: 12, backgroundColor: '#FFF', borderRadius: 16, padding: 14,
+            <View key={i} style={{ marginRight: 12, backgroundColor: '#FFF', borderRadius: 16, padding: 14,
               alignItems: 'center', width: 100, borderWidth: 1, borderColor: '#F0F0F0',
-              elevation: 2,
             }}>
               <View style={{
                 width: 48, height: 48, borderRadius: 14, backgroundColor: '#F8F5FF',
@@ -502,7 +523,7 @@ const PropertyDetailsNew = () => {
       </Text>
       <View style={{
         backgroundColor: '#FFF', borderRadius: 20, padding: 16,
-        borderWidth: 1, borderColor: '#F0F0F0', elevation: 3,
+        borderWidth: 1, borderColor: '#F0F0F0',
       }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
           <Image
@@ -520,10 +541,23 @@ const PropertyDetailsNew = () => {
         </View>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <TouchableOpacity
-            onPress={() => router.push({
-              pathname: "/(tabs)/chatConversation",
-              params: { id: property.id, name: property.agent.name, avatar: property.agent.image }
-            })}
+            onPress={async () => {
+              try {
+                const res = await api.post('/api/conversations', {
+                  agentId: property.agent.id,
+                  houseId: property.id,
+                });
+                const convoId = res.data?.conversation?.id || res.data?.id;
+                if (convoId) {
+                  router.push({
+                    pathname: '/(tabs)/chatConversation',
+                    params: { id: convoId, name: property.agent.name, avatar: property.agent.image },
+                  });
+                }
+              } catch (err) {
+                console.error('Failed to open conversation:', err);
+              }
+            }}
             style={{
               flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
               backgroundColor: '#F8F5FF', borderRadius: 14, paddingVertical: 12,
@@ -536,7 +570,7 @@ const PropertyDetailsNew = () => {
             onPress={callAgent}
             style={{
               flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-              backgroundColor: '#7F56D9', borderRadius: 14, paddingVertical: 12, elevation: 4,
+              backgroundColor: '#7F56D9', borderRadius: 14, paddingVertical: 12,
             }}
           >
             <Ionicons name="call" size={20} color="#FFF" />
@@ -553,7 +587,7 @@ const PropertyDetailsNew = () => {
       <Text style={{ fontSize: 18, fontWeight: '700', color: '#1A1A1A', marginBottom: 12 }}>
         Location
       </Text>
-      <View style={{ borderRadius: 20, overflow: 'hidden', height: 220, elevation: 4 }}>
+      <View style={{ borderRadius: 20, overflow: 'hidden', height: 220 }}>
         <WebView
           source={{ html: getMapHtml() }}
           style={{ flex: 1 }}
@@ -565,16 +599,13 @@ const PropertyDetailsNew = () => {
     </View>
   );
 
-  // ─── Book Button (simplified) ───
-  const BookNowFooter = () => (
-    <View style={{
-      paddingHorizontal: 20, paddingVertical: 14, backgroundColor: '#FFF',
-      borderTopWidth: 1, borderTopColor: '#F0F0F0', elevation: 10,
-    }}>
+  // ─── Book Button (inline, not sticky) ───
+  const BookNowButton = () => (
+    <View style={{ paddingHorizontal: 20, paddingVertical: 20 }}>
       <TouchableOpacity
         style={{
-          backgroundColor: '#7F56D9', borderRadius: 16, paddingVertical: 16,
-          alignItems: 'center', justifyContent: 'center', elevation: 8,
+          backgroundColor: '#7F56D9', borderRadius: 16, paddingVertical: 18,
+          alignItems: 'center', justifyContent: 'center',
         }}
       >
         <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 18 }}>
@@ -653,10 +684,11 @@ const PropertyDetailsNew = () => {
         <View style={{ height: 8, backgroundColor: '#F9FAFB' }} />
         <AgentCard />
         <View style={{ height: 8, backgroundColor: '#F9FAFB' }} />
+        <VideoSection videoUrl={property.videoUrl} />
+        <View style={{ height: 8, backgroundColor: '#F9FAFB' }} />
         <MapSection />
-        <View style={{ height: 100 }} />
+        <BookNowButton />
       </ScrollView>
-      <BookNowFooter />
       <ShareModal />
     </View>
   );

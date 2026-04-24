@@ -8,11 +8,12 @@ import {
   Animated,
   PanResponder,
 } from "react-native";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
 import api from "../../services/api";
+import { connectSocket, getSocket } from "../../services/socketService";
 import { useEffect } from "react";
 import { ActivityIndicator } from "react-native";
 import useAuthStore from "../../store/authStore";
@@ -35,14 +36,18 @@ const Chat = () => {
         console.log('[Chat] Fetching conversations...');
         const response = await api.get('/api/conversations');
         const transformedConversations = response.data.conversations.map(c => {
-          const otherUser = c.user1Id === user.id ? c.user2 : c.user1;
+          // userId = renter, agentId = owner/agent — pick the other party
+          const otherUser = c.userId === user?.id ? c.agent : c.user;
+          const lastMsg = c.messages?.[0];
           return {
             id: c.id,
-            name: otherUser.name || otherUser.username,
-            lastMessage: c.lastMessage?.content || "No message yet",
-            time: c.lastMessageAt ? new Date(c.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "",
+            name: otherUser?.name || otherUser?.username || 'Unknown',
+            lastMessage: lastMsg?.content || 'No message yet',
+            time: lastMsg?.createdAt
+              ? new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              : '',
             unreadCount: c.unreadCount || 0,
-            image: otherUser.avatar || "https://randomuser.me/api/portraits/men/1.jpg",
+            image: otherUser?.avatar || 'https://randomuser.me/api/portraits/men/1.jpg',
             online: true,
           };
         });
@@ -55,6 +60,19 @@ const Chat = () => {
       }
     };
     fetchConversations();
+
+    // Listen for new messages via socket to refresh conversations list
+    let sock;
+    const initSocket = async () => {
+      sock = await connectSocket();
+      if (!sock) return;
+      sock.on('message:new', fetchConversations);
+    };
+    initSocket();
+
+    return () => {
+      if (sock) sock.off('message:new', fetchConversations);
+    };
   }, []);
 
   // Filter conversations based on search

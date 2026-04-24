@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   View,
   Text,
@@ -9,11 +9,12 @@ import {
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { Link, useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import Toast from "react-native-toast-message";
-import useAuthStore from "../../store/authStore";
 import { ActivityIndicator } from "react-native-paper";
 import { ArrowLeft } from "lucide-react-native";
+import { useSignUp } from "@clerk/clerk-expo";
+import useAuthStore from "../../store/authStore";
 
 const Signup = () => {
   const [email, setEmail] = useState("");
@@ -21,93 +22,132 @@ const Signup = () => {
   const [userName, setUserName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isRemembered, setIsRemembered] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  // email verification step
+  const [pendingVerification, setPendingVerification] = useState(false);
+  const [code, setCode] = useState(["", "", "", "", "", ""]);
+  const inputRefs = useRef([]);
 
-  const { isLoading, register } = useAuthStore();
+  const { signUp, setActive, isLoaded } = useSignUp();
+  const { syncWithBackend } = useAuthStore();
   const router = useRouter();
   const params = useLocalSearchParams();
   const role = params.role || "USER";
 
   const handleRegister = async () => {
-    // Validate inputs
+    if (!isLoaded) return;
+
     if (!userName || !email || !password) {
-      Toast.show({
-        type: "error",
-        text1: "Validation Error",
-        text2: "Please fill in all fields",
-        position: "top",
-        visibilityTime: 3000,
-      });
+      Toast.show({ type: "error", text1: "Validation Error", text2: "Please fill in all fields", position: "top", visibilityTime: 3000 });
       return;
     }
-
     if (userName.length < 3) {
-      Toast.show({
-        type: "error",
-        text1: "Invalid Username",
-        text2: "Username must be at least 3 characters",
-        position: "top",
-        visibilityTime: 3000,
-      });
+      Toast.show({ type: "error", text1: "Invalid Username", text2: "Username must be at least 3 characters", position: "top", visibilityTime: 3000 });
       return;
     }
-
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      Toast.show({
-        type: "error",
-        text1: "Invalid Email",
-        text2: "Please enter a valid email address",
-        position: "top",
-        visibilityTime: 3000,
-      });
+      Toast.show({ type: "error", text1: "Invalid Email", text2: "Please enter a valid email address", position: "top", visibilityTime: 3000 });
+      return;
+    }
+    if (password.length < 8) {
+      Toast.show({ type: "error", text1: "Weak Password", text2: "Password must be at least 8 characters", position: "top", visibilityTime: 3000 });
       return;
     }
 
-    if (password.length < 6) {
-      Toast.show({
-        type: "error",
-        text1: "Weak Password",
-        text2: "Password must be at least 6 characters",
-        position: "top",
-        visibilityTime: 3000,
+    setIsLoading(true);
+    try {
+      await signUp.create({
+        emailAddress: email.trim().toLowerCase(),
+        password,
+        username: userName.trim(),
       });
+      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      setPendingVerification(true);
+      Toast.show({ type: "success", text1: "Code Sent", text2: "Check your email for a verification code", position: "top", visibilityTime: 3000 });
+    } catch (err) {
+      const message = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || "Registration failed. Please try again.";
+      Toast.show({ type: "error", text1: "Registration Failed", text2: message, position: "top", visibilityTime: 4000 });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerify = async () => {
+    if (!isLoaded) return;
+    const otpCode = code.join("");
+    if (otpCode.length !== 6) {
+      Toast.show({ type: "error", text1: "Incomplete Code", text2: "Enter the 6-digit code from your email", position: "top", visibilityTime: 3000 });
       return;
     }
-
-    // Implement register logic here
-    const result = await register(userName, email, password, role);
-
-    if (!result.success) {
-      Toast.show({
-        type: "error",
-        text1: "Registration Failed",
-        text2: result.message || "An error occurred during registration",
-        position: "top",
-        visibilityTime: 4000,
-      });
-    } else {
-      Toast.show({
-        type: "success",
-        text1: "Success!",
-        text2: "Account created successfully",
-        position: "top",
-        visibilityTime: 2000,
-      });
-      
-      // Navigate based on role
-      setTimeout(() => {
-        if (role === "AGENT") {
-          router.replace("/(owner)");
-        } else {
-          router.replace("/(tabs)");
-        }
-      }, 500);
+    setIsLoading(true);
+    try {
+      const result = await signUp.attemptEmailAddressVerification({ code: otpCode });
+      if (result.status === "complete") {
+        await setActive({ session: result.createdSessionId });
+        await syncWithBackend({ username: userName.trim(), role });
+        Toast.show({ type: "success", text1: "Account Created!", text2: "Welcome to Housely", position: "top", visibilityTime: 2000 });
+        setTimeout(() => {
+          router.replace(role === "AGENT" ? "/(owner)" : "/(tabs)");
+        }, 500);
+      }
+    } catch (err) {
+      const message = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || "Verification failed. Please try again.";
+      Toast.show({ type: "error", text1: "Verification Failed", text2: message, position: "top", visibilityTime: 4000 });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const RememberMeHandler = () => {
-    // Implement Remember Me functionality here
-    setIsRemembered(!isRemembered);
+  const handleCodeChange = (value, index) => {
+    if (!/^\d*$/.test(value)) return;
+    const newCode = [...code];
+    newCode[index] = value;
+    setCode(newCode);
+    if (value && index < 5) inputRefs.current[index + 1]?.focus();
   };
+
+  const handleKeyPress = (e, index) => {
+    if (e.nativeEvent.key === "Backspace" && !code[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const RememberMeHandler = () => setIsRemembered(!isRemembered);
+
+  if (pendingVerification) {
+    return (
+      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === "ios" ? "padding" : "height"}>
+        <View className="flex-1 bg-cardBackground justify-center items-center px-6">
+          <TouchableOpacity className="self-start mb-6" onPress={() => setPendingVerification(false)}>
+            <ArrowLeft size={24} color="black" />
+          </TouchableOpacity>
+          <Text className="text-3xl font-bold text-gray-900 mb-2">Verify Email</Text>
+          <Text className="text-gray-500 mb-8 text-center">Enter the 6-digit code sent to {email}</Text>
+          <View className="flex-row gap-2 mb-8">
+            {code.map((digit, index) => (
+              <TextInput
+                key={index}
+                ref={(ref) => (inputRefs.current[index] = ref)}
+                className="w-12 h-14 border border-gray-300 rounded-lg text-center text-xl font-bold text-gray-900"
+                maxLength={1}
+                keyboardType="number-pad"
+                value={digit}
+                onChangeText={(v) => handleCodeChange(v, index)}
+                onKeyPress={(e) => handleKeyPress(e, index)}
+              />
+            ))}
+          </View>
+          <TouchableOpacity className="bg-secondary rounded-lg py-4 w-full" onPress={handleVerify}>
+            {isLoading ? (
+              <ActivityIndicator animating={true} size="small" color="white" />
+            ) : (
+              <Text className="text-white text-center text-lg font-semibold">Verify & Continue</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    );
+  }
 
   return (
     <KeyboardAvoidingView

@@ -1,21 +1,17 @@
-import { verifyAccessToken } from '../utils/jwt.js';
+import { getAuth } from '@clerk/express';
 import prisma from '../config/prisma.js';
 import { error } from '../utils/response.js';
 
 export const protect = async (req, res, next) => {
   try {
-    let token;
-    if (req.headers.authorization?.startsWith('Bearer')) {
-      token = req.headers.authorization.split(' ')[1];
+    const { userId } = getAuth(req);
+
+    if (!userId) {
+      return error(res, 'Not authorized, no session', 401);
     }
 
-    if (!token) {
-      return error(res, 'Not authorized, no token', 401);
-    }
-
-    const decoded = verifyAccessToken(token);
     const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
+      where: { clerkId: userId },
       select: {
         id: true,
         username: true,
@@ -29,13 +25,13 @@ export const protect = async (req, res, next) => {
     });
 
     if (!user) {
-      return error(res, 'Not authorized, user not found', 401);
+      return error(res, 'Not authorized, user profile not found. Please sync your account.', 401);
     }
 
     req.user = user;
     next();
   } catch (err) {
-    return error(res, 'Not authorized, token failed', 401);
+    return error(res, 'Not authorized', 401);
   }
 };
 
