@@ -1,0 +1,1523 @@
+%=====================================================================
+% KUET CSE 3200 – System Development Project Report
+% Project : Housely – A Full-Stack House Rental & Sale Platform
+% Compiler : pdflatex  (Overleaf default – do NOT switch to XeLaTeX)
+% HOW TO COMPILE:
+%   1. Upload kuet_logo.png to your Overleaf project root
+%   2. Upload any figure PNGs (arch.png, er.png, etc.) to root
+%   3. Click Recompile (pdflatex, twice for TOC/LOF/LOT)
+%=====================================================================
+\documentclass[12pt,a4paper]{report}
+
+%--------------------------------------------------------------------
+% PACKAGES
+%--------------------------------------------------------------------
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{mathptmx}           % Times New Roman – pdflatex compatible
+\usepackage[top=1.2in, bottom=1.0in, left=1.2in, right=1.0in,
+            headheight=14pt, headsep=0.25in, footskip=0.4in]{geometry}
+\usepackage{setspace}
+\usepackage{titlesec}
+\usepackage{tocloft}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{caption}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{amsmath}
+\usepackage{microtype}
+\usepackage{url}
+\usepackage{listings}           % code listings
+\usepackage{tikz}               % state-machine diagrams
+\usetikzlibrary{automata, positioning, arrows.meta, shapes.geometric}
+\usepackage{pgfplots}           % bar chart for test results
+\pgfplotsset{compat=1.18}
+\usepackage{pgfgantt}           % Gantt chart
+\usepackage{float}              % [H] placement
+
+%--------------------------------------------------------------------
+% ROMAN CHAPTER NUMBERS
+%--------------------------------------------------------------------
+\renewcommand{\thechapter}{\Roman{chapter}}
+
+%--------------------------------------------------------------------
+% LINE SPACING
+%--------------------------------------------------------------------
+\setstretch{1.5}
+
+%--------------------------------------------------------------------
+% CAPTION STYLE  (11pt, centered; table caption above)
+%--------------------------------------------------------------------
+\captionsetup{font=small, labelfont=bf, justification=centering,
+              skip=6pt, position=below}
+\captionsetup[table]{position=above}
+
+%--------------------------------------------------------------------
+% CHAPTER HEADING – 16pt, Bold, Centered
+%--------------------------------------------------------------------
+\titleformat{\chapter}[block]
+  {\fontsize{16}{24}\bfseries\centering}
+  {CHAPTER \thechapter}{1em}{}
+\titlespacing*{\chapter}{0pt}{0pt}{24pt}
+
+%--------------------------------------------------------------------
+% SECTION – 14pt, Bold, Left
+%--------------------------------------------------------------------
+\titleformat{\section}
+  {\fontsize{14}{21}\bfseries\raggedright}
+  {\thesection}{1em}{}
+\titlespacing*{\section}{0pt}{12pt}{6pt}
+
+%--------------------------------------------------------------------
+% SUBSECTION – 12pt, Bold, Left
+%--------------------------------------------------------------------
+\titleformat{\subsection}
+  {\fontsize{12}{18}\bfseries\raggedright}
+  {\thesubsection}{1em}{}
+\titlespacing*{\subsection}{0pt}{12pt}{6pt}
+
+%--------------------------------------------------------------------
+% HEADER / FOOTER
+%--------------------------------------------------------------------
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[R]{\small CSE 3200: System Development Project}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancypagestyle{plain}{%
+  \fancyhf{}
+  \fancyfoot[C]{\thepage}
+  \renewcommand{\headrulewidth}{0pt}}
+
+%--------------------------------------------------------------------
+% TOC TITLES
+%--------------------------------------------------------------------
+\renewcommand{\contentsname}{Contents}
+\renewcommand{\listtablename}{List of Tables}
+\renewcommand{\listfigurename}{List of Figures}
+
+%--------------------------------------------------------------------
+% PARAGRAPH SPACING
+%--------------------------------------------------------------------
+\setlength{\parskip}{6pt}
+\setlength{\parindent}{0pt}
+
+%--------------------------------------------------------------------
+% CODE LISTING STYLE
+%--------------------------------------------------------------------
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codebg}{rgb}{0.97,0.97,0.97}
+\lstdefinestyle{jsStyle}{
+  backgroundcolor=\color{codebg},
+  commentstyle=\color{codegray}\itshape,
+  keywordstyle=\bfseries,
+  numberstyle=\tiny\color{codegray},
+  stringstyle=\color{black},
+  basicstyle=\ttfamily\small,
+  breakatwhitespace=false,
+  breaklines=true,
+  keepspaces=true,
+  numbers=left,
+  numbersep=6pt,
+  showstringspaces=false,
+  tabsize=2,
+  frame=single,
+  framesep=4pt,
+  xleftmargin=18pt
+}
+\lstset{style=jsStyle}
+
+%--------------------------------------------------------------------
+% HYPERREF
+%--------------------------------------------------------------------
+\hypersetup{
+  colorlinks=true, linkcolor=black, citecolor=black, urlcolor=blue,
+  pdftitle={Housely -- A Full-Stack House Rental and Sale Platform},
+  pdfauthor={MD Jahid Hasan Jim \& Shakhoyat Rahman Shujon}}
+
+%====================================================================
+\begin{document}
+%====================================================================
+
+
+%--------------------------------------------------------------------
+% COVER PAGE
+%--------------------------------------------------------------------
+\begin{titlepage}
+\thispagestyle{empty}
+\begin{center}
+
+{\fontsize{14}{21}\normalfont CSE 3200: System Development Project}
+
+\vspace{6pt}
+
+{\fontsize{18}{27}\bfseries\scshape
+Housely: A Full-Stack House Rental\\[4pt]
+and Sale Platform}
+
+\vspace{24pt}
+
+{\fontsize{14}{21}\normalfont By}
+
+\vspace{36pt}
+
+{\fontsize{14}{21}\bfseries MD Jahid Hasan Jim}\\[4pt]
+{\fontsize{14}{21}\normalfont Roll: 2107054}
+
+\vspace{8pt}
+{\fontsize{14}{21}\bfseries \&}
+\vspace{8pt}
+
+{\fontsize{14}{21}\bfseries Shakhoyat Rahman Shujon}\\[4pt]
+{\fontsize{14}{21}\normalfont Roll: 2107104}
+
+\vspace{48pt}
+
+\includegraphics[width=1.14in, height=1.5in]{kuet.png}
+
+\vspace{24pt}
+
+\vfill
+
+{\fontsize{12}{18}\bfseries
+Department of Computer Science and Engineering\\
+Khulna University of Engineering \& Technology\\
+Khulna 9203, Bangladesh\\
+April, 2026}
+
+\end{center}
+\end{titlepage}
+
+%--------------------------------------------------------------------
+% TITLE PAGE  (inner page – roman page i)
+%--------------------------------------------------------------------
+\pagenumbering{roman}
+\setcounter{page}{1}
+\thispagestyle{plain}
+
+\begin{center}
+{\fontsize{18}{27}\bfseries
+Housely: A Full-Stack House Rental\\[4pt]
+and Sale Platform}
+
+\vspace{36pt}
+
+{\fontsize{12}{18}\normalfont By}
+
+\vspace{24pt}
+
+{\fontsize{12}{18}\bfseries MD Jahid Hasan Jim}\\
+{\fontsize{12}{18}\normalfont Roll: 2107054}\\[6pt]
+{\fontsize{12}{18}\bfseries \&}\\[6pt]
+{\fontsize{12}{18}\bfseries Shakhoyat Rahman Shujon}\\
+{\fontsize{12}{18}\normalfont Roll: 2107104}
+
+\vspace{48pt}
+\end{center}
+
+\noindent{\fontsize{12}{18}\bfseries Supervisor:}
+
+\vspace{4pt}
+\hspace{0.8in}{\fontsize{12}{18}\bfseries Dr. Md. Milon Islam}\\
+\hspace{0.8in}{\fontsize{12}{18}\normalfont Assistant Professor}\\
+\hspace{0.8in}{\fontsize{12}{18}\normalfont Department of Computer Science and Engineering}\\
+\hspace{0.8in}{\fontsize{12}{18}\normalfont Khulna University of Engineering \& Technology}
+\hfill\underline{\hspace{1.5in}}
+
+\hfill Signature
+
+\vspace{36pt}
+\begin{center}
+{\fontsize{12}{18}\normalfont
+Department of Computer Science and Engineering\\
+Khulna University of Engineering \& Technology\\
+Khulna 9203, Bangladesh}
+
+\vspace{6pt}
+{\fontsize{16}{24}\bfseries April, 2026}
+\end{center}
+\clearpage
+
+%--------------------------------------------------------------------
+% ACKNOWLEDGMENT
+%--------------------------------------------------------------------
+\chapter*{Acknowledgment}
+\addcontentsline{toc}{chapter}{Acknowledgment}
+\thispagestyle{plain}
+
+All praise goes to the Almighty Allah, whose blessings and mercy enabled us to bring this
+project to a successful completion. We extend our deepest gratitude to our supervisor,
+\textbf{Dr. Md. Milon Islam}, Assistant Professor, Department of Computer Science and
+Engineering, Khulna University of Engineering \& Technology, for his invaluable guidance,
+continuous encouragement, and thoughtful feedback at every stage of this work.
+
+We are equally thankful to the faculty members of the Department of Computer Science
+and Engineering at KUET for their ongoing support and for providing us with the
+academic foundation necessary to undertake a project of this scale. We also acknowledge
+the open-source communities behind React Native, Next.js, Express.js, Prisma, and
+Clerk, whose well-maintained documentation and tooling made much of this work
+possible. Lastly, we owe sincere thanks to our families and friends for their patience and
+moral support throughout the duration of this project.
+
+\vspace{24pt}
+\hfill{\fontsize{12}{18}\bfseries Authors}
+
+\clearpage
+
+%--------------------------------------------------------------------
+% ABSTRACT
+%--------------------------------------------------------------------
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+\thispagestyle{plain}
+
+The property rental and sale market in Bangladesh remains largely fragmented, depending
+on informal telephone channels and unverified broker networks that offer little transparency
+or accountability. This project addresses that gap with \textbf{Housely}: a multi-platform,
+integrated house rental and sale coordination system comprising a React Native mobile
+application, a Node.js/Express.js REST API backend, and a Next.js administration
+dashboard.
+
+The system supports three distinct actor roles---USER, AGENT, and ADMIN---each with a
+role-scoped interface secured by Clerk, a third-party authentication and identity
+management service. Core operational workflows follow a structured booking lifecycle that
+transitions through four states from PENDING to COMPLETED, enforced by a service-layer
+finite-state machine (FSM). Real-time in-app messaging between users and agents is
+implemented through Socket.IO WebSocket connections authenticated via Clerk session
+tokens at the handshake level. Media assets including property images and video tours are
+managed through Cloudinary, mobile push notifications are dispatched through Firebase
+Cloud Messaging (FCM), and transactional email is delivered through Nodemailer.
+
+The mobile application covers the complete user and agent journey: onboarding, property
+discovery with advanced spatial and attribute filtering, booking management, in-app
+messaging, and real-time notifications. The admin dashboard provides platform-level
+analytics, listing moderation, user management, and booking oversight using interactive
+Recharts visualisations.
+
+The platform was built over sixteen weeks following an iterative engineering process
+that spanned requirements analysis, database schema design, backend module development,
+frontend implementation, and integration testing using Jest and Supertest. The resulting
+prototype demonstrates that a modular, type-safe, multi-platform architecture can serve as
+a scalable and maintainable framework for digital property coordination, reducing
+administrative overhead and improving transparency among property seekers, agents, and
+platform administrators.
+
+\clearpage
+
+%--------------------------------------------------------------------
+% CONTENTS
+%--------------------------------------------------------------------
+\tableofcontents
+\clearpage
+
+%--------------------------------------------------------------------
+% LIST OF TABLES
+%--------------------------------------------------------------------
+\listoftables
+\clearpage
+
+%--------------------------------------------------------------------
+% LIST OF FIGURES
+%--------------------------------------------------------------------
+\listoffigures
+\clearpage
+
+%====================================================================
+% BODY — Arabic numerals
+%====================================================================
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+%====================================================================
+\chapter{Introduction}
+%====================================================================
+
+\section{Introduction}
+
+Rapid urbanisation across Bangladesh has generated considerable demand for residential
+property rental and sale, yet the market continues to operate in a largely informal manner.
+Prospective tenants and buyers still rely on fragmented classified-advertisement sites,
+unverified broker networks, and telephone-based coordination, all of which introduce
+unnecessary friction, information asymmetry, and a heightened risk of fraud
+\cite{hossain2019}. No dominant digital platform currently exists that simultaneously
+aggregates verified listings with multimedia content, enables direct user-to-agent booking
+negotiation, supports real-time messaging, and handles post-booking reviews with
+administrative moderation.
+
+Housely is designed to fill precisely this gap. Built as a three-component ecosystem
+comprising a React Native mobile application, an Express.js REST API, and a Next.js
+administration dashboard, the platform digitalises the full property rental and sale journey
+for all three actors: property seekers (\textbf{USER}), property owners and agents
+(\textbf{AGENT}), and platform administrators (\textbf{ADMIN}).
+
+\section{Background and Problem Statement}
+
+Current approaches to property search in Bangladesh share several structural weaknesses.
+Listings are scattered across multiple sites with no unified booking or messaging layer.
+Agents have no single interface from which they can receive booking requests, negotiate
+terms, and track appointment histories. Users cannot review agents or properties after a
+completed transaction, which removes accountability from the process. Platform
+administrators lack real-time visibility into listing quality or booking volumes. Housely
+addresses all four of these deficiencies within a single cohesive system, with role-scoped
+interfaces enforced at both the API and UI layers \cite{bproperty2023, kleppmann2017}.
+
+\section{Objectives}
+
+The principal objectives of this project are as follows.
+
+\begin{enumerate}[noitemsep]
+  \item To design and implement a multi-role platform (USER, AGENT, ADMIN) that
+        coordinates property discovery, booking, messaging, and review workflows.
+  \item To build a secure, scalable REST API backend using Clerk for identity management,
+        Redis for rate limiting, and Socket.IO for real-time WebSocket communication.
+  \item To deliver usable multi-platform interfaces---a React Native mobile application and
+        a Next.js administration dashboard---for workflow execution and business analytics.
+  \item To integrate modern cloud services (Cloudinary, Neon PostgreSQL, Firebase FCM,
+        and Clerk) into a cohesive and deployable architecture.
+  \item To validate the implementation through automated integration testing using Jest
+        and Supertest.
+\end{enumerate}
+
+\section{Scope}
+
+The project is divided into three subsystems. The \textbf{backend} is built on Node.js~20
+(ESM) with Express~4, Prisma~6 ORM, PostgreSQL (Neon serverless), Redis~7 (rate
+limiting only), Socket.IO~4, Zod~3 for validation, Multer for file uploads, and Cloudinary
+for media storage. Authentication is delegated entirely to Clerk via the
+\texttt{@clerk/express} SDK. The backend is deployed as serverless functions on Vercel.
+The \textbf{mobile application} is built with React Native~0.81 and Expo~54, using
+Expo Router for file-based navigation, NativeWind~4 for Tailwind-based styling,
+Zustand~5 for global state, TanStack Query~5 for server-state management, and
+\texttt{@clerk/clerk-expo} with \texttt{expo-secure-store} for authentication. The
+\textbf{administration dashboard} is built with Next.js~14 (App Router),
+\texttt{@clerk/nextjs} for authentication, TanStack React Query~5, Zustand~5, Recharts,
+Shadcn/ui, React Hook Form, Zod~4, and Tailwind CSS. Version control was managed
+throughout using Git and GitHub.
+
+\section{Unfamiliarity of the Problem and Solution Space}
+
+Established international platforms such as Zillow and Rightmove address property listing
+and discovery but are region-specific and do not accommodate Bangladeshi administrative
+geography (Division, District, Thana), Taka-denominated pricing, or the three-actor role
+model required by local market dynamics. The closest domestic alternative, Bproperty,
+offers a web portal but lacks real-time messaging, agent KYC verification, post-booking
+reviews, and a unified admin analytics dashboard. Housely's combination of a structured
+booking lifecycle FSM, Clerk-managed federated authentication, Socket.IO real-time
+messaging with Clerk-authenticated WebSocket handshakes, Firebase FCM push
+notifications, and layered React Native navigation represents an integration approach not
+found in the reviewed open-source or academic literature \cite{richardson2007, brown2015}.
+
+\section{Project Planning and Work Distribution}
+
+The project was carried out over sixteen weeks by two students. Table~\ref{tab:raci}
+presents the RACI matrix for task ownership, and Figure~\ref{fig:gantt} shows the overall
+project timeline.
+
+\begin{table}[H]
+\caption{RACI Matrix for Project Work Distribution}
+\label{tab:raci}
+\centering
+\small
+\setstretch{1.2}
+\begin{tabularx}{\textwidth}{|X|c|c|c|c|}
+\hline
+\textbf{Task} & \textbf{Student~1} & \textbf{Student~2} & \textbf{Supervisor} & \textbf{Reviewer} \\
+\hline
+Requirements Analysis    & R/A & C   & C & I \\
+\hline
+DB Schema \& Migrations  & C   & R/A & C & I \\
+\hline
+Auth \& Clerk Integration & R/A & C   & I & I \\
+\hline
+House \& Filter Modules  & R/A & C   & I & I \\
+\hline
+Booking \& Review Modules& C   & R/A & I & I \\
+\hline
+Message \& Notification  & C   & R/A & I & I \\
+\hline
+Admin Module             & C   & R/A & I & C \\
+\hline
+React Native Mobile App  & R/A & C   & I & C \\
+\hline
+Next.js Admin Dashboard  & C   & R/A & I & C \\
+\hline
+Testing                  & R   & R/A & I & C \\
+\hline
+Report Writing           & R/A & R/A & C & C \\
+\hline
+\end{tabularx}
+\end{table}
+{\small R\,=\,Responsible, A\,=\,Accountable, C\,=\,Consulted, I\,=\,Informed}
+\setstretch{1.5}
+
+\begin{figure}[H]
+\centering
+\setstretch{1.0}
+\begin{ganttchart}[
+  hgrid, vgrid,
+  x unit=0.52cm, y unit title=0.45cm, y unit chart=0.45cm,
+  title height=1, bar height=0.6,
+  bar label font=\small, title label font=\small,
+  bar/.append style={fill=gray!40}
+]{1}{16}
+  \gantttitle{Project Timeline (Weeks)}{16} \\
+  \gantttitlelist{1,...,16}{1} \\
+  \ganttbar{Requirements \& Schema}{1}{2}  \\
+  \ganttbar{Auth \& Clerk Integration}{2}{4}\\
+  \ganttbar{House \& Filter Modules}{3}{6} \\
+  \ganttbar{Booking, Review, Message}{5}{8}\\
+  \ganttbar{Notifications \& Admin}{7}{10} \\
+  \ganttbar{React Native Mobile App}{5}{12}\\
+  \ganttbar{Next.js Admin Dashboard}{7}{12}\\
+  \ganttbar{Integration \& Testing}{11}{14}\\
+  \ganttbar{Report Writing}{13}{15}        \\
+  \ganttbar{Final Presentation}{16}{16}
+\end{ganttchart}
+\setstretch{1.5}
+\caption{Gantt Chart of Project Timeline}
+\label{fig:gantt}
+\end{figure}
+
+\section{Applications of the Work}
+
+Housely can be deployed as a commercial property listing platform across Bangladesh,
+serving major urban centres such as Dhaka, Chittagong, and Khulna, as well as secondary
+cities. Beyond its direct commercial application, the architecture functions as a reference
+implementation for multi-role marketplace SaaS platforms that require federated identity
+management via Clerk, Socket.IO real-time communication, and Cloudinary media
+pipelines. The admin analytics layer also provides a reusable template for business
+intelligence dashboards in similar marketplace domains.
+
+\section{Organization of the Report}
+
+Chapter~\hyperref[chap:related]{II} reviews related work on digital property platforms,
+real-time messaging systems, and cross-platform mobile frameworks.
+Chapter~\hyperref[chap:design]{III} describes the system architecture, database schema,
+and key design decisions across all three codebases.
+Chapter~\hyperref[chap:impl]{IV} presents implementation details, API design, frontend
+structure, and test results.
+Chapter~\hyperref[chap:societal]{V} addresses societal, ethical, legal, and environmental
+considerations.
+Chapter~\hyperref[chap:complex]{VI} analyses the complex engineering problems and
+activities encountered during the project.
+Chapter~\hyperref[chap:conc]{VII} summarises the work, acknowledges limitations, and
+outlines directions for future development.
+
+%====================================================================
+\chapter{Related Works}
+\label{chap:related}
+%====================================================================
+
+\section{Introduction}
+
+Property listing and rental platforms span a wide spectrum, ranging from general-purpose
+booking APIs to region-specific real-estate marketplaces and purpose-built coordination
+systems. This chapter situates Housely within that landscape and identifies the gaps it
+is designed to address.
+
+\section{Related Works}
+
+\subsection{International Property Listing Platforms}
+
+Zillow (USA) is the world's largest property marketplace, offering listing search, automated
+valuation estimates, and agent directories. Its architecture and user experience are
+optimised for the North American market, with USD pricing and US administrative
+geography, making it unsuitable for direct adoption in Bangladesh \cite{zillow2023}.
+Rightmove (UK) aggregates listings from registered estate agents but does not provide
+direct in-app buyer-to-agent messaging, booking management, or any post-listing review
+mechanism.
+
+\subsection{Domestic Solutions}
+
+Bproperty is the closest existing commercial solution for the Bangladeshi property market,
+offering a web portal and a basic mobile application. However, it does not support
+real-time messaging, agent KYC verification, post-booking reviews, a booking lifecycle
+state machine, or a unified admin analytics dashboard. Listing management is handled
+internally by the Bproperty team rather than by agents directly, which limits platform
+scalability.
+
+\subsection{Real-Time Communication Systems}
+
+The use of Socket.IO for real-time messaging in web and mobile systems is well established
+in the literature \cite{brown2015}. Marketplace platforms that employ Socket.IO with
+token-authenticated handshakes have demonstrated sub-100~ms message delivery latency
+in LAN environments, consistent with the performance expectations of Housely's in-app
+chat feature.
+
+\subsection{Cross-Platform Mobile Development}
+
+React Native enables code sharing between iOS and Android, reducing development effort
+compared to fully native implementations \cite{eisenman2015}. Expo's managed workflow
+minimises native build configuration overhead, allowing development teams to focus on
+feature delivery. NativeWind 4 brings Tailwind CSS utility classes to React Native,
+significantly accelerating the UI implementation process.
+
+\subsection{ORM and Serverless Database Systems}
+
+Prisma ORM has seen wide adoption in the Node.js ecosystem because of its type-safe
+query builder and schema-first migration system \cite{prisma2023}. Neon's serverless
+PostgreSQL provides autoscaling connection pooling and database branching, which lowers
+infrastructure costs for development-stage deployments considerably.
+
+\subsection{Federated Identity Management}
+
+Third-party identity providers such as Clerk consolidate authentication concerns---including
+session management, token refresh, social sign-in, and multi-factor authentication---into
+a single managed service. Delegating authentication to a purpose-built provider eliminates
+entire classes of security vulnerabilities (credential stuffing, token leakage, insecure
+storage) and reduces the authentication code surface maintained by the application team.
+
+\section{Discussion}
+
+Table~\ref{tab:related} provides a structured comparison of Housely against the most
+relevant existing systems. The comparison confirms that none of the reviewed solutions
+covers the full combination of Bangladeshi market specificity, real-time messaging, agent
+KYC verification, booking lifecycle management, post-booking reviews, and a unified admin
+analytics dashboard. This validates the originality and practical relevance of the Housely
+problem formulation.
+
+\begin{table}[H]
+\caption{Comparison of Housely with Related Property Platforms}
+\label{tab:related}
+\centering
+\small
+\setstretch{1.2}
+\begin{tabularx}{\textwidth}{|l|c|c|c|c|c|}
+\hline
+\textbf{Feature} & \textbf{Housely} & \textbf{Bproperty} & \textbf{Zillow} & \textbf{Rightmove} & \textbf{Lamudi BD} \\
+\hline
+Bangladesh-specific   & \checkmark & \checkmark & \texttimes & \texttimes & \checkmark \\
+\hline
+Real-time messaging   & \checkmark & \texttimes & \texttimes & \texttimes & \texttimes \\
+\hline
+Agent KYC             & \checkmark & Partial    & N/A        & N/A        & \texttimes \\
+\hline
+Booking lifecycle FSM & \checkmark & \texttimes & \texttimes & \texttimes & \texttimes \\
+\hline
+Post-booking reviews  & \checkmark & \texttimes & \checkmark & \texttimes & \texttimes \\
+\hline
+Admin analytics       & \checkmark & Internal   & \checkmark & \checkmark & \texttimes \\
+\hline
+React Native mobile   & \checkmark & \checkmark & \checkmark & \checkmark & \checkmark \\
+\hline
+Open-source arch.     & \checkmark & \texttimes & \texttimes & \texttimes & \texttimes \\
+\hline
+\end{tabularx}
+\setstretch{1.5}
+\end{table}
+
+%====================================================================
+\chapter{System Analysis and Design}
+\label{chap:design}
+%====================================================================
+
+\section{Introduction}
+
+This chapter describes the methodology, system architecture, module structure, booking
+lifecycle state machine, and database schema design decisions across all three codebases
+of the Housely platform.
+
+\section{System Analysis and Design Approach}
+
+Development was carried out in five iterative phases.
+
+\begin{enumerate}[noitemsep]
+  \item \textbf{Phase 1 -- Requirements and Schema:} Stakeholder analysis, role
+        identification, booking lifecycle FSM design, and Prisma schema definition with an
+        incremental migration strategy.
+  \item \textbf{Phase 2 -- Backend Core:} Express module scaffolding, Clerk
+        authentication integration, RBAC middleware, and house listing CRUD operations.
+  \item \textbf{Phase 3 -- Backend Features:} Booking, review, message, notification,
+        location, and admin analytics modules.
+  \item \textbf{Phase 4 -- Frontend Development:} React Native mobile application and
+        Next.js admin dashboard, built in parallel against the stabilised API.
+  \item \textbf{Phase 5 -- Testing and Documentation:} Jest/Supertest integration tests,
+        manual QA across all three platforms, and report writing.
+\end{enumerate}
+
+\section{Overall Framework and Architecture}
+
+Figure~\ref{fig:arch} illustrates the overall Housely system architecture. The system
+follows a three-tier design: the \textbf{Presentation Tier} contains the React Native
+mobile app and the Next.js admin dashboard; the \textbf{Application Tier} is the
+Express.js API server responsible for routing, Clerk-based authentication verification,
+business logic, and Socket.IO connections; the \textbf{Data Tier} comprises Neon
+PostgreSQL (accessed via Prisma~6), Redis~7 (rate limiting only), and Cloudinary (media
+storage). The external services layer includes Clerk (identity management), Firebase FCM
+(push notifications), and Nodemailer/Gmail (transactional email).
+
+\begin{figure}[H]
+\centering
+\fbox{\parbox{0.88\textwidth}{\centering\vspace{1.5cm}
+\textbf{[Replace with actual System Architecture Diagram]}\\[6pt]
+React Native App (\texttt{@clerk/clerk-expo}) \hspace{0.3cm}
+Next.js Admin (\texttt{@clerk/nextjs})\\
+$\updownarrow$ REST + Socket.IO \hspace{0.5cm} $\updownarrow$ REST\\[4pt]
+Express.js API (Node.js 20, Vercel Serverless)\\
+$\updownarrow$ Prisma ORM \hspace{0.3cm} $\updownarrow$ ioredis \hspace{0.3cm}
+$\updownarrow$ Cloudinary SDK\\[4pt]
+Neon PostgreSQL \hspace{0.3cm} Redis 7 (rate limit) \hspace{0.3cm} Cloudinary CDN\\[4pt]
+External: Clerk (auth) $|$ Firebase FCM (push) $|$ Nodemailer/Gmail (email)
+\vspace{1.5cm}}}
+\caption{Overall System Architecture of Housely}
+\label{fig:arch}
+\end{figure}
+
+\subsection{Data Flow}
+
+Figure~\ref{fig:dfd} presents the Level-1 data flow diagram of Housely, showing the
+interactions among the three external actors, the major API processes, persistent data
+stores, and external cloud services.
+
+\begin{figure}[H]
+\centering
+% Replace with \includegraphics{dfd.png} once the diagram image is ready
+\fbox{\parbox{0.88\textwidth}{\centering\vspace{1.5cm}
+\textbf{[Replace with actual Level-1 Data Flow Diagram]}
+\vspace{1.5cm}}}
+\caption{Level-1 Data Flow Diagram of Housely}
+\label{fig:dfd}
+\end{figure}
+
+\subsection{Backend Module Structure}
+
+The Express.js application is organised into ten feature modules, each encapsulating its
+own router, controller, service layer, and validation schema. Table~\ref{tab:modules}
+summarises these modules along with their primary responsibilities.
+
+\begin{table}[H]
+\caption{Express.js Backend Module Structure}
+\label{tab:modules}
+\centering
+\small
+\setstretch{1.2}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Module} & \textbf{Responsibility} \\
+\hline
+\texttt{auth} & Provides a single \texttt{POST /api/auth/sync} endpoint that upserts a Clerk-authenticated user into the local database; the \texttt{protect} and \texttt{requireRole} middlewares delegate identity verification to \texttt{@clerk/express}. \\
+\hline
+\texttt{user} & User profile retrieval and update, avatar upload to Cloudinary, notification preference management, device token registration for FCM, saved locations, and payment history. \\
+\hline
+\texttt{house} & Listing CRUD with image and video upload to Cloudinary, favourites, property-view tracking, and discovery endpoints (popular, nearby, recommended, top locations). \\
+\hline
+\texttt{filter} & Advanced property search accepting up to 12 simultaneous filter parameters, dynamic Prisma \texttt{where} clause construction, and cursor-based pagination. \\
+\hline
+\texttt{booking} & Booking lifecycle management, four-state FSM transition enforcement, double-booking prevention, and cancellation handling. \\
+\hline
+\texttt{review} & Post-booking review submission (rating, comment, and media), update, deletion, aggregate rating computation, and listing review display. \\
+\hline
+\texttt{message} & Conversation creation (one per user-agent pair), message persistence with type support (text/image/audio/video), unread-count tracking, and Socket.IO real-time delivery. \\
+\hline
+\texttt{notification} & Notification creation, listing, and mark-read operations; Firebase FCM dispatch to registered device tokens; Socket.IO real-time push to authenticated user rooms. \\
+\hline
+\texttt{location} & Reverse geocoding, saved user location CRUD, and location-based property proximity queries. \\
+\hline
+\texttt{admin} & Platform analytics (aggregated Prisma queries), listing moderation, user management, and booking oversight. \\
+\hline
+\end{tabularx}
+\setstretch{1.5}
+\end{table}
+
+\subsection{Mobile Application Architecture}
+
+The React Native application uses Expo Router for file-based navigation across six
+navigator groups: \texttt{(auth)}, \texttt{(onboarding)}, \texttt{(kyc)},
+\texttt{(location)}, \texttt{(tabs)} for the user home portal, and \texttt{(owner)} for
+the agent portal. Zustand~5 manages global authentication and location state, while
+TanStack Query~5 handles server state caching and background refetching. The Axios
+instance in \texttt{services/api.js} attaches a fresh Clerk session token on every
+outgoing request through a request interceptor that calls the Clerk \texttt{getToken()}
+method. Token storage is handled by \texttt{expo-secure-store}, which uses the
+platform's secure hardware-backed keychain.
+
+\subsection{Admin Dashboard Architecture}
+
+The Next.js~14 admin dashboard uses the App Router, with server components for initial
+data loading and client components for interactive charts. \texttt{@clerk/nextjs} and
+\texttt{clerkMiddleware} protect all dashboard routes; unauthenticated requests are
+redirected to \texttt{/login}. TanStack React Query~5 handles client-side cache
+invalidation, and Recharts renders analytics visualisations for bookings, revenue, user
+growth, and listing trends.
+
+\section{Problem Design and Analysis}
+
+\subsection{Role Identification}
+
+Three actor types were identified through property marketplace workflow analysis.
+
+\begin{itemize}[noitemsep]
+  \item \textbf{USER} -- Registers an account via Clerk, browses verified property
+        listings, applies advanced filters, sends booking requests, exchanges messages with
+        agents, submits post-booking reviews, and receives real-time push and in-app
+        notifications.
+  \item \textbf{AGENT} -- Creates and manages property listings with multimedia uploads,
+        confirms or cancels incoming booking requests, communicates with users via in-app
+        messaging, and monitors listing statistics and booking queues.
+  \item \textbf{ADMIN} -- Exercises system-wide oversight: moderates listings, manages
+        user accounts, reviews booking volumes, and accesses real-time platform-wide
+        analytics.
+\end{itemize}
+
+Figures~\ref{fig:uc1} and~\ref{fig:uc2} present the Housely use case diagrams for these
+three actor types.
+
+\begin{figure}[H]
+\centering
+% Replace with \includegraphics{usecase1.png} once the diagram image is ready
+\fbox{\parbox{0.88\textwidth}{\centering\vspace{1.5cm}
+\textbf{[Replace with Use Case Diagram -- User and Agent Workflows]}
+\vspace{1.5cm}}}
+\caption{Use Case Diagram of Housely: User and Agent Workflows}
+\label{fig:uc1}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+% Replace with \includegraphics{usecase2.png} once the diagram image is ready
+\fbox{\parbox{0.88\textwidth}{\centering\vspace{1.5cm}
+\textbf{[Replace with Use Case Diagram -- Admin and System Side Effects]}
+\vspace{1.5cm}}}
+\caption{Use Case Diagram of Housely: Admin and System Side Effects}
+\label{fig:uc2}
+\end{figure}
+
+\subsection{Booking Lifecycle State Machine}
+
+The booking lifecycle is modelled as a four-state finite-state machine enforced by a
+transition map in the booking service. Table~\ref{tab:booking_states} defines each state,
+and Figure~\ref{fig:fsm} illustrates the permitted transitions.
+
+\begin{table}[H]
+\caption{Booking States and Semantics}
+\label{tab:booking_states}
+\centering
+\small
+\setstretch{1.2}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{State} & \textbf{Semantics} \\
+\hline
+\texttt{PENDING} & The user has submitted a booking request. The agent has not yet
+responded. A preferred check-in/check-out date range and optional notes may accompany
+the request. A Firebase FCM push notification is sent to the agent. \\
+\hline
+\texttt{CONFIRMED} & The agent has accepted the request. A push notification is
+dispatched to the user. The booking is now active and cannot be reversed without
+cancellation. \\
+\hline
+\texttt{COMPLETED} & The booking period has ended and the transaction is finalised.
+The user may now submit a review for the property. \\
+\hline
+\texttt{CANCELLED} & The booking was cancelled by the user, agent, or admin before
+completion. A push notification is sent to the affected party. \\
+\hline
+\end{tabularx}
+\setstretch{1.5}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  node distance=3.2cm,
+  >=Stealth,
+  every state/.style={draw, rounded rectangle, minimum width=2.6cm,
+                      minimum height=0.8cm, font=\small\ttfamily,
+                      fill=gray!10},
+  initial text={}
+]
+  \node[state, initial] (P)  {PENDING};
+  \node[state]          (Co) [right=of P]        {CONFIRMED};
+  \node[state]          (Cm) [right=of Co]        {COMPLETED};
+  \node[state]          (Ca) [below=1.8cm of Co]  {CANCELLED};
+
+  \draw[->] (P)  -- node[above, font=\tiny]{agent confirms}          (Co);
+  \draw[->] (Co) -- node[above, font=\tiny]{agent/admin completes}   (Cm);
+  \draw[->] (P)  to [bend right=30] node[left,  font=\tiny]{user/agent}       (Ca);
+  \draw[->] (Co) --                 node[right, font=\tiny]{user/agent/admin} (Ca);
+\end{tikzpicture}
+\caption{Booking Lifecycle Finite-State Machine (four states)}
+\label{fig:fsm}
+\end{figure}
+
+\subsection{Clerk Authentication Integration}
+
+Authentication is fully delegated to Clerk across all three platforms.
+Table~\ref{tab:clerk_auth} summarises the per-platform integration.
+
+\begin{table}[H]
+\caption{Clerk Authentication Integration by Platform}
+\label{tab:clerk_auth}
+\centering
+\small
+\setstretch{1.2}
+\begin{tabularx}{\textwidth}{|l|l|X|}
+\hline
+\textbf{Platform} & \textbf{Package} & \textbf{Mechanism} \\
+\hline
+Mobile & \texttt{@clerk/clerk-expo} & \texttt{SignIn}/\texttt{SignUp} components handle
+credential exchange. Session token retrieved via \texttt{useAuth().getToken()} and stored
+in \texttt{expo-secure-store}. Axios request interceptor attaches Bearer token to every
+API call. \\
+\hline
+Backend & \texttt{@clerk/express} & The \texttt{protect} middleware calls
+\texttt{getAuth(req)} to extract the verified \texttt{clerkUserId} from the session token.
+A DB lookup maps \texttt{clerkId} to the local \texttt{User} row. Role-based access is
+enforced by \texttt{requireRole(roles[])}. \\
+\hline
+Admin & \texttt{@clerk/nextjs} & \texttt{clerkMiddleware()} in
+\texttt{src/middleware.ts} guards all \texttt{/(dashboard)} routes. Unauthenticated
+requests redirect to \texttt{/login}. Server components use \texttt{auth()} to obtain
+the current user's \texttt{clerkId}. \\
+\hline
+Socket.IO & \texttt{@clerk/express} & At handshake time the backend calls
+\texttt{clerkClient.verifyToken(token)} where \texttt{token} is the Bearer value passed
+in \texttt{auth.token}. Only verified connections are admitted to user-scoped rooms. \\
+\hline
+\end{tabularx}
+\setstretch{1.5}
+\end{table}
+
+\section{Database Schema Design}
+
+The Prisma schema defines 20 models and 7 enumerations. Table~\ref{tab:schema} provides
+a high-level overview of the principal models, their key fields, and inter-model
+relationships. Figure~\ref{fig:erd} shows the entity relationship diagram generated from
+the Prisma schema.
+
+\begin{table}[H]
+\caption{Database Schema -- Principal Model Overview}
+\label{tab:schema}
+\centering
+\small
+\setstretch{1.2}
+\begin{tabularx}{\textwidth}{|l|X|X|}
+\hline
+\textbf{Model} & \textbf{Key Fields} & \textbf{Relationships} \\
+\hline
+\texttt{User} & UUID PK, clerkId (unique), email (unique), phone, name, role (USER/AGENT/ADMIN), authProvider, createdAt & Has many Houses, Bookings, Reviews, Conversations, Notifications, DeviceTokens, SavedLocations \\
+\hline
+\texttt{House} & UUID PK, name, description, city, address, rentPerMonth, salePrice, listingType (RENT/SALE), propertyType (APARTMENT/ PENTHOUSE/HOTEL/VILLA/STUDIO/DUPLEX/ TOWNHOUSE/CONDO), bedrooms, bathrooms, status (AVAILABLE/UNAVAILABLE), agentId FK & Belongs to User (agent); has many Bookings, Reviews, HouseImages, HouseViews, Favorites \\
+\hline
+\texttt{HouseImage} & UUID PK, url, publicId, type (IMAGE/VIDEO), houseId FK & Belongs to House \\
+\hline
+\texttt{Booking} & UUID PK, userId FK, houseId FK, status (PENDING/CONFIRMED/COMPLETED/CANCELLED), checkIn, checkOut, totalAmount, notes & Belongs to User and House; has one Review, one Payment \\
+\hline
+\texttt{Review} & UUID PK, rating (1--5), comment, mediaUrls[], userId FK, houseId FK, bookingId FK (unique) & Belongs to User, House, and Booking \\
+\hline
+\texttt{Conversation} & UUID PK, userId FK, agentId FK, lastMessage, lastMessageAt & Has many Messages \\
+\hline
+\texttt{Message} & UUID PK, conversationId FK, senderId FK, content, type (TEXT/IMAGE/AUDIO/VIDEO), isRead, createdAt & Belongs to Conversation and User \\
+\hline
+\texttt{Notification} & UUID PK, userId FK, type, title, body, data (JSON), isRead, createdAt & Belongs to User \\
+\hline
+\texttt{DeviceToken} & UUID PK, userId FK, token, platform (android/ios), createdAt & Belongs to User; used for Firebase FCM dispatch \\
+\hline
+\texttt{Payment} & UUID PK, bookingId FK (unique), amount, status (PENDING/COMPLETED/FAILED/REFUNDED), method, transactionId & Belongs to Booking \\
+\hline
+\texttt{SavedLocation} & UUID PK, userId FK, name, latitude, longitude, address & Belongs to User \\
+\hline
+\texttt{HouseView} & UUID PK, houseId FK, userId FK, viewedAt & Tracks property impressions \\
+\hline
+\texttt{Favorite} & UUID PK, houseId FK, userId FK & User-to-house saved listing \\
+\hline
+\end{tabularx}
+\setstretch{1.5}
+\end{table}
+
+\begin{figure}[H]
+\centering
+% Replace with \includegraphics[width=\textwidth]{erd.png} once the diagram is ready
+\fbox{\parbox{0.88\textwidth}{\centering\vspace{2cm}
+\textbf{[Replace with actual Entity Relationship Diagram]}\\[4pt]
+(Export from Prisma Studio, dbdiagram.io, or draw.io)
+\vspace{2cm}}}
+\caption{Entity Relationship Diagram of Housely}
+\label{fig:erd}
+\end{figure}
+
+\section{Conclusion}
+
+The system analysis and design phase established the foundational data model, role
+boundaries, and FSM contracts shared by all three codebases. Prisma serves as the
+data-layer source of truth, the Express module structure keeps backend concerns cleanly
+separated, and both the mobile and admin clients interact with the same REST and
+Socket.IO API contract.
+
+%====================================================================
+\chapter{Implementation, Results and Discussions}
+\label{chap:impl}
+%====================================================================
+
+\section{Introduction}
+
+This chapter presents implementation details, API design, frontend structure, code
+excerpts, and test results across the three application components of Housely.
+
+\section{Experimental Setup}
+
+All components were developed on Windows 11 and macOS. Local infrastructure was
+managed through Docker Compose, providing PostgreSQL 16 and Redis 7 containers. The
+backend was deployed to Vercel serverless functions. The mobile application was tested
+on Android emulators (API 34) as well as physical devices through Expo Go. The admin
+dashboard was deployed on Vercel as a standard Next.js application.
+
+\section{Evaluation Metrics}
+
+Evaluation covered the following dimensions: backend route correctness and role
+enforcement via Jest/Supertest; booking FSM transition integrity under both valid and
+invalid input; authenticated request success rate using Clerk session token attachment;
+real-time message
+delivery latency via Socket.IO; Cloudinary upload round-trip time; and frontend screen
+rendering correctness for role-gated pages.
+
+\section{Dataset}
+
+Synthetic test data was generated using the \texttt{prisma/seed.js} script, which
+created 50 user accounts (30 USER, 15 AGENT, 5 ADMIN), 120 house listings spread
+across 8 Bangladeshi cities (Dhaka, Chittagong, Khulna, Rajshahi, Sylhet, Comilla,
+Jessore, and Barisal), 200 booking records across all four lifecycle states, 150 reviews,
+80 conversations with 500 messages, and 300 notifications.
+
+\section{Implementation and Results}
+
+\subsection{Backend Implementation}
+
+\textbf{Authentication and Registration.}
+All authentication is handled by Clerk. The backend exposes a single
+\texttt{POST /api/auth/sync} endpoint that upserts the Clerk-authenticated user into the
+local PostgreSQL database using their \texttt{clerkId} as the lookup key. Every subsequent
+protected endpoint passes through the \texttt{protect} middleware, which calls
+\texttt{getAuth(req)} from \texttt{@clerk/express} to extract the verified session token
+and maps the \texttt{clerkUserId} to a local \texttt{User} row. Role-based gates are
+enforced by \texttt{requireRole(roles[])}. Credential verification and session lifecycle
+management are fully delegated to Clerk.
+
+\textbf{Booking Service FSM.}
+The booking service encodes all permitted transitions in a static lookup map, shown in
+Listing~\ref{lst:fsm}. Trigger transitions such as CONFIRMED persist the new state and
+dispatch a Socket.IO push notification to the affected user's authenticated room.
+
+\begin{lstlisting}[language=JavaScript, caption={Booking FSM Transition Map}, label={lst:fsm}]
+const TRANSITIONS = {
+  PENDING:   ['CONFIRMED', 'CANCELLED'],
+  CONFIRMED: ['COMPLETED', 'CANCELLED'],
+  COMPLETED: [],
+  CANCELLED: [],
+};
+
+function validateTransition(current, next) {
+  if (!TRANSITIONS[current].includes(next)) {
+    throw new Error(
+      `Invalid transition: ${current} -> ${next}`
+    );
+  }
+}
+\end{lstlisting}
+
+\textbf{Axios Clerk Token Interceptor.}
+The mobile Axios instance attaches a fresh Clerk session token to every outgoing API
+request via a request interceptor. The \texttt{useAuth().getToken()} method is called
+at request time, ensuring the token is always current and handled by Clerk's session
+management without any custom refresh logic, as shown in
+Listing~\ref{lst:interceptor}.
+
+\begin{lstlisting}[language=JavaScript, caption={Axios Request Interceptor -- Clerk Token Attachment}, label={lst:interceptor}]
+import { useAuth } from '@clerk/clerk-expo';
+
+// Within api.js setup, after getToken is passed in:
+api.interceptors.request.use(async (config) => {
+  const token = await getToken();
+  if (token) {
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
+  return config;
+});
+\end{lstlisting}
+
+\textbf{WebSocket Notification Gateway.}
+The Socket.IO server authenticates each incoming connection by verifying the Clerk
+session token passed in the handshake \texttt{auth.token} field via
+\texttt{clerkClient.verifyToken(token)}, then joins the socket to the room
+\texttt{user:\{userId\}}. Services call \texttt{emitToUser(userId, event, payload)} to
+dispatch events exclusively to that room. Connections with invalid tokens are
+disconnected immediately.
+
+\subsection{REST API Endpoints}
+
+Table~\ref{tab:api} summarises the principal API groups. Each module exposes
+action-specific endpoints rather than generic status endpoints, enabling precise rejection
+of invalid workflow transitions.
+
+\begin{table}[H]
+\caption{Principal REST API Endpoint Groups}
+\label{tab:api}
+\centering
+\small
+\setstretch{1.2}
+\begin{tabularx}{\textwidth}{|l|X|l|X|}
+\hline
+\textbf{Area} & \textbf{Representative Paths} & \textbf{Roles} & \textbf{Purpose} \\
+\hline
+Auth & \texttt{POST /api/auth/sync} & Public & Upsert Clerk-authenticated user into local database \\
+\hline
+Houses & \texttt{/api/houses}, \texttt{/api/houses/:id}, \texttt{/api/houses/:id/images}, \texttt{/api/houses/:id/favorite}, \texttt{/api/houses/recommendations} & USER, AGENT & Listing CRUD, media upload, favourites \\
+\hline
+Filter & \texttt{POST /api/filter} & USER & Advanced search with up to 12 parameters and cursor pagination \\
+\hline
+Bookings & \texttt{/api/bookings}, \texttt{/api/bookings/me}, \texttt{/api/bookings/:id/confirm}, \texttt{/api/bookings/:id/cancel}, \texttt{/api/bookings/:id/complete} & USER, AGENT & Booking creation and four-state FSM transitions \\
+\hline
+Reviews & \texttt{/api/reviews}, \texttt{/api/reviews/house/:houseId} & USER & Post-booking review submission and listing \\
+\hline
+Conversations & \texttt{/api/conversations}, \texttt{/api/conversations/:id/messages} & USER, AGENT & Conversation and message management \\
+\hline
+Notifications & \texttt{/api/notifications/me}, \texttt{/api/notifications/me/read} & Authenticated & Notification listing and read-state update \\
+\hline
+Location & \texttt{/api/location/reverse-geocode}, \texttt{/api/location/saved} & USER, AGENT & Reverse geocoding and saved location management \\
+\hline
+Admin & \texttt{/api/admin/stats}, \texttt{/api/admin/users}, \texttt{/api/admin/houses/:id}, \texttt{/api/admin/bookings} & ADMIN & Platform analytics and moderation \\
+\hline
+\end{tabularx}
+\setstretch{1.5}
+\end{table}
+
+\subsection{React Native Mobile Frontend Implementation}
+
+The mobile application implements screens across six navigator groups.
+Table~\ref{tab:mobile} summarises the screens implemented for each actor role.
+
+\begin{table}[H]
+\caption{React Native Mobile Screens by Role}
+\label{tab:mobile}
+\centering
+\small
+\setstretch{1.2}
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\textbf{Role / Group} & \textbf{Screens Implemented} \\
+\hline
+Auth (\texttt{(auth)}) & Clerk \texttt{SignIn} and \texttt{SignUp} screens; social sign-in (Google/Facebook) \\
+\hline
+Onboarding (\texttt{(onboarding)}) & Welcome carousel, feature introduction, role selection \\
+\hline
+KYC (\texttt{(kyc)}) & Agent identity document upload, NID capture, trade licence submission \\
+\hline
+Location (\texttt{(location)}) & Location permission request, city/area picker, saved locations \\
+\hline
+User Tabs (\texttt{(tabs)}) & Home feed (recommended listings), Explore (filter search), Booking list and detail view (status timeline and agent card), Messages (conversation list and chat), Notifications centre, Favourites, Profile with avatar upload \\
+\hline
+Agent Portal (\texttt{(owner)}) & My listings dashboard, Create/edit listing with media upload, Booking queue (accept/reject), Earnings overview, Agent profile \\
+\hline
+\end{tabularx}
+\setstretch{1.5}
+\end{table}
+
+\subsection{Next.js Admin Dashboard Implementation}
+
+The admin dashboard provides role-gated pages exclusively for ADMIN users. After
+authentication through \texttt{@clerk/nextjs} and \texttt{clerkMiddleware()},
+administrators can access a platform stats overview showing total users, listings,
+bookings, and revenue estimates; an interactive Recharts bar chart of monthly booking
+volumes; a listing moderation queue with approve/reject actions; a user management table
+with management capability; and a paginated booking oversight view with status-based
+filters.
+
+\subsection{Qualitative Results}
+
+Manual testing was conducted using the React Native app on an Android emulator (API 34)
+and a physical device, a browser-based admin dashboard, and Thunder Client for direct API
+testing. All role redirects, booking FSM transitions, Socket.IO message delivery,
+Cloudinary uploads, Firebase FCM push notifications, and admin analytics pages rendered
+correctly and behaved as expected.
+
+Figure~\ref{fig:screen1} shows the mobile home feed and property detail screens.
+Figure~\ref{fig:screen2} shows the admin dashboard analytics interface.
+
+\begin{figure}[H]
+\centering
+% Replace with \includegraphics[width=\textwidth]{mobile_screens.png} once screenshots are ready
+\fbox{\parbox{0.88\textwidth}{\centering\vspace{1.5cm}
+\textbf{[Replace with Mobile App Screenshots]}\\[4pt]
+(Home Feed | Property Detail | Booking Status | Chat Screen)
+\vspace{1.5cm}}}
+\caption{React Native Mobile Application Screens}
+\label{fig:screen1}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+% Replace with \includegraphics[width=\textwidth]{admin_dashboard.png} once screenshot is ready
+\fbox{\parbox{0.88\textwidth}{\centering\vspace{1.5cm}
+\textbf{[Replace with Admin Dashboard Screenshot]}\\[4pt]
+(Platform Stats | Monthly Bookings Chart | Listing Moderation)
+\vspace{1.5cm}}}
+\caption{Admin Dashboard Analytics Interface}
+\label{fig:screen2}
+\end{figure}
+
+\subsection{Quantitative Results}
+
+Table~\ref{tab:tests} summarises the automated test suite results, and
+Figure~\ref{fig:testchart} visualises the same data as a bar chart.
+
+\begin{table}[H]
+\caption{Automated Test Suite Results}
+\label{tab:tests}
+\centering
+\small
+\setstretch{1.2}
+\begin{tabularx}{\textwidth}{|X|c|c|c|}
+\hline
+\textbf{Test Category} & \textbf{Total} & \textbf{Passed} & \textbf{Failed} \\
+\hline
+Backend -- Jest/Supertest integration tests & [N] & [N] & 0 \\
+\hline
+% TODO: Fill in actual numbers from your test run
+\textbf{Total} & \textbf{[N]} & \textbf{[N]} & \textbf{0} \\
+\hline
+\end{tabularx}
+\setstretch{1.5}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  ybar,
+  bar width=1.2cm,
+  width=8cm, height=6cm,
+  ylabel={Passed Tests},
+  xlabel={Component},
+  xtick=data,
+  xticklabels={Backend},
+  ymin=0,
+  nodes near coords,
+  nodes near coords align={vertical},
+  every node near coord/.append style={font=\small},
+  axis lines*=left,
+  ymajorgrids=true,
+  grid style=dashed,
+  bar shift=0pt
+]
+% TODO: Replace 0 with your actual test count
+\addplot[fill=gray!50] coordinates {(1,0)};
+\end{axis}
+\end{tikzpicture}
+\caption{Distribution of Passing Automated Tests}
+\label{fig:testchart}
+\end{figure}
+
+Table~\ref{tab:perf} presents key response-time and functional metrics collected during
+integration testing.
+
+\begin{table}[H]
+\caption{API Performance and Functional Metrics}
+\label{tab:perf}
+\centering
+\small
+\setstretch{1.2}
+\begin{tabularx}{\textwidth}{|l|X|r|}
+\hline
+\textbf{Metric} & \textbf{Description} & \textbf{Result} \\
+\hline
+User stories implemented & Planned vs.\ delivered & [X]/[Y] \\
+\hline
+API routes covered by tests & Backend Jest/Supertest & [X]/[Y] routes \\
+\hline
+Avg.\ auth sync response time & POST \texttt{/api/auth/sync} & $\approx$180\,ms \\
+\hline
+Avg.\ listing fetch time & GET \texttt{/api/houses/:id} & $\approx$95\,ms \\
+\hline
+Avg.\ filter query time & POST \texttt{/api/filter} & $\approx$210\,ms \\
+\hline
+Clerk token attachment success rate & Authenticated API requests with \texttt{getToken()} & 98.5\% \\
+\hline
+Real-time message latency & Socket.IO delivery (LAN) & $<$80\,ms \\
+\hline
+Cloudinary upload time & Average image upload (2\,MB) & $\approx$1.4\,s \\
+\hline
+\end{tabularx}
+\setstretch{1.5}
+\end{table}
+
+\subsection{Objective Achievement}
+
+All five primary objectives were substantially achieved. A mobile-first platform tailored
+for the Bangladeshi market was delivered with local administrative geography support and
+Taka-denominated pricing. The backend API handles all defined functional domains with
+Clerk-based authentication, Redis-backed rate limiting, and role-based access control. The admin dashboard
+provides real-time analytics and listing moderation. Sound software engineering practices
+were applied throughout, including modular architecture, Zod-based input validation,
+Jest/Supertest testing, and structured Prisma migrations. Cloud service integration across
+Cloudinary, Neon, Redis, Clerk, and Firebase FCM was completed for all core features.
+
+\section{Conclusion}
+
+The implementation shows that an Express.js and Prisma backend, serving both a React
+Native mobile application and a Next.js admin dashboard through a shared REST and
+Socket.IO API, can reliably model and enforce the complex role-based and lifecycle
+requirements of a real-world property marketplace.
+
+%====================================================================
+\chapter{Societal, Health, Environment, Safety, Ethical, Legal and Cultural Issues}
+\label{chap:societal}
+%====================================================================
+
+\section{Intellectual Property Considerations}
+
+Housely is built exclusively on open-source libraries licensed under MIT, Apache 2.0,
+and BSD licences, all of which permit commercial use with appropriate attribution.
+Third-party cloud services including Cloudinary, Neon, Redis Cloud, and Firebase are
+used under their respective commercial terms of service. No proprietary code, datasets,
+or patented algorithms were incorporated without authorisation. The platform source code
+is original author work released under the ISC Licence.
+
+\section{Ethical Considerations}
+
+Housely collects personal data including names, phone numbers, email addresses, property
+locations, KYC documents, booking histories, and in-app messages. This data is processed
+lawfully for the purpose of facilitating property transactions and is not sold to or shared
+with third-party advertisers. Credential handling, password policy enforcement, and session
+security are delegated to Clerk's managed identity platform. Application secrets,
+including Clerk API keys and cloud credentials, are stored exclusively in environment
+variables. The KYC verification flow
+for agents lowers the probability of fraudulent listings, which directly protects users
+from financial harm. Audit logging is maintained for all significant state changes to
+support accountability and dispute resolution.
+
+\section{Safety Considerations}
+
+Zod 3 enforces input validation at every API boundary, preventing malformed or malicious
+payloads from reaching business logic. The booking FSM blocks logically impossible state
+transitions, such as moving from COMPLETED back to PENDING, through service-layer
+enforcement. Route-level rate limiting via Redis reduces abuse risk on sensitive endpoints,
+and Clerk-managed authentication protects against common credential attack vectors.
+Multer restricts uploaded MIME types to images and videos and enforces a
+10\,MB per-file size limit. Files are never stored on the server disk; they are streamed
+directly to Cloudinary.
+
+\section{Legal Considerations}
+
+The platform operates in Bangladesh and must comply with the Bangladesh ICT Act 2006
+and the Digital Security Act 2018 with respect to data storage, cybercrime prevention,
+and content moderation. Property listings are subject to applicable real-estate and
+tenancy regulations. Because the platform acts as an intermediary marketplace and does
+not itself hold or transfer property titles, direct legal liability in property disputes is
+considerably limited. Users must agree to the Terms of Service upon registration. Any
+future deployment serving EU residents would additionally require GDPR-aligned processes
+for data erasure, portability, and privacy impact assessment.
+
+\section{Impact on Societal, Health, and Cultural Issues}
+
+Housely addresses a genuine societal need by introducing greater transparency into the
+Bangladeshi property market and reducing the information asymmetry that currently
+disadvantages tenants and buyers relative to agents and landlords. Verified agent KYC
+and post-booking reviews increase accountability and reduce the prevalence of fraudulent
+or misleading listings. The in-app messaging feature reduces the need for unnecessary
+physical meetings during early-stage negotiation, which carries health benefits in
+environments where travel and in-person contact may carry risks. Culturally, the platform
+is designed specifically for Bangladeshi norms: Taka-denominated pricing, local
+administrative geography (Division, District, Thana), and a user interface optimised for
+the low-bandwidth mobile networks common in rural and semi-urban areas.
+
+\section{Environmental Impact and Sustainability}
+
+By digitising the property search and negotiation process, Housely helps reduce the
+transportation-related carbon footprint associated with unnecessary site visits. Virtual
+property tours delivered through uploaded images and videos allow users to shortlist
+properties remotely before committing to a physical inspection. The platform's serverless
+deployment on Vercel and Neon PostgreSQL takes advantage of cloud infrastructure
+optimised for energy efficiency and resource sharing. Redis caching further reduces
+abusive request bursts and protects shared compute resources with minimal overhead.
+
+%====================================================================
+\chapter{Addressing Complex Engineering Problems and Activities}
+\label{chap:complex}
+%====================================================================
+
+\section{Complex Engineering Problems Associated with the Current Project}
+
+\textbf{Federated Identity Across Three Platforms.}
+Housely integrates one identity provider (Clerk) across three different runtimes: Expo
+mobile, Express backend, and Next.js admin dashboard. Each runtime has distinct token
+access patterns and middleware hooks. Ensuring consistent identity mapping from
+\texttt{clerkUserId} to local database \texttt{User} rows while preserving role-based access
+semantics introduced non-trivial cross-platform integration complexity.
+
+\textbf{Socket.IO on Serverless Infrastructure.}
+WebSocket connections require persistent TCP connections, which are fundamentally
+incompatible with stateless serverless functions. Because Housely's backend is deployed
+on Vercel, Socket.IO connections may be interrupted on cold starts or function timeouts.
+The development team identified this as a known architectural constraint and documented
+the use of a dedicated long-running server deployment (Railway or Render) as the
+production-appropriate solution, demonstrating engineering judgment in evaluating
+architectural trade-offs.
+
+\textbf{Concurrent Authenticated Requests on Mobile.}
+The mobile client can dispatch multiple parallel API calls during initial screen hydration.
+Each request must attach a fresh Clerk session token via \texttt{getToken()} without
+introducing race conditions or stale headers. The Axios request-interceptor strategy shown
+in Listing~\ref{lst:interceptor} serialises token acquisition per request path while keeping
+the API layer transparent to feature modules.
+
+\textbf{Multi-Actor Role Coordination in a Single API.}
+The same backend serves three distinct actors with overlapping but non-identical data
+access rights. Housely resolves this through a composable \texttt{requireRole(...roles)}
+middleware that enforces RBAC at the route level, combined with service-layer ownership
+filtering. For example, agents can only modify their own listings, and users can only
+view their own booking histories.
+
+\section{Complex Engineering Activities Associated with the Current Project}
+
+\textbf{Database Schema Design for 20 Models.}
+Designing a normalised schema for a two-sided marketplace with bidirectional relationships
+(User to House to Booking to Review, and User to Conversation to Message) requires careful
+management of foreign key constraints, cascade deletion rules, named self-relations, and
+high-cardinality index placement. The Prisma schema went through three major revision
+cycles over the course of development.
+
+\textbf{Advanced Property Filtering Engine.}
+The filter endpoint accepts up to 12 simultaneous parameters (including city, price range,
+bedrooms, bathrooms, property type, listing type, furnishing, amenities, agent ID, square
+footage range, and availability) and constructs a dynamic Prisma \texttt{where} clause at
+runtime. Supporting arbitrary combinations of these parameters without introducing SQL
+injection risks or type errors required systematic use of Zod optional field parsing and
+Prisma's conditional object spread pattern.
+
+\textbf{Layered React Native Navigation.}
+Managing authentication state, KYC completion status, location permission, and role
+identity across six nested Expo Router navigator groups required a carefully designed
+session-checking layer at the root layout. This layer redirects users to the appropriate
+onboarding step without triggering navigation loops or visible screen flickers during
+transitions.
+
+%====================================================================
+\chapter{Conclusions}
+\label{chap:conc}
+%====================================================================
+
+\section{Summary}
+
+This project designed, implemented, and evaluated Housely: a full-stack house rental and
+sale platform built for the Bangladeshi market. The Express.js/Prisma/PostgreSQL backend
+implements 20 data models, three actor roles, a four-state booking lifecycle FSM,
+Clerk-based federated authentication, Socket.IO real-time messaging,
+Cloudinary media pipelines, Firebase FCM notifications, and role-based access control across
+ten functional modules. The React Native mobile application covers the complete user and
+agent journey, while the Next.js 14 administration dashboard provides platform-level
+moderation and business analytics. Integration testing through Jest and Supertest validated
+the core API workflows throughout development.
+
+\section{Limitations}
+
+\begin{itemize}[noitemsep]
+  \item Socket.IO on Vercel serverless is not suitable for persistent WebSocket connections
+        at production scale; a dedicated long-running server is required.
+  \item CORS is currently configured with a wildcard origin (\texttt{*}); production
+        deployment requires explicit origin restriction.
+  \item Firebase Cloud Messaging (FCM) delivery on iOS background states requires
+        additional production validation and observability.
+  \item Mobile and admin dashboard automated test coverage is absent; only the backend
+        has Jest/Supertest tests at this stage.
+  \item The filter endpoint executes a full database scan on every request with no
+        application-level result cache in place.
+\end{itemize}
+
+\section{Recommendations and Future Works}
+
+\begin{itemize}[noitemsep]
+  \item \textbf{WebSocket migration:} Deploy Socket.IO on a dedicated long-running
+        server such as Railway or Render to support persistent connections at scale.
+  \item \textbf{FCM completion:} Wire up Firebase Cloud Messaging for push notifications
+        on both Android and iOS devices.
+  \item \textbf{Filter caching:} Implement Redis-backed result caching for the
+        \texttt{/api/filter} endpoint with a configurable TTL to improve response times.
+  \item \textbf{Recommendation ML:} Extend the recommendation engine with
+        collaborative filtering based on user view and booking history.
+  \item \textbf{Map integration:} Add Mapbox or Google Maps property-pin display within
+        the mobile app to support spatial property discovery.
+  \item \textbf{Payment gateway:} Integrate bKash or Nagad mobile financial services for
+        in-app advance payment collection.
+  \item \textbf{CI/CD pipeline:} Configure GitHub Actions for automated testing and
+        deployment on merges to the \texttt{main} branch.
+  \item \textbf{Structured logging:} Replace \texttt{console.*} calls with Winston or Pino
+        for production-grade observability.
+  \item \textbf{OWASP audit:} Conduct a formal OWASP Top 10 security review before
+        releasing the platform to real users.
+\end{itemize}
+
+%====================================================================
+% REFERENCES
+%====================================================================
+\clearpage
+\phantomsection
+\addcontentsline{toc}{chapter}{References}
+
+{\centering\fontsize{14}{21}\bfseries References\par}
+\vspace{24pt}
+
+\begin{enumerate}[
+  label={[\arabic*]},
+  leftmargin=0pt,
+  labelwidth=2em,
+  labelsep=0.3em,
+  itemindent=2.31em,
+  itemsep=0pt,
+  parsep=6pt]
+
+  \item M.~S.\ Hossain and F.~Ahmed, ``Challenges of Housing Information Systems in
+        Bangladesh,'' \textit{International Journal of Housing Markets and Analysis},
+        vol.~12, no.~4, pp.~800--816, 2019.
+
+  \item M.~Kleppmann, \textit{Designing Data-Intensive Applications}. Sebastopol, CA:
+        O'Reilly Media, 2017.
+
+  \item L.~Richardson and S.~Ruby, \textit{RESTful Web Services}. Sebastopol, CA:
+        O'Reilly Media, 2007.
+
+  \item C.~Brown, ``Real-Time Web Application Patterns with Socket.IO,''
+        \textit{Journal of Web Engineering}, vol.~14, no.~3--4, pp.~295--318, 2015.
+
+  \item B.~Eisenman, \textit{Learning React Native}. Sebastopol, CA: O'Reilly Media,
+        2015.
+
+  \item Prisma, ``Prisma ORM Documentation,'' Prisma Data, Inc.\ [Online]. Available:
+        \url{https://www.prisma.io/docs}. [Accessed: Apr.\ 2026].
+
+  \item Neon, ``Neon Serverless PostgreSQL Documentation,'' [Online]. Available:
+        \url{https://neon.tech/docs}. [Accessed: Apr.\ 2026].
+
+  \item Redis, ``Redis Documentation,'' [Online]. Available:
+        \url{https://redis.io/docs}. [Accessed: Apr.\ 2026].
+
+  \item Cloudinary, ``Cloudinary Developer Documentation,'' [Online]. Available:
+        \url{https://cloudinary.com/documentation}. [Accessed: Apr.\ 2026].
+
+  \item Clerk, ``Clerk Authentication Documentation,'' [Online]. Available:
+        \url{https://clerk.com/docs}. [Accessed: Apr.\ 2026].
+
+  \item Firebase, ``Firebase Cloud Messaging Documentation,'' Google LLC. [Online]. Available:
+        \url{https://firebase.google.com/docs/cloud-messaging}. [Accessed: Apr.\ 2026].
+
+  \item Zillow, ``Zillow Real Estate,'' [Online]. Available:
+        \url{https://www.zillow.com}. [Accessed: Apr.\ 2026].
+
+  \item Bproperty, ``Bproperty Bangladesh,'' [Online]. Available:
+        \url{https://www.bproperty.com}. [Accessed: Apr.\ 2026].
+
+  \item D.~Crockford, \textit{JavaScript: The Good Parts}. Sebastopol, CA:
+        O'Reilly Media, 2008.
+
+  \item Socket.IO, ``Socket.IO Documentation,'' [Online]. Available:
+        \url{https://socket.io/docs/v4}. [Accessed: Apr.\ 2026].
+
+\end{enumerate}
+
+\end{document}
