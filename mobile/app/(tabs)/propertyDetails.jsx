@@ -603,6 +603,20 @@ const PropertyDetailsNew = () => {
   const BookNowButton = () => (
     <View style={{ paddingHorizontal: 20, paddingVertical: 20 }}>
       <TouchableOpacity
+        onPress={() => {
+          router.push({
+            pathname: '/bookProperty',
+            params: {
+              propertyId: property.id,
+              propertyName: property.name,
+              propertyLocation: property.location,
+              propertyImage: property.images?.[0] || '',
+              propertyPrice: property.price?.toString(),
+              propertyPriceType: property.priceType,
+              propertyStatus: property.status,
+            },
+          });
+        }}
         style={{
           backgroundColor: '#7F56D9', borderRadius: 16, paddingVertical: 18,
           alignItems: 'center', justifyContent: 'center',
