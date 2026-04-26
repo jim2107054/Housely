@@ -1,484 +1,275 @@
-# Housely – All System Development Mermaid Diagrams
+# Housely - Print-Friendly Mermaid Diagrams
 
-> Paste any block into [mermaid.live](https://mermaid.live) or any Markdown renderer
-> that supports Mermaid to preview and export as PNG/SVG.
+> Each diagram uses Times New Roman and larger text for printing.
 
 ---
 
-## 1. System Architecture Diagram (Three-Tier)
+## 1. System Architecture (3-Tier)
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Times New Roman","fontSize":"24px"}}}%%
 graph TB
-    subgraph PresentationTier["Presentation Tier"]
-        RN["React Native Mobile App\nExpo 54 · NativeWind 4\nZustand 5 · TanStack Query 5\nClerk Expo SDK · expo-secure-store"]
-        NEXT["Next.js 14 Admin Dashboard\nApp Router · Clerk Next.js\nRecharts · Shadcn/ui · Tailwind CSS\nTanStack Query 5 · Zustand 5"]
+    subgraph UI["UI"]
+        RN["Mobile"]
+        NEXT["Admin"]
     end
 
-    subgraph ApplicationTier["Application Tier"]
-        API["Express.js REST API\nNode.js 20 ESM · Express 4\nZod 3 · Multer · Socket.IO 4\nClerk Express SDK"]
+    subgraph APP["App"]
+        API["Backend API"]
     end
 
-    subgraph DataTier["Data Tier"]
-        PG[("Neon PostgreSQL\nPrisma 6 ORM\n20 Models · 7 Enums")]
-        RD[("Redis\nRate Limiting")]
-        CLD["Cloudinary\nImages & Videos"]
+    subgraph DATA["Data"]
+        PG[("Postgres")]
+        RD[("Redis")]
+        CLD["Cloudinary"]
     end
 
-    subgraph ExternalServices["External Services"]
-        CLERK["Clerk\nIdentity & Auth"]
-        NM["Nodemailer / Gmail\nTransactional Email"]
-        FCM["Firebase FCM\nPush Notifications"]
+    subgraph EXT["External"]
+        CLERK["Clerk"]
+        NM["Email"]
+        FCM["FCM"]
     end
 
-    RN   -- "REST + Socket.IO (Clerk token)" --> API
-    NEXT -- "REST (Clerk session token)"     --> API
-
-    API -- "Prisma ORM"    --> PG
-    API -- "ioredis"       --> RD
-    API -- "Cloudinary SDK"--> CLD
-    API -- "Email"         --> NM
-    API -- "Push"          --> FCM
-    RN   -- "Sign-in / Sign-up" --> CLERK
-    NEXT -- "Sign-in"           --> CLERK
-    API  -- "verifyToken"       --> CLERK
+    RN -->|REST/Socket| API
+    NEXT -->|REST| API
+    API -->|ORM| PG
+    API --> RD
+    API --> CLD
+    API --> NM
+    API --> FCM
+    RN --> CLERK
+    NEXT --> CLERK
+    API --> CLERK
 ```
 
 ---
 
-## 2. DFD Level 0 – Context Diagram
+## 2. DFD Level 0 (Context)
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Times New Roman","fontSize":"24px"}}}%%
 graph LR
-    USER(["User / Agent\nMobile App"])
-    ADMIN(["Administrator\nWeb Dashboard"])
-    EXT(["External Services\nClerk · Cloudinary · Gmail · FCM"])
+    USER(["User/Agent"])
+    ADMIN(["Admin"])
+    EXT(["External"])
+    SYS[["Housely"]]
 
-    SYS[["Housely Platform"]]
-
-    USER  -->|"Search · Book · Message · Review · Pay"| SYS
-    SYS   -->|"Listings · Bookings · Notifications · Chat"| USER
-    ADMIN -->|"Moderate · Manage · Analytics"| SYS
-    SYS   -->|"Reports · Stats"| ADMIN
-    SYS   -->|"Auth · Media upload · Email · Push"| EXT
-    EXT   -->|"Identity tokens · CDN URLs · Delivery confirmations"| SYS
+    USER -->|Req| SYS
+    SYS -->|Resp| USER
+    ADMIN -->|Ops| SYS
+    SYS -->|Stats| ADMIN
+    SYS -->|Auth/Media/Push| EXT
+    EXT -->|Tokens/URLs| SYS
 ```
 
 ---
 
-## 3. DFD Level 1 – Main Processes
+## 3. DFD Level 1 (Main)
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Times New Roman","fontSize":"24px"}}}%%
 graph TD
-    subgraph Actors
-        UA(["User / Agent"])
-        AD(["Admin"])
-    end
+    UA(["User/Agent"])
+    AD(["Admin"])
 
-    subgraph Processes
-        P1["1.0 Authentication\n& Account Sync (Clerk)"]
-        P2["2.0 Property\nManagement"]
-        P3["3.0 Booking\nManagement"]
-        P4["4.0 Messaging &\nNotifications"]
-        P5["5.0 Review\nManagement"]
-        P6["6.0 Payment\nManagement"]
-        P7["7.0 Admin &\nAnalytics"]
-    end
+    P1["Auth"]
+    P2["Property"]
+    P3["Booking"]
+    P4["Chat/Notif"]
+    P5["Review"]
+    P6["Payment"]
+    P7["Admin"]
 
-    subgraph DataStores
-        DS1[("D1 Users")]
-        DS2[("D2 Houses")]
-        DS3[("D3 Bookings")]
-        DS4[("D4 Conversations & Messages")]
-        DS5[("D5 Reviews")]
-        DS6[("D6 Notifications")]
-        DS7[("D7 Payments")]
-        DS8[("D8 SavedLocations")]
-        DS9[("D9 Redis – Rate Limiting")]
-    end
+    D1[("Users")]
+    D2[("Houses")]
+    D3[("Bookings")]
+    D4[("Chat")]
+    D5[("Reviews")]
+    D6[("Notifs")]
+    D7[("Payments")]
+    D8[("SavedLoc")]
+    D9[("Redis")]
 
-    UA -->|"Clerk session token"| P1
-    P1 -->|"Synced user profile"| UA
-    P1 --- DS1
-
-    UA -->|"Create / Edit listing / Upload media"| P2
-    P2 -->|"Listing details / Images"| UA
-    P2 --- DS2
-
-    UA -->|"Booking request / Status update"| P3
-    P3 -->|"Confirmation / Notification"| UA
-    P3 --- DS3
-    P3 --- DS2
-
-    UA -->|"Send message / Read messages"| P4
-    P4 -->|"Real-time messages / Push"| UA
-    P4 --- DS4
-    P4 --- DS6
-
-    UA -->|"Submit review / Upload media"| P5
-    P5 -->|"Review confirmation"| UA
-    P5 --- DS5
-    P5 --- DS3
-
-    UA -->|"Payment for booking"| P6
-    P6 -->|"Payment receipt"| UA
-    P6 --- DS7
-    P6 --- DS3
-
-    AD -->|"Manage users / Moderate / Analytics"| P7
-    P7 -->|"Platform stats / Reports"| AD
-    P7 --- DS1
-    P7 --- DS2
-    P7 --- DS3
-    P7 --- DS5
-    P7 --- DS7
+    UA --> P1
+    P1 --- D1
+    UA --> P2
+    P2 --- D2
+    UA --> P3
+    P3 --- D2
+    P3 --- D3
+    UA --> P4
+    P4 --- D4
+    P4 --- D6
+    UA --> P5
+    P5 --- D3
+    P5 --- D5
+    UA --> P6
+    P6 --- D3
+    P6 --- D7
+    AD --> P7
+    P7 --- D1
+    P7 --- D2
+    P7 --- D3
+    P7 --- D5
+    P7 --- D7
+    P7 --- D8
+    P7 --- D9
 ```
 
 ---
 
-## 4. DFD Level 2 – Property Search Drill-down
+## 4. DFD Level 2 (Property Search)
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Times New Roman","fontSize":"24px"}}}%%
 graph TD
-    UA(["User"])
+    U(["User"])
+    S1["Input"]
+    S2["Filter"]
+    S3["Query"]
+    S4["Track"]
+    S5["Output"]
+    H[("Houses")]
+    V[("HouseViews")]
 
-    P2_1["2.1 Receive Search\nParameters"]
-    P2_2["2.2 Apply Filters\ncity · price · listingType · propertyType\nbeds · baths · area · sortBy"]
-    P2_3["2.3 Query Database\nwith Pagination"]
-    P2_4["2.4 Record Property View"]
-    P2_5["2.5 Return Paginated\nResults"]
-
-    DS_HOUSE[("D2 Houses")]
-    DS_VIEW[("D2a HouseViews")]
-
-    UA       -->|"GET /api/filter/search + query params"| P2_1
-    P2_1     --> P2_2
-    P2_2     --> P2_3
-    P2_3     --- DS_HOUSE
-    P2_3     --> P2_4
-    P2_4     --- DS_VIEW
-    P2_4     --> P2_5
-    P2_5     -->|"Listing results + pagination"| UA
+    U -->|GET /search| S1
+    S1 --> S2 --> S3
+    S3 --- H
+    S3 --> S4
+    S4 --- V
+    S4 --> S5
+    S5 --> U
 ```
 
 ---
 
-## 5. Entity Relationship Diagram (ERD)
+## 5. ERD (Compact)
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Times New Roman","fontSize":"24px"}}}%%
 erDiagram
     USER {
-        string id           PK
-        string clerkId      UK
-        string username     UK
-        string email        UK
-        string password
-        string phoneNumber  UK
-        string name
-        string bio
-        datetime dateOfBirth
-        string avatar
-        enum   role         "USER | AGENT | ADMIN"
-        enum   authProvider "LOCAL | GOOGLE | FACEBOOK"
-        string googleId     UK
-        string facebookId   UK
-        bool   isVerified
-        datetime createdAt
-        datetime updatedAt
-    }
-    SAVED_LOCATION {
-        string id       PK
-        string userId   FK
-        string label
-        string address
-        string city
-        string area
-        string street
-        float  latitude
-        float  longitude
-        datetime createdAt
+        string id PK
+        string clerkId UK
+        string role
     }
     HOUSE {
-        string id           PK
-        string name
-        string description
-        enum   status       "AVAILABLE | UNAVAILABLE"
-        float  rentPerMonth
-        float  salePrice
-        enum   listingType  "RENT | SALE"
-        enum   propertyType "APARTMENT | PENTHOUSE | HOTEL | VILLA | STUDIO | DUPLEX | TOWNHOUSE | CONDO"
-        string address
+        string id PK
+        string agentId FK
         string city
-        string area
-        float  latitude
-        float  longitude
-        int    bedrooms
-        int    bathrooms
-        float  sizeInSqft
-        int    buildYear
-        bool   hasWifi
-        bool   hasWater
-        string agentId      FK
-        datetime createdAt
-        datetime updatedAt
-    }
-    HOUSE_IMAGE {
-        string id       PK
-        string houseId  FK
-        string url
-        int    order
-    }
-    HOUSE_VIDEO {
-        string id       PK
-        string houseId  FK "unique"
-        string url
-    }
-    PUBLIC_FACILITY {
-        string id               PK
-        string houseId          FK "unique"
-        bool   wifi
-        bool   water
-        bool   electricity
-        bool   parking
-        float  mosqueDistance
-        float  hospitalDistance
-        float  shoppingMallDistance
-        float  marketDistance
+        float price
     }
     BOOKING {
-        string   id            PK
-        string   userId        FK
-        string   houseId       FK
-        string   agentId       FK
-        datetime checkIn
-        datetime checkOut
-        float    totalAmount
-        enum     status        "PENDING | CONFIRMED | COMPLETED | CANCELLED"
-        enum     paymentStatus "PENDING | COMPLETED | FAILED | REFUNDED"
-        string   notes
-        datetime createdAt
-        datetime updatedAt
+        string id PK
+        string userId FK
+        string houseId FK
+        string status
     }
     PAYMENT {
-        string id             PK
-        string userId         FK
-        string bookingId      FK
-        float  amount
-        string currency
-        string method
-        string transactionId  UK
-        enum   status         "PENDING | COMPLETED | FAILED | REFUNDED"
-        datetime createdAt
+        string id PK
+        string bookingId FK
+        string status
     }
     REVIEW {
-        string   id        PK
-        string   userId    FK
-        string   houseId   FK
-        string   bookingId FK "unique"
-        int      rating
-        string   comment
-        datetime createdAt
-        datetime updatedAt
-    }
-    REVIEW_MEDIA {
-        string id       PK
-        string reviewId FK
-        string url
-        string type     "image | video"
+        string id PK
+        string userId FK
+        string houseId FK
     }
     CONVERSATION {
-        string   id        PK
-        string   userId    FK
-        string   agentId   FK
-        string   houseId   FK
-        datetime createdAt
-        datetime updatedAt
+        string id PK
+        string userId FK
+        string agentId FK
+        string houseId FK
     }
     MESSAGE {
-        string   id             PK
-        string   conversationId FK
-        string   senderId       FK
-        string   content
-        string   type           "text | image | audio | video"
-        bool     isRead
-        datetime createdAt
+        string id PK
+        string conversationId FK
+        string senderId FK
     }
     NOTIFICATION {
-        string   id        PK
-        string   userId    FK
-        enum     type      "BOOKING_CONFIRMED | BOOKING_CANCELLED | PAYMENT_SUCCESS | NEW_MESSAGE | REVIEW_POSTED | GENERAL"
-        string   title
-        string   message
-        json     data
-        bool     isRead
-        datetime createdAt
-    }
-    NOTIFICATION_SETTINGS {
-        string id             PK
-        string userId         FK "unique"
-        bool   pushEnabled
-        bool   emailEnabled
-        bool   smsEnabled
-        bool   bookingUpdates
-        bool   promotions
+        string id PK
+        string userId FK
+        string type
     }
     DEVICE_TOKEN {
-        string id        PK
-        string userId    FK
-        string token     UK
-        string platform  "android | ios"
-        datetime createdAt
-    }
-    HOUSE_VIEW {
-        string   id       PK
-        string   userId   FK
-        string   houseId  FK
-        datetime viewedAt
+        string id PK
+        string userId FK
+        string token UK
     }
     FAVORITE {
-        string id        PK
-        string userId    FK
-        string houseId   FK
+        string id PK
+        string userId FK
+        string houseId FK
+    }
+    HOUSE_VIEW {
+        string id PK
+        string userId FK
+        string houseId FK
+    }
+    SAVED_LOCATION {
+        string id PK
+        string userId FK
     }
 
-    USER              ||--o{ SAVED_LOCATION       : "saves"
-    USER              ||--o{ HOUSE                : "lists as agent"
-    USER              ||--o{ BOOKING              : "creates (user)"
-    USER              ||--o{ BOOKING              : "receives (agent)"
-    USER              ||--o{ PAYMENT              : "makes"
-    USER              ||--o{ REVIEW               : "writes"
-    USER              ||--o{ NOTIFICATION         : "receives"
-    USER              ||--o| NOTIFICATION_SETTINGS: "configures"
-    USER              ||--o{ DEVICE_TOKEN         : "registers"
-    USER              ||--o{ HOUSE_VIEW           : "generates"
-    USER              ||--o{ FAVORITE             : "saves"
-    USER              ||--o{ CONVERSATION         : "starts (user)"
-    USER              ||--o{ CONVERSATION         : "receives (agent)"
-    USER              ||--o{ MESSAGE              : "sends"
+    USER ||--o{ HOUSE : lists
+    USER ||--o{ BOOKING : books
+    USER ||--o{ REVIEW : writes
+    USER ||--o{ NOTIFICATION : gets
+    USER ||--o{ DEVICE_TOKEN : has
+    USER ||--o{ FAVORITE : saves
+    USER ||--o{ HOUSE_VIEW : views
+    USER ||--o{ SAVED_LOCATION : stores
 
-    HOUSE             ||--o{ HOUSE_IMAGE          : "has"
-    HOUSE             ||--o| HOUSE_VIDEO          : "has"
-    HOUSE             ||--o| PUBLIC_FACILITY      : "has"
-    HOUSE             ||--o{ BOOKING              : "subject of"
-    HOUSE             ||--o{ REVIEW               : "receives"
-    HOUSE             ||--o{ HOUSE_VIEW           : "tracked by"
-    HOUSE             ||--o{ FAVORITE             : "saved in"
-    HOUSE             ||--o{ CONVERSATION         : "linked to"
+    HOUSE ||--o{ BOOKING : has
+    HOUSE ||--o{ REVIEW : has
+    HOUSE ||--o{ FAVORITE : in
+    HOUSE ||--o{ HOUSE_VIEW : tracked
+    HOUSE ||--o{ CONVERSATION : context
 
-    BOOKING           ||--o| REVIEW               : "reviewed after"
-    BOOKING           ||--o{ PAYMENT              : "paid via"
-
-    REVIEW            ||--o{ REVIEW_MEDIA         : "has"
-
-    CONVERSATION      ||--o{ MESSAGE              : "contains"
+    BOOKING ||--o{ PAYMENT : pays
+    BOOKING ||--o| REVIEW : reviewed
+    CONVERSATION ||--o{ MESSAGE : contains
 ```
 
 ---
 
-## 6. Booking Lifecycle Finite-State Machine
+## 6. Booking FSM
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Times New Roman","fontSize":"24px"}}}%%
 stateDiagram-v2
-    [*] --> PENDING : User submits booking request\n(POST /api/bookings)
-
-    PENDING   --> CONFIRMED : Agent confirms\n(PATCH /bookings/agent/:id/status)
-    PENDING   --> CANCELLED : User cancels\n(PATCH /bookings/:id/cancel)
-
-    CONFIRMED --> COMPLETED : Agent marks completed
-    CONFIRMED --> CANCELLED : User or agent cancels
-
+    [*] --> PENDING : Create
+    PENDING --> CONFIRMED : Approve
+    PENDING --> CANCELLED : Cancel
+    CONFIRMED --> COMPLETED : Complete
+    CONFIRMED --> CANCELLED : Cancel
     COMPLETED --> [*]
     CANCELLED --> [*]
-
-    note right of PENDING
-        paymentStatus starts as PENDING
-        Conflict check runs on checkIn/checkOut dates
-    end note
-
-    note right of CONFIRMED
-        Socket.IO + FCM push notification
-        dispatched to user on this transition
-    end note
-
-    note right of COMPLETED
-        User is now eligible
-        to submit a review
-        (POST /api/reviews)
-    end note
 ```
 
 ---
 
-## 7. Use Case Diagram – User and Agent Workflows
+## 7. Use Case (User + Agent)
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Times New Roman","fontSize":"24px"}}}%%
 graph LR
-    subgraph Actors
-        U(["USER"])
-        A(["AGENT"])
-    end
+    U(["User"])
+    A(["Agent"])
 
-    subgraph AuthModule["Authentication (Clerk)"]
-        UC1(Register Account)
-        UC2(Login)
-        UC3(Change Password)
-        UC4(Select Role at Signup)
-    end
+    UC1(Login)
+    UC2(Browse)
+    UC3(Filter)
+    UC4(Book)
+    UC5(Chat)
+    UC6(Review)
+    UC7(Favorite)
+    UC8(Notify)
 
-    subgraph PropertyModule["Property Discovery"]
-        UC5(Browse Listings)
-        UC6(Apply Advanced Filters)
-        UC7(View Property Details)
-        UC8(Save to Favourites)
-        UC9(View Saved Locations)
-        UC10(Browse Nearby Properties)
-        UC11(Browse Popular Properties)
-        UC12(Browse Recommended)
-        UC13(Browse Top Locations)
-    end
-
-    subgraph BookingModule["Booking"]
-        UC14(Submit Booking Request)
-        UC15(View My Bookings)
-        UC16(Cancel Booking)
-        UC17(Accept Booking Request)
-        UC18(Reject / Cancel Booking)
-    end
-
-    subgraph MessagingModule["Messaging"]
-        UC19(Start Conversation with Agent)
-        UC20(Send Message)
-        UC21(Receive Real-time Message)
-        UC22(Mark Messages as Read)
-    end
-
-    subgraph ReviewModule["Review"]
-        UC23(Submit Review after Booking)
-        UC24(View Property Reviews)
-        UC25(Update Own Review)
-        UC26(Delete Own Review)
-    end
-
-    subgraph AgentModule["Agent Portal"]
-        UC27(Create Property Listing)
-        UC28(Edit Listing Details)
-        UC29(Upload Images and Videos)
-        UC30(View Agent Dashboard)
-        UC31(View Earnings Overview)
-        UC32(Manage Agent Bookings)
-    end
-
-    subgraph NotifModule["Notifications"]
-        UC33(Receive Push Notifications)
-        UC34(Mark Notifications as Read)
-        UC35(Register Device Token)
-        UC36(Manage Notification Settings)
-    end
-
-    subgraph LocationModule["Location"]
-        UC37(Save Location)
-        UC38(Reverse Geocode)
-        UC39(View Saved Locations)
-    end
+    AC1(List)
+    AC2(Manage Bookings)
+    AC3(Reply)
+    AC4(Dashboard)
 
     U --> UC1
     U --> UC2
@@ -488,103 +279,38 @@ graph LR
     U --> UC6
     U --> UC7
     U --> UC8
-    U --> UC9
-    U --> UC10
-    U --> UC11
-    U --> UC12
-    U --> UC14
-    U --> UC15
-    U --> UC16
-    U --> UC19
-    U --> UC20
-    U --> UC21
-    U --> UC22
-    U --> UC23
-    U --> UC24
-    U --> UC33
-    U --> UC34
-    U --> UC35
-    U --> UC36
-    U --> UC37
-    U --> UC38
-    U --> UC39
 
-    A --> UC2
-    A --> UC17
-    A --> UC18
-    A --> UC20
-    A --> UC21
-    A --> UC24
-    A --> UC25
-    A --> UC27
-    A --> UC28
-    A --> UC29
-    A --> UC30
-    A --> UC31
-    A --> UC32
-    A --> UC33
-    A --> UC34
+    A --> UC1
+    A --> AC1
+    A --> AC2
+    A --> AC3
+    A --> AC4
 ```
 
 ---
 
-## 8. Use Case Diagram – Admin and System Side Effects
+## 8. Use Case (Admin + System)
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Times New Roman","fontSize":"24px"}}}%%
 graph LR
-    subgraph Actors
-        AD(["ADMIN"])
-        SYS(["System Automated"])
-    end
+    AD(["Admin"])
+    SYS(["System"])
 
-    subgraph ModerationModule["Property Management"]
-        A1(View All Properties)
-        A2(Update Property Status)
-        A3(Delete Property)
-    end
+    A1(View Users)
+    A2(Update Roles)
+    A3(Manage Houses)
+    A4(Manage Bookings)
+    A5(View Payments)
+    A6(Moderate Reviews)
+    A7(View Analytics)
+    A8(Broadcast)
 
-    subgraph UserMgmtModule["User Management"]
-        A4(View All Users)
-        A5(Get User Details)
-        A6(Update User Role)
-        A7(Toggle User Verification)
-        A8(Delete User)
-    end
-
-    subgraph BookingOversight["Booking Oversight"]
-        A9(View All Bookings)
-        A10(Update Booking Status)
-    end
-
-    subgraph PaymentModule["Payment Oversight"]
-        A11(View All Payments)
-    end
-
-    subgraph ReviewManagement["Review Management"]
-        A12(View All Reviews)
-        A13(Delete Review)
-    end
-
-    subgraph AnalyticsModule["Platform Analytics"]
-        A14(View Platform Stats)
-        A15(View Revenue Data)
-        A16(View Top Agents)
-        A17(View Top Properties)
-        A18(View System Health)
-    end
-
-    subgraph NotifBroadcast["Notifications"]
-        A19(Send Broadcast Notification)
-    end
-
-    subgraph SystemTriggers["Automated System Events"]
-        S1(Send FCM Push on Booking Confirm)
-        S2(Send Email via Nodemailer/Gmail)
-        S3(Emit Socket.IO Event to User Room)
-        S4(Upload Media to Cloudinary)
-        S5(Track Property View)
-        S6(Rate-limit via Redis)
-    end
+    S1(Push)
+    S2(Email)
+    S3(Socket)
+    S4(Upload)
+    S5(Rate Limit)
 
     AD --> A1
     AD --> A2
@@ -594,515 +320,313 @@ graph LR
     AD --> A6
     AD --> A7
     AD --> A8
-    AD --> A9
-    AD --> A10
-    AD --> A11
-    AD --> A12
-    AD --> A13
-    AD --> A14
-    AD --> A15
-    AD --> A16
-    AD --> A17
-    AD --> A18
-    AD --> A19
 
     SYS --> S1
     SYS --> S2
     SYS --> S3
     SYS --> S4
     SYS --> S5
-    SYS --> S6
 ```
 
 ---
 
-## 9. Application Flow Diagram (Happy Path)
+## 9. App Flow (Happy Path)
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Times New Roman","fontSize":"24px"}}}%%
 flowchart TD
-    A([User opens App]) --> B{Clerk session\nexists?}
-    B -- No --> C[Onboarding Screens]
-    C --> D{New or existing?}
-    D -- New --> E[Clerk Sign-up]
-    E --> F{Role selected?}
-    F -- AGENT --> G[Agent Portal /(owner)/]
-    F -- USER  --> H[Set Location / Home /(tabs)/]
-    D -- Existing --> I[Clerk Login]
-    I --> J{User role?}
-    J -- AGENT --> G
-    J -- USER  --> H
-    B -- Yes --> K[POST /api/auth/sync]
-    K --> J
+    A([Open App]) --> B{Session?}
+    B -- No --> C[Sign In/Up]
+    B -- Yes --> D{Role}
+    C --> D
 
-    H --> L[Home Feed – Recommended / Popular Listings]
+    D -- Agent --> E[Agent Home]
+    D -- User --> F[User Home]
 
-    L --> M{User Action}
-    M -- Filter/Search  --> N[GET /api/filter/search\ncity · price · propertyType · beds]
-    M -- View listing   --> O[Property Detail Page\nGET /api/houses/:id]
-    M -- Chat           --> P[Open Conversation\nPOST /api/conversations]
-    M -- Profile        --> Q[View / Edit Profile\nGET /api/users/me]
-
-    N --> O
-    O --> R{Signed in as USER?}
-    R -- Yes --> S[Submit Booking Request\nPOST /api/bookings]
-    R -- No  --> I
-
-    S --> T[(Booking → PENDING)]
-    T --> U[Agent notified via\nSocket.IO + FCM]
-    U --> V{Agent Decision\nPATCH /bookings/agent/:id/status}
-    V -- CONFIRMED --> W[(Booking → CONFIRMED)]
-    V -- CANCELLED --> X[(Booking → CANCELLED)]
-
-    W --> Y[User notified via\nSocket.IO + FCM]
-    Y --> Z{Agent marks\nCOMPLETED}
-    Z --> AA[(Booking → COMPLETED)]
-    AA --> AB[User submits Review\nPOST /api/reviews]
-    AB --> AC([End])
-    X --> AC
+    F --> G[Browse]
+    G --> H[View House]
+    H --> I[Book]
+    I --> J[(PENDING)]
+    J --> K{Agent Action}
+    K -- Confirm --> L[(CONFIRMED)]
+    K -- Cancel --> M[(CANCELLED)]
+    L --> N[(COMPLETED)]
+    N --> O[Review]
+    O --> P([End])
+    M --> P
 ```
 
 ---
 
-## 10. UML Component Diagram
+## 10. UML Component (Compact)
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Times New Roman","fontSize":"24px"}}}%%
 graph TB
-    subgraph MobileApp["React Native Mobile App (Expo 54)"]
-        MA_AUTH["Auth Screens\nClerk Sign-in · Sign-up · Role Selection\nChange / Forgot / Reset Password"]
-        MA_NAV["Expo Router\nFile-based Navigation\n/(tabs)/ · /(owner)/"]
-        MA_STATE["Zustand Store\nAuthStore · LocationStore"]
-        MA_QUERY["TanStack Query 5\nServer State Cache"]
-        MA_AXIOS["Axios Client\nClerk token interceptor"]
-        MA_SOCK["Socket.IO Client\nClerk token handshake"]
-        MA_SCREENS["User Screens\nHome · Explore · Bookings · Favorites\nChat · Notifications · Profile\nNearby · Popular · Recommended"]
-        MA_AGENT["Agent Portal\nListings · Bookings · Earnings\nMessages · Reviews · Dashboard"]
-        MA_CLERK["@clerk/clerk-expo\nexpo-secure-store token cache"]
+    subgraph MOBILE["Mobile"]
+        MA1["Auth"]
+        MA2["Router"]
+        MA3["State"]
+        MA4["API Client"]
+        MA5["Socket Client"]
     end
 
-    subgraph AdminDash["Next.js 14 Admin Dashboard"]
-        AD_AUTH["@clerk/nextjs\nclerkMiddleware · Clerk session"]
-        AD_PAGES["Server & Client Components"]
-        AD_CHARTS["Recharts\nAnalytics Visualisation"]
-        AD_QUERY["TanStack Query 5\nClient Cache"]
-        AD_UI["Shadcn/ui + Tailwind\nUI Components"]
-        AD_MODULES["Dashboard · Users · Properties\nBookings · Payments · Reviews\nRevenue · Notifications"]
+    subgraph ADMIN["Admin"]
+        AD1["Auth"]
+        AD2["Pages"]
+        AD3["Charts"]
     end
 
-    subgraph BackendAPI["Express.js REST API (Node.js 20)"]
-        BE_ROUTER["Express Router\n10 Route Modules"]
-        BE_MIDDLE["Middleware\nprotect (Clerk) · requireRole · errorHandler"]
-        BE_AUTH["Auth Module\nPOST /auth/sync — upsert Clerk user"]
-        BE_HOUSE["House Module\nCRUD · Cloudinary upload · Filters"]
-        BE_FILTER["Filter Module\nAdvanced search + pagination"]
-        BE_BOOK["Booking Module\nFSM · date conflict check"]
-        BE_MSG["Message Module\nConversations + Socket.IO"]
-        BE_REVIEW["Review Module\nWith ReviewMedia"]
-        BE_NOTIF["Notification Module\nFCM push · DeviceToken"]
-        BE_ADMIN["Admin Module\nStats · Revenue · User/House mgmt"]
-        BE_LOC["Location Module\nReverse Geocode · SavedLocations"]
-        BE_USER["User Module\nProfile · Avatar · Payment history"]
-        BE_PAY["Payment Model\n(via Booking service)"]
-        BE_ZOD["Zod 3\nInput Validation"]
-        BE_SOCK["Socket.IO Server\nClerk token handshake\nmessage:send · conversation:join"]
-        BE_CLERK["@clerk/express\nclerkMiddleware · getAuth · verifyToken"]
+    subgraph BACKEND["Backend"]
+        BE1["Router"]
+        BE2["Middleware"]
+        BE3["Modules"]
+        BE4["Socket Server"]
     end
 
-    subgraph DataLayer["Data Layer"]
-        PRISMA["Prisma 6 ORM"]
-        PG[("Neon PostgreSQL\n20 Models · 7 Enums")]
-        REDIS[("Redis\nRate Limiting")]
-        CLD["Cloudinary\nImages & Videos"]
+    subgraph DATA["Data"]
+        D1["Prisma"]
+        D2[("Postgres")]
+        D3[("Redis")]
+        D4["Cloudinary"]
     end
 
-    subgraph ExtServices["External Services"]
-        CLERK_SVC["Clerk\nIdentity & Auth"]
-        NODEMAILER["Nodemailer / Gmail"]
-        FCM_SVC["Firebase FCM"]
+    subgraph EXT["External"]
+        X1["Clerk"]
+        X2["Email"]
+        X3["FCM"]
     end
 
-    MA_AXIOS  --> BE_ROUTER
-    MA_SOCK   --> BE_SOCK
-    MA_CLERK  --> CLERK_SVC
-    AD_PAGES  --> BE_ROUTER
-    AD_QUERY  --> BE_ROUTER
-    AD_AUTH   --> CLERK_SVC
+    MA4 --> BE1
+    MA5 --> BE4
+    MA1 --> X1
+    AD2 --> BE1
+    AD1 --> X1
 
-    BE_ROUTER --> BE_MIDDLE
-    BE_MIDDLE --> BE_AUTH
-    BE_MIDDLE --> BE_HOUSE
-    BE_MIDDLE --> BE_FILTER
-    BE_MIDDLE --> BE_BOOK
-    BE_MIDDLE --> BE_MSG
-    BE_MIDDLE --> BE_REVIEW
-    BE_MIDDLE --> BE_NOTIF
-    BE_MIDDLE --> BE_ADMIN
-    BE_MIDDLE --> BE_LOC
-    BE_MIDDLE --> BE_USER
-
-    BE_BOOK   --> BE_ZOD
-    BE_HOUSE  --> BE_ZOD
-    BE_CLERK  --> CLERK_SVC
-
-    BE_AUTH   --> PRISMA
-    BE_HOUSE  --> PRISMA
-    BE_FILTER --> PRISMA
-    BE_BOOK   --> PRISMA
-    BE_MSG    --> PRISMA
-    BE_REVIEW --> PRISMA
-    BE_NOTIF  --> PRISMA
-    BE_ADMIN  --> PRISMA
-    BE_LOC    --> PRISMA
-    BE_USER   --> PRISMA
-    BE_PAY    --> PRISMA
-
-    PRISMA    --> PG
-    BE_HOUSE  --> CLD
-    BE_REVIEW --> CLD
-    BE_USER   --> CLD
-    BE_NOTIF  --> FCM_SVC
-    BE_AUTH   --> NODEMAILER
-    BE_MIDDLE --> REDIS
-    BE_SOCK   --> PRISMA
+    BE1 --> BE2 --> BE3
+    BE3 --> D1 --> D2
+    BE2 --> D3
+    BE3 --> D4
+    BE3 --> X1
+    BE3 --> X2
+    BE3 --> X3
 ```
 
 ---
 
-## 11. Class Diagram
+## 11. Class Diagram (Compact)
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Times New Roman","fontSize":"24px"}}}%%
 classDiagram
     class User {
-        +String id
-        +String email
-        +String phone
-        +String passwordHash
-        +Role role
-        +Boolean isVerified
-        +DateTime createdAt
-        +register(dto) Promise
-        +login(dto) Promise
-        +updateProfile(id, dto) Promise
+        +id
+        +role
+        +login()
+        +updateProfile()
     }
-
     class House {
-        +String id
-        +String title
-        +String description
-        +String city
-        +Float price
-        +ListingType listingType
-        +PropertyType propertyType
-        +Int bedrooms
-        +Int bathrooms
-        +HouseStatus status
-        +String agentId
-        +create(agentId, dto) Promise
-        +update(id, dto) Promise
-        +delete(id) Promise
-        +toggleFavorite(userId, houseId) Promise
-        +recordView(userId, houseId) Promise
+        +id
+        +agentId
+        +create()
+        +update()
     }
-
     class Booking {
-        +String id
-        +String userId
-        +String houseId
-        +DateTime startDate
-        +DateTime endDate
-        +Float totalPrice
-        +BookingStatus status
-        +String message
-        +create(userId, dto) Promise
-        +updateStatus(id, status) Promise
-        +getUserBookings(userId) Promise
-        +getAgentBookings(agentId) Promise
+        +id
+        +status
+        +create()
+        +updateStatus()
     }
-
     class Review {
-        +String id
-        +String userId
-        +String houseId
-        +String bookingId
-        +Int rating
-        +String comment
-        +create(userId, dto) Promise
-        +update(userId, id, dto) Promise
-        +delete(userId, id) Promise
-        +getByHouse(houseId) Promise
-        +getMyReviews(userId) Promise
+        +id
+        +rating
+        +create()
     }
-
     class Conversation {
-        +String id
-        +String userId
-        +String agentId
-        +String houseId
-        +DateTime createdAt
-        +create(userId, agentId, houseId) Promise
-        +getByUser(userId) Promise
-        +delete(userId, id) Promise
+        +id
+        +create()
     }
-
     class Message {
-        +String id
-        +String conversationId
-        +String senderId
-        +String content
-        +String type
-        +Boolean isRead
-        +DateTime createdAt
-        +send(senderId, conversationId, content, type) Promise
-        +markRead(conversationId, userId) Promise
-        +getMessages(conversationId, userId) Promise
+        +id
+        +send()
+        +markRead()
     }
-
     class Notification {
-        +String id
-        +String userId
-        +NotificationType type
-        +String title
-        +String message
-        +Json data
-        +Boolean isRead
-        +DateTime createdAt
-        +getByUser(userId, filters) Promise
-        +markAsRead(userId, id) Promise
-        +markAllAsRead(userId) Promise
-        +sendPush(userId, title, body) Promise
+        +id
+        +type
+        +sendPush()
     }
-
     class DeviceToken {
-        +String id
-        +String userId
-        +String token
-        +String platform
-        +register(userId, token, platform) Promise
-        +remove(userId, token) Promise
+        +id
+        +token
+        +register()
     }
-
     class AuthService {
-        +syncUser(clerkUserId, extraData) Promise
+        +syncUser()
     }
-
     class SocketService {
-        +initializeSocket(server) IO
-        +authenticateSocket(socket, next) void
-        +handleMessageSend(socket, data) void
-        +handleConversationJoin(socket, data) void
-        +emitToUser(io, userId, event, data) void
+        +init()
+        +emitToUser()
     }
 
-    User "1" --> "0..*" House         : lists as agent
-    User "1" --> "0..*" Booking       : creates (user)
-    User "1" --> "0..*" Booking       : manages (agent)
-    User "1" --> "0..*" Payment       : makes
-    User "1" --> "0..*" Review        : writes
-    User "1" --> "0..*" Conversation  : starts / receives
-    User "1" --> "0..*" Message       : sends
-    User "1" --> "0..*" Notification  : receives
-    User "1" --> "0..*" DeviceToken   : registers
-
-    House "1" --> "0..*" Booking      : subject of
-    House "1" --> "0..*" Review       : receives
-
-    Booking "1" --> "0..1" Review     : reviewed after
-    Booking "1" --> "0..*" Payment    : paid via
-    Conversation "1" --> "0..*" Message : contains
-
-    AuthService --> SocketService  : initializes
+    User "1" --> "*" House : lists
+    User "1" --> "*" Booking : books
+    User "1" --> "*" Review : writes
+    User "1" --> "*" Notification : gets
+    User "1" --> "*" DeviceToken : has
+    House "1" --> "*" Booking : has
+    House "1" --> "*" Review : has
+    Conversation "1" --> "*" Message : has
+    AuthService --> SocketService : uses
 ```
 
 ---
 
-## 12. Sequence Diagram – Authentication (Clerk-based Login)
+## 12. Sequence (Auth Login)
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Times New Roman","fontSize":"24px"}}}%%
 sequenceDiagram
     actor U as User
-    participant MA as Mobile App
-    participant CL as Clerk
-    participant API as Backend API
-    participant DB as PostgreSQL
+    participant M as Mobile
+    participant C as Clerk
+    participant A as API
+    participant D as DB
 
-    U  ->> MA  : Enter credentials and tap Login
-    MA ->> CL  : Clerk signIn() with email + password
-    CL -->> MA : Session token (JWT)
+    U->>M: Login
+    M->>C: signIn
+    C-->>M: token
+    M->>A: auth/sync
+    A->>C: verify
+    C-->>A: ok
+    A->>D: upsert user
+    D-->>A: user
+    A-->>M: user
+    M-->>U: redirect
+```
 
-    MA ->> MA  : setTokenProvider(getToken)
-    MA ->> API : POST /api/auth/sync\n(Authorization: Bearer clerkToken)
-    API ->> CL : clerkClient.verifyToken(token)
-    CL -->> API : payload { sub: clerkUserId }
+---
 
-    API ->> DB : upsert User WHERE clerkId = ?
-    DB -->> API : User record
+## 13. Sequence (Token Refresh)
 
-    API -->> MA : 200 { user }
-    MA  ->> MA  : authStore.setUser(user)
+```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Times New Roman","fontSize":"24px"}}}%%
+sequenceDiagram
+    actor U as User
+    participant M as Mobile
+    participant C as Clerk
+    participant A as API
 
-    alt User role is AGENT
-        MA  -->> U  : Redirect to /(owner)/ portal
-    else User role is USER
-        MA  -->> U  : Redirect to /(tabs)/ home
+    M->>A: request + token
+    A->>C: verify
+
+    alt valid
+        A-->>M: 200
+        M-->>U: data
+    else expired
+        A-->>M: 401
+        M->>C: getToken
+        C-->>M: new token
+        M->>A: retry
+        A-->>M: 200
     end
 ```
 
 ---
 
-## 13. Sequence Diagram – Clerk Token Lifecycle (Silent Refresh)
+## 14. Sequence (Messaging)
 
 ```mermaid
-sequenceDiagram
-    actor U as User
-    participant MA as Mobile App
-    participant CL as Clerk
-    participant API as Backend API
-
-    MA ->> API : Authenticated API request\n(Axios interceptor attaches Clerk token)
-    API ->> CL : clerkMiddleware verifies session token
-    CL -->> API : Valid session payload
-
-    alt Session active
-        API -->> MA : 200 Requested data
-        MA  -->> U  : Seamless experience
-    else Session expired
-        CL  -->> API : Token invalid
-        API -->> MA  : 401 Unauthorized
-        MA  ->> CL   : getToken() — Clerk auto-refreshes session
-        CL  -->> MA  : New session token
-
-        alt Token refreshed successfully
-            MA  ->> API : Retry original request with new token
-            API -->> MA : 200 Requested data
-            MA  -->> U  : Seamless experience
-        else Refresh failed (signed out)
-            MA  ->> MA  : authStore.clearUser()
-            MA  -->> U  : Redirect to /(auth)/ login screen
-        end
-    end
-```
-
----
-
-## 14. Sequence Diagram – Real-time Messaging
-
-```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Times New Roman","fontSize":"24px"}}}%%
 sequenceDiagram
     actor U as User
     actor A as Agent
-    participant MAU as Mobile App (User)
-    participant MAA as Mobile App (Agent)
-    participant SOCK as Socket.IO Server
-    participant API as REST API
-    participant DB as PostgreSQL
+    participant MU as User App
+    participant MA as Agent App
+    participant S as Socket
+    participant API as API
+    participant DB as DB
 
-    U   ->> MAU  : Tap Message Agent on property
-    MAU ->> API  : POST /api/conversations\n{ agentId, houseId }
-    API ->> DB   : findOrCreate Conversation (userId+agentId unique)
-    DB  -->> API : Conversation record
-    API -->> MAU : { conversationId }
-
-    MAU ->> SOCK : emit conversation:join { conversationId }\n(Clerk token in handshake)
-    MAA ->> SOCK : emit conversation:join { conversationId }
-    SOCK ->> DB  : Verify both users belong to conversation
-
-    U   ->> MAU  : Type message and tap Send
-    MAU ->> SOCK : emit message:send { conversationId, content, type }
-    SOCK ->> DB  : INSERT Message record
-    SOCK -->> MAA : event message:new { id, content, senderId, type, createdAt }
-    A   -->> MAA : Sees new message in real time
-
-    A   ->> MAA  : Type reply and tap Send
-    MAA ->> SOCK : emit message:send { conversationId, content, type }
-    SOCK ->> DB  : INSERT Message record
-    SOCK -->> MAU : event message:new { id, content, senderId, type, createdAt }
-    U   -->> MAU : Sees reply in real time
-
-    MAU ->> API  : PATCH /api/conversations/:id/read
-    API ->> DB   : UPDATE Message SET isRead=true WHERE conversationId
-    SOCK -->> MAA : event messages:read { conversationId }
+    U->>MU: Open chat
+    MU->>API: create conversation
+    API->>DB: find/create
+    DB-->>API: conversation
+    API-->>MU: id
+    MU->>S: join
+    MA->>S: join
+    U->>MU: send
+    MU->>S: message
+    S->>DB: save
+    S-->>MA: message:new
+    A->>MA: reply
+    MA->>S: message
+    S->>DB: save
+    S-->>MU: message:new
 ```
 
 ---
 
-## 15. Activity Diagram – User Booking Flow
+## 15. Activity (Booking)
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Times New Roman","fontSize":"24px"}}}%%
 stateDiagram-v2
-    [*] --> BrowseListings : User opens app
-
-    BrowseListings --> ViewProperty  : Tap on listing
-    ViewProperty   --> CheckAuth     : Tap Book Now
-
-    CheckAuth --> LoginPrompt : Not authenticated (Clerk session missing)
-    LoginPrompt --> ViewProperty : Clerk sign-in success
-
-    CheckAuth --> FillBookingForm : Authenticated
-
-    FillBookingForm --> ValidateInput  : Submit form
-    ValidateInput   --> FillBookingForm : Validation fails
-    ValidateInput   --> CreateBooking   : Validation passes
-
-    CreateBooking --> PENDING          : POST /api/bookings
-    PENDING       --> NotifyAgent      : FCM push notification sent
-
-    NotifyAgent --> AgentReviews
-    AgentReviews --> CONFIRMED         : PATCH /api/bookings/:id/status (CONFIRMED)
-    AgentReviews --> CANCELLED         : PATCH /api/bookings/:id/status (CANCELLED)
-
-    CONFIRMED --> NotifyUser           : FCM push to user
-    CANCELLED --> NotifyUser           : FCM push to user
-
-    NotifyUser --> COMPLETED           : PATCH /api/bookings/:id/status (COMPLETED)
-    COMPLETED  --> SubmitReview        : POST /api/reviews
-    SubmitReview --> [*]
-    CANCELLED  --> [*]
+    [*] --> Browse
+    Browse --> View
+    View --> Auth
+    Auth --> Login : no session
+    Login --> View
+    Auth --> Form : has session
+    Form --> Validate
+    Validate --> Form : invalid
+    Validate --> PENDING : valid
+    PENDING --> CONFIRMED : agent confirm
+    PENDING --> CANCELLED : cancel
+    CONFIRMED --> COMPLETED
+    COMPLETED --> Review
+    Review --> [*]
+    CANCELLED --> [*]
 ```
 
 ---
 
-## 16. Activity Diagram – Clerk-managed Password Reset Flow
+## 16. Activity (Password Reset)
 
 ```mermaid
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Times New Roman","fontSize":"24px"}}}%%
 stateDiagram-v2
-    [*] --> LoginScreen : User opens app
-
-    LoginScreen --> ForgotPassword : Tap "Forgot Password"
-
-    ForgotPassword --> EnterEmail : Clerk forgot-password form
-    EnterEmail --> EmailSent      : Clerk sends reset email
-
-    EmailSent --> CheckEmail      : User opens email
-    CheckEmail --> EnterResetCode : Click reset link or enter code
-
-    EnterResetCode --> ValidateCode
-    ValidateCode   --> EnterResetCode : Invalid / expired code (retry)
-    ValidateCode   --> SetNewPassword : Code valid
-
-    SetNewPassword --> PasswordUpdated : Clerk updates credential
-    PasswordUpdated --> AutoSignIn     : Clerk signs user in automatically
-    AutoSignIn --> SyncBackend         : POST /api/auth/sync with new Clerk session
-    SyncBackend --> [*]                : User lands on home screen
+    [*] --> Login
+    Login --> Forgot
+    Forgot --> Email
+    Email --> Code
+    Code --> Verify
+    Verify --> Code : invalid
+    Verify --> NewPass : valid
+    NewPass --> Updated
+    Updated --> AutoSignIn
+    AutoSignIn --> Sync
+    Sync --> [*]
 ```
 
 ---
 
 ## Summary Table
 
-| # | Diagram | Mermaid Type | Description |
-|---|---------|--------------|-------------|
-| 1 | System Architecture – Three-Tier | `graph TB` | Mobile + Admin → Express API → Neon PostgreSQL; Clerk auth; Cloudinary; FCM; Redis rate limiting |
-| 2 | DFD Level 0 – Context | `graph LR` | Top-level data flows between User, Agent, Admin, Clerk, Cloudinary, FCM, PostgreSQL |
-| 3 | DFD Level 1 – Main Processes | `graph TD` | Six core processes: Auth Sync, Property Mgmt, Booking & Payment, Messaging, Notifications, Filter/Search |
-| 4 | DFD Level 2 – Property Search | `graph TD` | Filter pipeline: query params → Redis rate limit → Prisma query → Cloudinary URLs |
-| 5 | Entity Relationship Diagram | `erDiagram` | All 20 Prisma models with fields and relationships; 7 enums |
-| 6 | Booking Finite State Machine | `stateDiagram-v2` | PENDING → CONFIRMED → COMPLETED / CANCELLED; paymentStatus transitions |
-| 7 | Use Case – User & Agent | `graph LR` | User: browse, book, review, message, favorites; Agent: manage listings, handle bookings |
-| 8 | Use Case – Admin & System | `graph LR` | Admin dashboard actions; system-automated notifications and cleanup |
-| 9 | Application Flow – Happy Path | `flowchart TD` | Clerk sign-in → role-based routing → core feature flows |
-| 10 | UML Component Diagram | `graph TB` | All 10 backend modules + mobile + admin + external services (Clerk, Cloudinary, FCM, Neon) |
-| 11 | Class Diagram | `classDiagram` | 9 domain classes + AuthService + SocketService; actual fields and methods |
-| 12 | Sequence – Clerk Login | `sequenceDiagram` | Clerk sign-in → getToken → POST /api/auth/sync → upsert DB → role-based redirect |
-| 13 | Sequence – Token Lifecycle | `sequenceDiagram` | Clerk auto-refreshes session; Axios interceptor attaches fresh token on each request |
-| 14 | Sequence – Real-time Messaging | `sequenceDiagram` | Socket.IO Clerk auth; conversation:join; message:send → DB insert → message:new emit |
-| 15 | Activity – Booking Flow | `stateDiagram-v2` | Browse → Book → PENDING → CONFIRMED → COMPLETED → Review (no ACTIVE state) |
-| 16 | Activity – Clerk Password Reset | `stateDiagram-v2` | Clerk forgot-password email flow → code validation → credential update → auto sign-in |
+| # | Diagram | Type | Scope |
+|---|---------|------|-------|
+| 1 | Architecture | graph TB | UI, API, Data, External |
+| 2 | DFD L0 | graph LR | Context flow |
+| 3 | DFD L1 | graph TD | Core processes |
+| 4 | DFD L2 | graph TD | Search path |
+| 5 | ERD | erDiagram | Core entities |
+| 6 | Booking FSM | stateDiagram-v2 | Status transitions |
+| 7 | Use Case User/Agent | graph LR | Main actions |
+| 8 | Use Case Admin/System | graph LR | Ops and automation |
+| 9 | App Flow | flowchart TD | Happy path |
+| 10 | Component | graph TB | Major modules |
+| 11 | Class | classDiagram | Core classes |
+| 12 | Sequence Auth | sequenceDiagram | Login sync |
+| 13 | Sequence Token | sequenceDiagram | Refresh flow |
+| 14 | Sequence Chat | sequenceDiagram | Real-time messaging |
+| 15 | Activity Booking | stateDiagram-v2 | Book lifecycle |
+| 16 | Activity Reset | stateDiagram-v2 | Password reset |
