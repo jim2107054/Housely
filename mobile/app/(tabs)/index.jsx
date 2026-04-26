@@ -6,13 +6,15 @@ import {
   TouchableOpacity,
   FlatList,
   Dimensions,
-  Animated,
+  RefreshControl,
   ActivityIndicator,
+  Animated,
 } from "react-native";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import useLocationStore from "../../store/locationStore";
+import { connectSocket } from "../../services/socketService";
 
 // Import SVG icons
 import LocationIcon from "../../assets/images/home-icons/Location.svg";
@@ -31,8 +33,9 @@ const Home = () => {
   const router = useRouter();
   const [favorites, setFavorites] = useState([]);
   const [popularFavorites, setPopularFavorites] = useState([]);
-  const [activeLocation, setActiveLocation] = useState("2");
+  const [activeLocation, setActiveLocation] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [chatUnreadCount, setChatUnreadCount] = useState(0);
 
   // Real data states
   const [recommended, setRecommended] = useState([]);
@@ -40,130 +43,146 @@ const Home = () => {
   const [popular, setPopular] = useState([]);
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
   // Location store - for displaying selected location in header
-  const { locationName, isLocationSet, loadLocation, getCoordinates } = useLocationStore();
+  const { locationName, isLocationSet, loadLocation, getCoordinates, selectedLocation } = useLocationStore();
+
+  const recommendedListRef = useRef(null);
+  const recommendedIndexRef = useRef(0);
 
   useEffect(() => {
-    // Load saved location on mount
     loadLocation();
+  }, [loadLocation]);
+
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const res = await api.get('/api/notifications/unread-count');
+      setUnreadCount(res.data?.notificationCount ?? 0);
+      setChatUnreadCount(res.data?.chatCount ?? 0);
+    } catch {
+      setUnreadCount(0);
+      setChatUnreadCount(0);
+    }
   }, []);
 
-  // Refresh unread count every time the home tab is focused
+  const fetchData = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) {
+      setLoading(true);
+    }
+    setError(null);
+
+    try {
+      const coords = getCoordinates();
+
+      const [recRes, nearRes, popRes, locRes, favRes] = await Promise.all([
+        api.get('/api/houses/recommended'),
+        api.get('/api/houses/nearby', {
+          params: {
+            lat: coords.latitude,
+            lng: coords.longitude,
+          },
+        }),
+        api.get('/api/houses/popular'),
+        api.get('/api/houses/top-locations'),
+        api.get('/api/houses/favorites').catch(() => ({ data: { houses: [] } })),
+      ]);
+
+      const transformHouse = (h) => ({
+        id: h.id,
+        name: h.name,
+        location: [h.area, h.city].filter(Boolean).join(', '),
+        price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
+        priceType: h.listingType === 'RENT' ? 'month' : 'total',
+        rating: h.rating || 4.5,
+        image: h.images?.[0]?.url || 'https://via.placeholder.com/300',
+        isFavorite: h.isFavorite || false,
+      });
+
+      const transformedLocations = (locRes.data.locations || []).map((l, index) => ({
+        id: `${l.city}-${index}`,
+        name: l.city,
+        count: l.count,
+        image: { uri: `https://picsum.photos/seed/location-${encodeURIComponent(l.city)}/300/200` },
+      }));
+
+      const favIds = (favRes.data.houses || []).map((h) => h.id);
+      setFavorites(favIds);
+      setPopularFavorites(favIds);
+
+      setRecommended((recRes.data.houses || []).map(transformHouse));
+      setNearby((nearRes.data.houses || []).map(transformHouse));
+      setPopular((popRes.data.houses || []).map(transformHouse));
+      setLocations(transformedLocations);
+      if (transformedLocations.length > 0 && !activeLocation) {
+        setActiveLocation(transformedLocations[0].id);
+      }
+    } catch (err) {
+      let errorMessage = 'Failed to load homes';
+      if (err.request) {
+        errorMessage = 'Cannot connect to server';
+      } else if (err.response) {
+        errorMessage = err.response.data?.message || 'Server error';
+      }
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [getCoordinates, activeLocation]);
+
   useFocusEffect(
     useCallback(() => {
-      const fetchUnreadCount = async () => {
-        try {
-          const res = await api.get('/api/notifications/unread-count');
-          console.log('[Home] Unread count:', res.data?.unreadCount);
-          setUnreadCount(res.data?.unreadCount ?? 0);
-        } catch (err) {
-          // silently fail
-        }
-      };
       fetchUnreadCount();
-    }, [])
+      fetchData({ silent: false });
+    }, [fetchData, fetchUnreadCount])
   );
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        console.log('[Home] Fetching home data...');
-        
-        // Get coordinates for nearby API
-        const coords = getCoordinates();
-        console.log('[Home] Using coordinates:', coords);
-        
-        const [recRes, nearRes, popRes, locRes, favRes, notifRes] = await Promise.all([
-          api.get('/api/houses/recommended'),
-          api.get('/api/houses/nearby', {
-            params: {
-              lat: coords.latitude,
-              lng: coords.longitude,
-            }
-          }),
-          api.get('/api/houses/popular'),
-          api.get('/api/houses/top-locations'),
-          api.get('/api/houses/favorites').catch(() => ({ data: { houses: [] } })),
-          api.get('/api/notifications/unread-count').catch(() => ({ data: { unreadCount: 0 } })),
-        ]);
+    fetchData({ silent: false });
+  }, [selectedLocation, fetchData]);
 
-        const transformHouse = (h) => ({
-          id: h.id,
-          name: h.name,
-          location: `${h.area}, ${h.city}`,
-          price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
-          priceType: h.listingType === 'RENT' ? 'month' : 'total',
-          rating: h.rating || 4.5,
-          image: h.images?.[0]?.url || 'https://via.placeholder.com/300',
-          isFavorite: h.isFavorite || false,
-        });
+  useEffect(() => {
+    if (recommended.length < 2) return;
 
-        // Set favorited property IDs for heart icon state
-        const favIds = (favRes.data.houses || []).map(h => h.id);
-        setFavorites(favIds);
-        setPopularFavorites(favIds);
-        console.log('[Home] Notification unread response:', JSON.stringify(notifRes.data));
-        setUnreadCount(notifRes.data?.unreadCount ?? 0);
+    let index = 0;
+    const timer = setInterval(() => {
+      index = (index + 1) % recommended.length;
+      recommendedListRef.current?.scrollToIndex({
+        index,
+        animated: true,
+        viewPosition: 0,
+      });
+    }, 4000);
 
-        setRecommended(recRes.data.houses.map(transformHouse));
-        setNearby(nearRes.data.houses.map(transformHouse));
-        setPopular(popRes.data.houses.map(transformHouse));
-        setLocations(locRes.data.locations || []);
-        console.log('[Home] Data loaded successfully');
-      } catch (err) {
-        console.error('[Home] Error fetching home data:', err);
-        let errorMessage = 'Failed to load homes';
-        if (err.request) {
-          errorMessage = 'Cannot connect to server';
-        } else if (err.response) {
-          errorMessage = err.response.data?.message || 'Server error';
-        }
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
+    return () => clearInterval(timer);
+  }, [recommended.length]);
+
+  // Socket listener for real-time unread count
+  useEffect(() => {
+    let sock;
+    const initSocket = async () => {
+      sock = await connectSocket();
+      if (!sock) return;
+
+      sock.on('message:new', () => {
+        fetchUnreadCount();
+      });
+    };
+    initSocket();
+
+    return () => {
+      if (sock) {
+        sock.off('message:new');
       }
     };
+  }, [fetchUnreadCount]);
 
-    fetchData();
-  }, []);
-
-  // Auto-scroll animation for Recommended section
-  const recommendedScrollX = useRef(new Animated.Value(0)).current;
-  
-  useEffect(() => {
-    if (recommended.length === 0) return;
-
-    // Calculate total content width: (CARD_WIDTH + 16px margin) * number of cards
-    const totalWidth = (CARD_WIDTH + 16) * recommended.length;
-    
-    if (totalWidth > width) {
-      const scrollDistance = totalWidth - width + 40;
-      
-      const animation = Animated.loop(
-        Animated.sequence([
-          // Scroll from right to left
-          Animated.timing(recommendedScrollX, {
-            toValue: -scrollDistance,
-            duration: 10000,
-            useNativeDriver: true,
-          }),
-          // Reset instantly to starting position
-          Animated.timing(recommendedScrollX, {
-            toValue: 0,
-            duration: 0,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-      animation.start();
-      
-      return () => animation.stop();
-    }
-  }, []);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([fetchData({ silent: true }), fetchUnreadCount()]);
+  };
 
   const toggleFavorite = async (id) => {
     try {
@@ -242,6 +261,26 @@ const Home = () => {
           onPress={() => router.push("/(tabs)/chat")}
         >
           <ChatIcon width={20} height={20} />
+          {/* Chat Badge */}
+          {chatUnreadCount > 0 && (
+            <View 
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                backgroundColor: '#7B61FF',
+                width: 18,
+                height: 18,
+                borderRadius: 9,
+                justifyContent: 'center',
+                alignItems: 'center',
+                borderWidth: 2,
+                borderColor: '#FFFFFF',
+              }}
+            >
+              <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: 'bold' }}>{chatUnreadCount > 9 ? '9+' : chatUnreadCount}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -360,7 +399,7 @@ const Home = () => {
         </View>
         <View className="flex-row items-center justify-between">
           <Text className="text-primary font-poppins-bold text-sm">
-            ${item.price}<Text className="text-textSecondary font-poppins text-xs">/month</Text>
+            ৳{item.price}<Text className="text-textSecondary font-poppins text-xs">/month</Text>
           </Text>
           <View className="flex-row items-center">
             <Ionicons name="star" size={14} color="#FFC42D" />
@@ -388,6 +427,11 @@ const Home = () => {
   // Top Location Card Component - Rectangle with rounded-md
   const LocationCard = ({ item }) => {
     const isActive = activeLocation === item.id;
+    const imageSource =
+      typeof item.image === 'string'
+        ? { uri: item.image }
+        : item.image || { uri: 'https://picsum.photos/seed/location-fallback/300/200' };
+
     return (
       <TouchableOpacity
         onPress={() => setActiveLocation(item.id)}
@@ -395,7 +439,7 @@ const Home = () => {
         style={{ width: 100, height: 80 }}
       >
         <Image
-          source={item.image}
+          source={imageSource}
           className="w-full h-full rounded-xl"
           resizeMode="cover"
         />
@@ -451,7 +495,7 @@ const Home = () => {
         </View>
         <View className="flex-row items-center justify-between mt-1">
           <Text className="text-primary font-poppins-bold text-sm">
-            ${item.price}<Text className="text-textSecondary font-poppins text-xs">/{item.priceType}</Text>
+            ৳{item.price}<Text className="text-textSecondary font-poppins text-xs">/{item.priceType}</Text>
           </Text>
           <View className="flex-row items-center">
             <Ionicons name="star" size={14} color="#FFC42D" />
@@ -486,6 +530,12 @@ const Home = () => {
           <Ionicons name="cloud-offline-outline" size={64} color="#A1A5C1" />
           <Text style={{ marginTop: 12, color: '#252B5C', fontSize: 18, fontWeight: '700' }}>Connection Error</Text>
           <Text style={{ marginTop: 6, color: '#A1A5C1', fontSize: 14, textAlign: 'center' }}>{error}</Text>
+          <TouchableOpacity
+            onPress={() => fetchData({ silent: false })}
+            style={{ marginTop: 16, backgroundColor: '#6941C6', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10 }}
+          >
+            <Text style={{ color: '#FFF', fontWeight: '700' }}>Retry</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -493,7 +543,10 @@ const Home = () => {
 
   return (
     <View className="flex-1 bg-white">
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#6941C6"]} tintColor="#6941C6" />}
+      >
         <Header />
         <SearchBar />
         <PromoBanner />
@@ -503,19 +556,23 @@ const Home = () => {
           title="Recommended"
           onPress={() => router.push("/(tabs)/recommended")}
         />
-        <View className="mb-6 overflow-hidden">
-          <Animated.View 
-            style={{ 
-              flexDirection: 'row', 
-              transform: [{ translateX: recommendedScrollX }],
-              paddingHorizontal: 20,
-            }}
-          >
-            {recommended.map((item) => (
-              <RecommendedCard key={item.id} item={item} />
-            ))}
-          </Animated.View>
-        </View>
+        <FlatList
+          ref={recommendedListRef}
+          data={recommended}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <RecommendedCard item={item} />}
+          contentContainerStyle={{ paddingHorizontal: 20 }}
+          snapToInterval={CARD_WIDTH + 16}
+          decelerationRate="fast"
+          className="mb-6"
+          getItemLayout={(data, index) => ({
+            length: CARD_WIDTH + 16,
+            offset: (CARD_WIDTH + 16) * index,
+            index,
+          })}
+        />
 
         {/* Nearby Section - Single horizontal scrollable row */}
         <SectionHeader

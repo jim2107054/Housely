@@ -44,7 +44,11 @@ const Profile = () => {
 
   const handleSignOut = async () => {
     try {
-      await logout();
+      const result = await logout();
+      if (!result?.success) {
+        throw new Error(result?.message || 'Failed to logout');
+      }
+
       Toast.show({
         type: 'success',
         text1: 'Logged Out',
@@ -59,7 +63,7 @@ const Profile = () => {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Failed to logout. Please try again.',
+        text2: error?.message || 'Failed to logout. Please try again.',
         position: 'top',
         visibilityTime: 3000,
       });

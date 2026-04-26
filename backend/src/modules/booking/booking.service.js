@@ -49,12 +49,40 @@ export const createBooking = async (userId, data) => {
     throw Object.assign(new Error('Check-out date must be after check-in date'), { statusCode: 400 });
   }
 
+  // Rental bookings are month-based: users can only book in full month intervals.
+  if (house.listingType === 'RENT') {
+    const checkInUtc = new Date(Date.UTC(checkInDate.getUTCFullYear(), checkInDate.getUTCMonth(), checkInDate.getUTCDate()));
+    const checkOutUtc = new Date(Date.UTC(checkOutDate.getUTCFullYear(), checkOutDate.getUTCMonth(), checkOutDate.getUTCDate()));
+
+    const isFirstDayCheckIn = checkInUtc.getUTCDate() === 1;
+    const isFirstDayCheckOut = checkOutUtc.getUTCDate() === 1;
+    if (!isFirstDayCheckIn || !isFirstDayCheckOut) {
+      throw Object.assign(
+        new Error('For monthly rentals, check-in and check-out must be the 1st day of a month.'),
+        { statusCode: 400 }
+      );
+    }
+
+    const monthDiff =
+      (checkOutUtc.getUTCFullYear() - checkInUtc.getUTCFullYear()) * 12 +
+      (checkOutUtc.getUTCMonth() - checkInUtc.getUTCMonth());
+
+    if (monthDiff < 1) {
+      throw Object.assign(new Error('Rental duration must be at least 1 full month.'), { statusCode: 400 });
+    }
+  }
+
   const conflictingBooking = await prisma.booking.findFirst({
     where: {
       houseId,
       status: { in: ['PENDING', 'CONFIRMED'] },
       OR: [
-        { checkIn: { lte: checkOutDate }, checkOut: { gte: checkInDate } },
+        {
+          AND: [
+            { checkIn: { lt: checkOutDate } },
+            { checkOut: { gt: checkInDate } },
+          ],
+        },
       ],
     },
   });
@@ -66,8 +94,9 @@ export const createBooking = async (userId, data) => {
   // Calculate total amount based on listing type
   let totalAmount = 0;
   if (house.listingType === 'RENT' && house.rentPerMonth) {
-    const days = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
-    const months = days / 30;
+    const months =
+      (checkOutDate.getUTCFullYear() - checkInDate.getUTCFullYear()) * 12 +
+      (checkOutDate.getUTCMonth() - checkInDate.getUTCMonth());
     totalAmount = Math.ceil(house.rentPerMonth * months);
   } else if (house.listingType === 'SALE' && house.salePrice) {
     totalAmount = house.salePrice;

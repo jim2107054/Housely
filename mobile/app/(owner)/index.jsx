@@ -7,12 +7,14 @@ import {
   Dimensions,
   ActivityIndicator,
 } from "react-native";
-import { useEffect, useState } from "react";
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useCallback, useEffect, useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import useAuthStore from "../../store/authStore";
 import api from "../../services/api";
+import { RefreshControl } from "react-native";
+import { connectSocket } from "../../services/socketService";
 
 
 
@@ -36,40 +38,79 @@ const OwnerDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [chatUnreadCount, setChatUnreadCount] = useState(0);
 
-  useEffect(() => {
-    const fetchDashboard = async () => {
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const res = await api.get('/api/notifications/unread-count');
+      setUnreadCount(res.data?.notificationCount ?? 0);
+      setChatUnreadCount(res.data?.chatCount ?? 0);
+    } catch {
+      setUnreadCount(0);
+      setChatUnreadCount(0);
+    }
+  }, []);
+
+  const fetchDashboard = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) {
       setLoading(true);
-      setError(null);
-      try {
-        console.log('[Owner Dashboard] Fetching dashboard data...');
-        const response = await api.get('/api/houses/agent/dashboard');
-        console.log('[Owner Dashboard] Success:', response.data);
-        setDashboardData(response.data);
-      } catch (err) {
-        console.error('[Owner Dashboard] Error fetching dashboard:', err);
-        
-        // Detailed error handling
-        let errorMessage = 'Failed to load dashboard';
-        
-        if (err.response) {
-          // Server responded with error
-          errorMessage = err.response.data?.message || `Server error: ${err.response.status}`;
-        } else if (err.request) {
-          // Network error - no response received
-          errorMessage = 'Cannot connect to server. Please check:\n• Backend server is running\n• Your network connection\n• API URL in config.js';
-        } else {
-          // Request setup error
-          errorMessage = err.message || 'Unknown error occurred';
-        }
-        
-        setError(errorMessage);
-      } finally {
-        setLoading(false);
+    }
+    setError(null);
+    try {
+      console.log('[Owner Dashboard] Fetching dashboard data...');
+      const response = await api.get('/api/houses/agent/dashboard');
+      console.log('[Owner Dashboard] Success:', response.data);
+      setDashboardData(response.data);
+    } catch (err) {
+      console.error('[Owner Dashboard] Error fetching dashboard:', err);
+      let errorMessage = 'Failed to load dashboard';
+      if (err.response) {
+        errorMessage = err.response.data?.message || `Server error: ${err.response.status}`;
+      } else if (err.request) {
+        errorMessage = 'Cannot connect to server. Please check:\n• Backend server is running\n• Your network connection\n• API URL in config.js';
+      } else {
+        errorMessage = err.message || 'Unknown error occurred';
+      }
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchDashboard({ silent: false });
+      fetchUnreadCount();
+    }, [fetchDashboard, fetchUnreadCount])
+  );
+
+  // Socket listener for real-time unread count
+  useEffect(() => {
+    let sock;
+    const initSocket = async () => {
+      sock = await connectSocket();
+      if (!sock) return;
+
+      sock.on('message:new', () => {
+        fetchUnreadCount();
+      });
+    };
+    initSocket();
+
+    return () => {
+      if (sock) {
+        sock.off('message:new');
       }
     };
-    fetchDashboard();
-  }, []);
+  }, [fetchUnreadCount]);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchDashboard({ silent: true });
+  };
 
   const statsData = dashboardData?.stats || {
     housesCount: 0,
@@ -111,7 +152,7 @@ const OwnerDashboard = () => {
     },
     {
       label: "Earnings",
-      value: `$${statsData.totalEarnings.toLocaleString()}`,
+      value: `৳${statsData.totalEarnings.toLocaleString()}`,
       icon: "cash",
       color: "#4CAF50",
       bgColor: "#E8F5E9",
@@ -178,7 +219,12 @@ const OwnerDashboard = () => {
 
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} tintColor={COLORS.primary} />
+        }
+      >
         {/* Header */}
         <View
           style={{
@@ -205,18 +251,73 @@ const OwnerDashboard = () => {
                 </Text>
               </View>
             </View>
-            <TouchableOpacity
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: "rgba(255,255,255,0.2)",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Ionicons name="notifications-outline" size={22} color="#fff" />
-            </TouchableOpacity>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <TouchableOpacity
+                onPress={() => router.push("/(tabs)/chat")}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: "rgba(255,255,255,0.2)",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Ionicons name="chatbubble-ellipses-outline" size={22} color="#fff" />
+                {chatUnreadCount > 0 && (
+                  <View 
+                    style={{
+                      position: 'absolute',
+                      top: -2,
+                      right: -2,
+                      backgroundColor: '#FFFFFF',
+                      width: 18,
+                      height: 18,
+                      borderRadius: 9,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      borderWidth: 2,
+                      borderColor: COLORS.primary,
+                    }}
+                  >
+                    <Text style={{ color: COLORS.primary, fontSize: 10, fontWeight: 'bold' }}>{chatUnreadCount > 9 ? '9+' : chatUnreadCount}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                onPress={() => router.push("/(tabs)/notifications")}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: "rgba(255,255,255,0.2)",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Ionicons name="notifications-outline" size={22} color="#fff" />
+                {unreadCount > 0 && (
+                  <View 
+                    style={{
+                      position: 'absolute',
+                      top: -2,
+                      right: -2,
+                      backgroundColor: '#FF5252',
+                      width: 18,
+                      height: 18,
+                      borderRadius: 9,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      borderWidth: 2,
+                      borderColor: COLORS.primary,
+                    }}
+                  >
+                    <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: 'bold' }}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Earnings Summary */}
@@ -232,7 +333,7 @@ const OwnerDashboard = () => {
               This Month's Earnings
             </Text>
             <Text style={{ color: "#fff", fontSize: 32, fontWeight: "bold", marginTop: 4 }}>
-              ${statsData.thisMonthEarnings.toLocaleString()}
+              ৳{statsData.thisMonthEarnings.toLocaleString()}
             </Text>
             <View style={{ flexDirection: "row", marginTop: 12 }}>
               <View style={{ flex: 1 }}>
@@ -240,7 +341,7 @@ const OwnerDashboard = () => {
                   Pending
                 </Text>
                 <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>
-                  ${statsData.pendingPayouts.toLocaleString()}
+                  ৳{statsData.pendingPayouts.toLocaleString()}
                 </Text>
               </View>
               <View style={{ flex: 1 }}>
@@ -248,7 +349,7 @@ const OwnerDashboard = () => {
                   Total Earned
                 </Text>
                 <Text style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}>
-                  ${statsData.totalEarnings.toLocaleString()}
+                  ৳{statsData.totalEarnings.toLocaleString()}
                 </Text>
               </View>
             </View>
@@ -378,7 +479,7 @@ const OwnerDashboard = () => {
                     </View>
                   </View>
                   <Text style={{ fontSize: 16, fontWeight: "700", color: COLORS.primary }}>
-                    ${booking.totalAmount}
+                    ৳{booking.totalAmount?.toLocaleString()}
                   </Text>
                 </View>
               );

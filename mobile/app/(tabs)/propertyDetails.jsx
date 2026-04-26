@@ -23,23 +23,25 @@ import { useEffect } from "react";
 const { width, height } = Dimensions.get("window");
 const AUTO_SCROLL_INTERVAL = 4000;
 
-// Standalone component so useVideoPlayer hook is stable outside conditional render
-const VideoSection = ({ videoUrl }) => {
+// Component for rendering a video slide in the carousel
+const VideoSlide = ({ videoUrl, isActive }) => {
   const player = useVideoPlayer(videoUrl ? { uri: videoUrl } : null);
+  
+  useEffect(() => {
+    if (!isActive && player) {
+      player.pause();
+    }
+  }, [isActive, player]);
+
   if (!videoUrl) return null;
   return (
-    <View style={{ paddingHorizontal: 20, paddingVertical: 16 }}>
-      <Text style={{ fontSize: 18, fontWeight: '700', color: '#1A1A1A', marginBottom: 12 }}>
-        Property Video
-      </Text>
-      <View style={{ borderRadius: 20, overflow: 'hidden', backgroundColor: '#000' }}>
-        <VideoView
-          player={player}
-          style={{ width: '100%', height: 220 }}
-          nativeControls
-          contentFit="contain"
-        />
-      </View>
+    <View style={{ width, height: height * 0.45, backgroundColor: '#000' }}>
+      <VideoView
+        player={player}
+        style={{ width: '100%', height: '100%' }}
+        nativeControls
+        contentFit="contain"
+      />
     </View>
   );
 };
@@ -124,16 +126,17 @@ const PropertyDetailsNew = () => {
 
   // Auto-scroll images
   const startAutoScroll = useCallback(() => {
-    if (!property?.images?.length || property.images.length <= 1) return;
+    const mediaCount = (property?.images?.length || 0) + (property?.videoUrl ? 1 : 0);
+    if (mediaCount <= 1) return;
     stopAutoScroll();
     autoScrollTimer.current = setInterval(() => {
       setSelectedImageIndex((prev) => {
-        const next = (prev + 1) % property.images.length;
+        const next = (prev + 1) % mediaCount;
         imageScrollRef.current?.scrollToOffset({ offset: next * width, animated: true });
         return next;
       });
     }, AUTO_SCROLL_INTERVAL);
-  }, [property?.images?.length]);
+  }, [property?.images?.length, property?.videoUrl]);
 
   const stopAutoScroll = useCallback(() => {
     if (autoScrollTimer.current) {
@@ -166,7 +169,7 @@ const PropertyDetailsNew = () => {
   };
 
   const handleShare = async (platform) => {
-    const shareMessage = `Check out this property: ${property.name} in ${property.location} - $${property.price}/${property.priceType}`;
+    const shareMessage = `Check out this property: ${property.name} in ${property.location} - ৳${property.price}/${property.priceType}`;
     const shareUrl = `https://housely.app/property/${property.id}`;
 
     if (platform === "native") {
@@ -265,118 +268,147 @@ const PropertyDetailsNew = () => {
     </View>
   );
 
-  // ─── Image Carousel ───
-  const HeroCarousel = () => (
-    <View style={{ height: height * 0.45 }}>
-      <FlatList
-        ref={imageScrollRef}
-        data={property.images}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onScrollBeginDrag={onImageScrollBegin}
-        onMomentumScrollEnd={onImageScrollEnd}
-        keyExtractor={(_, i) => String(i)}
-        renderItem={({ item }) => (
-          <View style={{ width }}>
-            <Image source={{ uri: item }} style={{ width, height: height * 0.45 }} resizeMode="cover" />
-            {/* Bottom gradient overlay */}
-            <View style={{
-              position: 'absolute', bottom: 0, left: 0, right: 0, height: 120,
-              backgroundColor: 'transparent',
-            }}>
-              <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.0)' }} />
-              <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.15)' }} />
-              <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)' }} />
-              <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' }} />
+  // ─── Image/Video Carousel ───
+  const HeroCarousel = () => {
+    const media = [
+      ...property.images.map(url => ({ type: 'image', url })),
+      ...(property.videoUrl ? [{ type: 'video', url: property.videoUrl }] : [])
+    ];
+
+    return (
+      <View style={{ height: height * 0.45 }}>
+        <FlatList
+          ref={imageScrollRef}
+          data={media}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onScrollBeginDrag={onImageScrollBegin}
+          onMomentumScrollEnd={onImageScrollEnd}
+          keyExtractor={(_, i) => String(i)}
+          renderItem={({ item, index }) => (
+            <View style={{ width }}>
+              {item.type === 'video' ? (
+                <VideoSlide videoUrl={item.url} isActive={selectedImageIndex === index} />
+              ) : (
+                <View style={{ width, height: height * 0.45 }}>
+                  <Image source={{ uri: item.url }} style={{ width, height: height * 0.45 }} resizeMode="cover" />
+                  {/* Bottom gradient overlay */}
+                  <View style={{
+                    position: 'absolute', bottom: 0, left: 0, right: 0, height: 120,
+                    backgroundColor: 'transparent',
+                  }}>
+                    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.0)' }} />
+                    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.15)' }} />
+                    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)' }} />
+                    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' }} />
+                  </View>
+                </View>
+              )}
             </View>
-          </View>
-        )}
-      />
+          )}
+        />
 
-      {/* Pagination Dots */}
-      <View style={{
-        position: 'absolute', bottom: 16, left: 0, right: 0,
-        flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6,
-      }}>
-        {property.images.map((_, index) => (
-          <View
-            key={index}
-            style={{
-              height: 8,
-              width: selectedImageIndex === index ? 28 : 8,
-              borderRadius: 4,
-              backgroundColor: selectedImageIndex === index ? '#FFFFFF' : 'rgba(255,255,255,0.4)',
-            }}
-          />
-        ))}
+        {/* Pagination Dots */}
+        <View style={{
+          position: 'absolute', bottom: 16, left: 0, right: 0,
+          flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6,
+        }}>
+          {media.map((_, index) => (
+            <View
+              key={index}
+              style={{
+                height: 8,
+                width: selectedImageIndex === index ? 28 : 8,
+                borderRadius: 4,
+                backgroundColor: selectedImageIndex === index ? '#FFFFFF' : 'rgba(255,255,255,0.4)',
+              }}
+            />
+          ))}
+        </View>
+
+        {/* Image Counter */}
+        <View style={{
+          position: 'absolute', bottom: 16, right: 20,
+          backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 12,
+          paddingHorizontal: 10, paddingVertical: 4,
+        }}>
+          <Text style={{ color: '#FFF', fontSize: 12, fontWeight: '600' }}>
+            {selectedImageIndex + 1}/{media.length}
+          </Text>
+        </View>
       </View>
+    );
+  };
 
-      {/* Image Counter */}
+  // ─── Floating Header ───
+  const FloatingHeader = () => (
+    <View 
+      pointerEvents="box-none"
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 20,
+      }}
+    >
       <View style={{
-        position: 'absolute', bottom: 16, right: 20,
-        backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 12,
-        paddingHorizontal: 10, paddingVertical: 4,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingTop: StatusBar.currentHeight || 40,
       }}>
-        <Text style={{ color: '#FFF', fontSize: 12, fontWeight: '600' }}>
-          {selectedImageIndex + 1}/{property.images.length}
-        </Text>
-      </View>
-
-      {/* Floating Header */}
-      <View style={{
-        position: 'absolute', top: 0, left: 0, right: 0,
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingHorizontal: 20, paddingTop: StatusBar.currentHeight || 40,
-      }}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={{
-            width: 36, height: 36, borderRadius: 10,
-            backgroundColor: 'rgba(255,255,255,0.9)',
-            alignItems: 'center', justifyContent: 'center',
-          }}
-        >
-          <Ionicons name="arrow-back" size={20} color="#1A1A1A" />
-        </TouchableOpacity>
-
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <TouchableOpacity
-            onPress={() => setShowShareModal(true)}
+            onPress={() => router.back()}
             style={{
               width: 36, height: 36, borderRadius: 10,
               backgroundColor: 'rgba(255,255,255,0.9)',
               alignItems: 'center', justifyContent: 'center',
             }}
           >
-            <Ionicons name="share-social" size={18} color="#1A1A1A" />
+            <Ionicons name="arrow-back" size={20} color="#1A1A1A" />
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={toggleFavorite}
-            style={{
-              width: 36, height: 36, borderRadius: 10,
-              backgroundColor: isFavorite ? '#FF6B6B' : 'rgba(255,255,255,0.9)',
-              alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <Ionicons
-              name={isFavorite ? "heart" : "heart-outline"} size={18}
-              color={isFavorite ? "#FFF" : "#1A1A1A"}
-            />
-          </TouchableOpacity>
-        </View>
-      </View>
 
-      {/* Status Badge */}
-      <View style={{
-        position: 'absolute', top: (StatusBar.currentHeight || 40) + 56, right: 20,
-        backgroundColor: property.priceType === 'month' ? '#10B981' : '#3B82F6',
-        borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6,
-      }}>
-        <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 13 }}>
-          {property.status}
-        </Text>
-      </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <TouchableOpacity
+              onPress={() => setShowShareModal(true)}
+              style={{
+                width: 36, height: 36, borderRadius: 10,
+                backgroundColor: 'rgba(255,255,255,0.9)',
+                alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <Ionicons name="share-social" size={18} color="#1A1A1A" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={toggleFavorite}
+              style={{
+                width: 36, height: 36, borderRadius: 10,
+                backgroundColor: isFavorite ? '#FF6B6B' : 'rgba(255,255,255,0.9)',
+                alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <Ionicons
+                name={isFavorite ? "heart" : "heart-outline"} size={18}
+                color={isFavorite ? "#FFF" : "#1A1A1A"}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Status Badge */}
+        <View style={{
+          position: 'absolute', top: (StatusBar.currentHeight || 40) + 56, right: 20,
+          backgroundColor: property.priceType === 'month' ? '#10B981' : '#3B82F6',
+          borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6,
+        }}>
+          <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 13 }}>
+            {property.status}
+          </Text>
+        </View>
     </View>
   );
 
@@ -423,7 +455,7 @@ const PropertyDetailsNew = () => {
           <Text style={{ color: '#9E9E9E', fontSize: 12, marginBottom: 4 }}>Price</Text>
           <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
             <Text style={{ color: '#7F56D9', fontSize: 28, fontWeight: '800' }}>
-              ${property.price?.toLocaleString()}
+              ৳{property.price?.toLocaleString()}
             </Text>
             <Text style={{ color: '#7F56D9', fontSize: 15, fontWeight: '500', opacity: 0.6 }}>
               /{property.priceType}
@@ -701,6 +733,7 @@ const PropertyDetailsNew = () => {
   return (
     <View style={{ flex: 1, backgroundColor: '#FFF' }}>
       <StatusBar barStyle="light-content" />
+      <FloatingHeader />
       <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false}>
         <HeroCarousel />
         <PropertyHeader />
@@ -711,8 +744,6 @@ const PropertyDetailsNew = () => {
         <FacilitiesSection />
         <View style={{ height: 8, backgroundColor: '#F9FAFB' }} />
         <AgentCard />
-        <View style={{ height: 8, backgroundColor: '#F9FAFB' }} />
-        <VideoSection videoUrl={property.videoUrl} />
         <View style={{ height: 8, backgroundColor: '#F9FAFB' }} />
         <MapSection />
         <BookNowButton />

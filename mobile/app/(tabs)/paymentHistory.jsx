@@ -171,7 +171,7 @@ const PaymentCard = ({ payment, onPress }) => {
             color: COLORS.primary,
           }}
         >
-          ${payment.amount}
+          ৳{payment.amount}
         </Text>
       </View>
     </TouchableOpacity>
@@ -202,7 +202,7 @@ const SummaryCard = ({ payments }) => {
         Total Payments
       </Text>
       <Text style={{ color: '#FFFFFF', fontSize: 28, fontWeight: 'bold', marginTop: 4 }}>
-        ${totalPaid.toLocaleString()}
+        ৳{totalPaid.toLocaleString()}
       </Text>
       <View style={{ flexDirection: 'row', marginTop: 16 }}>
         <View style={{ flex: 1 }}>
@@ -218,7 +218,7 @@ const SummaryCard = ({ payments }) => {
             Pending
           </Text>
           <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '600', marginTop: 2 }}>
-            ${pendingAmount.toLocaleString()}
+            ৳{pendingAmount.toLocaleString()}
           </Text>
         </View>
       </View>

@@ -8,7 +8,10 @@ import {
   Switch,
   KeyboardAvoidingView,
   Platform,
+  Dimensions,
 } from "react-native";
+
+const { width } = Dimensions.get("window");
 import api from "../../services/api";
 import { useState, useEffect } from "react";
 import { ActivityIndicator } from "react-native";
@@ -189,7 +192,7 @@ const AddProperty = () => {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsMultipleSelection: true,
       quality: 0.7,
     });
@@ -207,7 +210,7 @@ const AddProperty = () => {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      mediaTypes: ['videos'],
       allowsEditing: true,
       quality: 0.7,
     });
@@ -266,11 +269,11 @@ const AddProperty = () => {
         address: form.address,
         city: form.city,
         area: form.area,
-        rentPerMonth: form.listingType === 'RENT' ? parseFloat(form.rentPerMonth) : null,
-        salePrice: form.listingType === 'SALE' ? parseFloat(form.salePrice) : null,
-        bedrooms: parseInt(form.bedrooms) || 0,
-        bathrooms: parseInt(form.bathrooms) || 0,
-        sizeInSqft: parseFloat(form.sizeInSqft) || 0,
+        rentPerMonth: form.listingType === 'RENT' ? (parseFloat(form.rentPerMonth) || 0) : null,
+        salePrice: form.listingType === 'SALE' ? (parseFloat(form.salePrice) || 0) : null,
+        bedrooms: parseInt(form.bedrooms) || 1,
+        bathrooms: parseInt(form.bathrooms) || 1,
+        sizeInSqft: form.sizeInSqft ? parseFloat(form.sizeInSqft) : undefined,
         buildYear: parseInt(form.buildYear) || 2024,
         status: 'AVAILABLE',
         images: images.map((url, i) => ({ url, order: i })),
@@ -342,54 +345,60 @@ const AddProperty = () => {
           <View style={{ marginBottom: 20 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
               <Text style={{ fontSize: 14, fontWeight: "600", color: COLORS.textPrimary }}>
-                Property Images
+                Property Images <Text style={{ color: "#F44336" }}>*</Text>
               </Text>
               {uploading && <ActivityIndicator size="small" color={COLORS.primary} />}
             </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <TouchableOpacity
-                onPress={pickImages}
-                disabled={uploading}
-                style={{
-                  width: 100,
-                  height: 100,
-                  borderRadius: 12,
-                  borderWidth: 2,
-                  borderColor: COLORS.border,
-                  borderStyle: "dashed",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginRight: 10,
-                  backgroundColor: '#fff'
-                }}
-              >
-                <Ionicons name="camera-outline" size={28} color={COLORS.textSecondary} />
-                <Text style={{ fontSize: 11, color: COLORS.textSecondary, marginTop: 4 }}>
-                  Add Photo
-                </Text>
-              </TouchableOpacity>
-              {images.map((img, index) => (
-                <View key={index} style={{ marginRight: 10, position: "relative" }}>
-                  <Image source={{ uri: img }} style={{ width: 100, height: 100, borderRadius: 12 }} />
-                  <TouchableOpacity
-                    onPress={() => setImages((prev) => prev.filter((_, i) => i !== index))}
-                    style={{
-                      position: "absolute",
-                      top: -6,
-                      right: -6,
-                      backgroundColor: "#F44336",
-                      width: 22,
-                      height: 22,
-                      borderRadius: 11,
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Ionicons name="close" size={14} color="#fff" />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </ScrollView>
+            
+            <TouchableOpacity
+              onPress={pickImages}
+              disabled={uploading}
+              style={{
+                width: '100%',
+                height: 120,
+                borderRadius: 12,
+                borderWidth: 2,
+                borderColor: COLORS.border,
+                borderStyle: "dashed",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: '#fff',
+                marginBottom: 12
+              }}
+            >
+              <Ionicons name="images-outline" size={32} color={COLORS.textSecondary} />
+              <Text style={{ fontSize: 13, color: COLORS.textSecondary, marginTop: 4 }}>
+                {uploading ? "Uploading..." : "Upload Multiple Images"}
+              </Text>
+            </TouchableOpacity>
+
+            {images.length > 0 && (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                {images.map((img, index) => (
+                  <View key={index} style={{ width: (width - 60) / 3, height: (width - 60) / 3, position: "relative" }}>
+                    <Image source={{ uri: img }} style={{ width: '100%', height: '100%', borderRadius: 12 }} />
+                    <TouchableOpacity
+                      onPress={() => setImages((prev) => prev.filter((_, i) => i !== index))}
+                      style={{
+                        position: "absolute",
+                        top: -6,
+                        right: -6,
+                        backgroundColor: "#F44336",
+                        width: 24,
+                        height: 24,
+                        borderRadius: 12,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                      }}
+                    >
+                      <Ionicons name="close" size={14} color="#fff" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
           </View>
 
           {/* Video Section */}
@@ -476,7 +485,7 @@ const AddProperty = () => {
           {/* Pricing */}
           {form.listingType === "RENT" ? (
             <InputField
-              label="Rent Per Month ($)"
+              label="Rent Per Month (৳)"
               value={form.rentPerMonth}
               onChangeText={(v) => updateForm("rentPerMonth", v)}
               placeholder="e.g. 1500"
@@ -485,7 +494,7 @@ const AddProperty = () => {
             />
           ) : (
             <InputField
-              label="Sale Price ($)"
+              label="Sale Price (৳)"
               value={form.salePrice}
               onChangeText={(v) => updateForm("salePrice", v)}
               placeholder="e.g. 250000"

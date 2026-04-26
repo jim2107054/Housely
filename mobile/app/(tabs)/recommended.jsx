@@ -92,7 +92,7 @@ const Recommended = () => {
         </View>
         <View className="flex-row items-center mt-2">
           <Text className="text-primary font-poppins-bold text-sm">
-            ${item.price}
+            ৳{item.price}
             <Text className="text-textSecondary font-poppins text-xs">/month</Text>
           </Text>
           <View className="flex-row items-center ml-3">

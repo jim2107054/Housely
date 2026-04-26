@@ -53,10 +53,10 @@ const OwnerEarnings = () => {
   };
 
   const summaryCards = [
-    { label: "Total Earnings", value: `$${stats.totalEarnings.toLocaleString()}`, icon: "wallet", color: "#4CAF50", bgColor: "#E8F5E9" },
-    { label: "This Month", value: `$${stats.thisMonthEarnings.toLocaleString()}`, icon: "trending-up", color: "#7B61FF", bgColor: "#F0ECFF" },
-    { label: "Last Month", value: `$${stats.lastMonthEarnings.toLocaleString()}`, icon: "analytics", color: "#2196F3", bgColor: "#E3F2FD" },
-    { label: "Pending Payouts", value: `$${stats.pendingPayouts.toLocaleString()}`, icon: "time", color: "#FF9800", bgColor: "#FFF3E0" },
+    { label: "Total Earnings", value: `৳${stats.totalEarnings.toLocaleString()}`, icon: "wallet", color: "#4CAF50", bgColor: "#E8F5E9" },
+    { label: "This Month", value: `৳${stats.thisMonthEarnings.toLocaleString()}`, icon: "trending-up", color: "#7B61FF", bgColor: "#F0ECFF" },
+    { label: "Last Month", value: `৳${stats.lastMonthEarnings.toLocaleString()}`, icon: "analytics", color: "#2196F3", bgColor: "#E3F2FD" },
+    { label: "Pending Payouts", value: `৳${stats.pendingPayouts.toLocaleString()}`, icon: "time", color: "#FF9800", bgColor: "#FFF3E0" },
   ];
 
   const transactions = dashboardData?.transactions || [];
@@ -100,7 +100,7 @@ const OwnerEarnings = () => {
         </View>
         <View style={{ alignItems: "flex-end" }}>
           <Text style={{ fontSize: 17, fontWeight: "700", color: isCompleted ? COLORS.success : COLORS.warning }}>
-            +${item.amount}
+            +৳{item.amount}
           </Text>
           <Text style={{ fontSize: 11, color: COLORS.textSecondary, marginTop: 2 }}>
             {isCompleted ? "Completed" : "Pending"}

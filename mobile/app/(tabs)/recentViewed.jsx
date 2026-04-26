@@ -162,7 +162,7 @@ const PropertyCard = ({ property, onPress, onRemove }) => {
         {/* Bottom Row - Price & Rating */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
           <Text style={{ fontSize: 14, fontWeight: 'bold', color: COLORS.primary }}>
-            ${property.price}
+            ৳{property.price}
             <Text style={{ fontSize: 11, fontWeight: 'normal', color: COLORS.textSecondary }}>/month</Text>
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>

@@ -95,7 +95,7 @@ const Popular = () => {
         </View>
         <View className="flex-row items-center mt-1">
           <Text className="text-textPrimary font-poppins-semibold text-sm">
-            ${item.price}/{item.priceType}
+            ৳{item.price}/{item.priceType}
           </Text>
           <View className="flex-row items-center ml-4">
             <Ionicons name="star" size={14} color="#FFC42D" />

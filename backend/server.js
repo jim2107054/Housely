@@ -1,6 +1,6 @@
+import env from './src/config/env.js';
 import http from 'http';
 import app from './src/app.js';
-import env from './src/config/env.js';
 import { initializeSocket } from './src/sockets/index.js';
 
 const PORT = env.PORT;

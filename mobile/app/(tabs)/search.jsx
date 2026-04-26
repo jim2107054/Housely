@@ -407,7 +407,7 @@ const FilterBottomSheet = ({ visible, onClose, filters, setFilters, onApply, onR
                   }
                   keyboardType="numeric"
                   style={{ fontSize: 16, fontWeight: '600', color: COLORS.textPrimary, marginTop: 4 }}
-                  placeholder="$10"
+                  placeholder="৳10"
                   placeholderTextColor={COLORS.textHint}
                 />
               </View>
@@ -431,7 +431,7 @@ const FilterBottomSheet = ({ visible, onClose, filters, setFilters, onApply, onR
                   }
                   keyboardType="numeric"
                   style={{ fontSize: 16, fontWeight: '600', color: COLORS.textPrimary, marginTop: 4 }}
-                  placeholder="$800"
+                  placeholder="৳800"
                   placeholderTextColor={COLORS.textHint}
                 />
               </View>

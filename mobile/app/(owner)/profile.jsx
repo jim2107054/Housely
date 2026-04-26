@@ -38,9 +38,13 @@ const OwnerProfile = () => {
       {
         text: "Logout",
         style: "destructive",
-        onPress: () => {
-          logout();
-          router.replace("/(auth)/roleSelection");
+        onPress: async () => {
+          const result = await logout();
+          if (result?.success) {
+            router.replace("/(auth)/roleSelection");
+          } else {
+            Alert.alert('Logout failed', result?.message || 'Please try again.');
+          }
         },
       },
     ]);

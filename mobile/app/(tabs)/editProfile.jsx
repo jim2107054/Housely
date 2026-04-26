@@ -71,7 +71,7 @@ const EditProfile = () => {
       });
 
       if (response.data.success) {
-        setUser(response.data.user);
+        setUser({ ...(user || {}), ...(response.data.user || {}) });
         Toast.show({ type: 'success', text1: 'Avatar Updated' });
       }
     } catch (err) {
@@ -90,13 +90,28 @@ const EditProfile = () => {
 
     setLoading(true);
     try {
-      const response = await api.patch('/api/users/me', {
-        name: formData.name,
-        username: formData.username,
-        email: formData.email,
-      });
+      const payload = {
+        name: formData.name?.trim(),
+        email: formData.email?.trim(),
+      };
+
+      const username = formData.username?.trim();
+      if (username) {
+        payload.username = username;
+      }
+
+      if (formData.dateOfBirth) {
+        // Basic validation for date string if manual entry was possible, 
+        // but since it's from a date string, we try to parse it.
+        const d = new Date(formData.dateOfBirth);
+        if (!isNaN(d.getTime())) {
+          payload.dateOfBirth = d.toISOString();
+        }
+      }
+
+      const response = await api.patch('/api/users/me', payload);
       if (response.data.success) {
-        setUser(response.data.user);
+        setUser({ ...(user || {}), ...(response.data.user || {}) });
         Toast.show({
           type: 'success',
           text1: 'Profile Updated',

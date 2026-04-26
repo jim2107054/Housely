@@ -135,18 +135,18 @@ const OwnerBookings = () => {
         </View>
 
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#F5F5F5" }}>
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <View style={{ flexDirection: "row", alignItems: "center", flex: 1, marginRight: 8 }}>
             <View style={{ backgroundColor: config.bg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}>
               <Text style={{ fontSize: 12, fontWeight: "600", color: config.text }}>{config.label}</Text>
             </View>
             {item.notes && (
-              <Text style={{ fontSize: 12, color: COLORS.textSecondary, marginLeft: 8 }} numberOfLines={1}>
+              <Text style={{ fontSize: 12, color: COLORS.textSecondary, marginLeft: 8, flex: 1 }} numberOfLines={1}>
                 "{item.notes}"
               </Text>
             )}
           </View>
           <Text style={{ fontSize: 18, fontWeight: "bold", color: COLORS.primary }}>
-            ${item.totalAmount}
+            ৳{item.totalAmount?.toLocaleString()}
           </Text>
         </View>
 
