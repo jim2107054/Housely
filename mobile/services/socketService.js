@@ -9,6 +9,15 @@ export const setSocketTokenProvider = (getToken) => {
   _getToken = getToken;
 };
 
+// Booking refresh callback — set by myBooking.jsx, called by Agent 10 after payment
+let _bookingRefreshCallback = null;
+export const setBookingRefreshCallback = (cb) => {
+  _bookingRefreshCallback = cb;
+};
+export const triggerBookingRefresh = () => {
+  if (_bookingRefreshCallback) _bookingRefreshCallback();
+};
+
 export const connectSocket = async () => {
   if (socket?.connected) return socket;
   if (socket) {

@@ -316,20 +316,23 @@ const Notifications = () => {
   const router = useRouter();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all');
 
+  const fetchNotifications = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.get('/api/notifications');
+      setNotifications(response.data.notifications || []);
+    } catch (err) {
+      setError(err.request ? 'Cannot connect to server' : 'Failed to load notifications');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchNotifications = async () => {
-      setLoading(true);
-      try {
-        const response = await api.get('/api/notifications');
-        setNotifications(response.data.notifications || []);
-      } catch (err) {
-        console.error('Error fetching notifications:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchNotifications();
   }, []);
 
@@ -481,6 +484,23 @@ const Notifications = () => {
           <Text style={{ marginTop: 12, color: COLORS.textSecondary, fontSize: 14 }}>
             Loading notifications...
           </Text>
+        </View>
+      ) : error ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 }}>
+          <Ionicons name="cloud-offline-outline" size={64} color={COLORS.textMuted} />
+          <Text style={{ marginTop: 12, fontSize: 18, fontWeight: '700', color: COLORS.textPrimary, textAlign: 'center' }}>
+            Connection Error
+          </Text>
+          <Text style={{ marginTop: 6, fontSize: 14, color: COLORS.textSecondary, textAlign: 'center' }}>
+            {error}
+          </Text>
+          <TouchableOpacity
+            onPress={fetchNotifications}
+            activeOpacity={0.7}
+            style={{ marginTop: 16, backgroundColor: COLORS.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 }}
+          >
+            <Text style={{ color: '#FFF', fontWeight: '700' }}>Try Again</Text>
+          </TouchableOpacity>
         </View>
       ) : filteredNotifications.length === 0 ? (
         <EmptyState filter={activeFilter} />

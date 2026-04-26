@@ -116,6 +116,7 @@ const ChatConversation = () => {
 
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(null);
   const [newMessage, setNewMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
@@ -135,12 +136,13 @@ const ChatConversation = () => {
   useEffect(() => {
     const fetchMessages = async () => {
       setLoading(true);
+      setLoadError(null);
       try {
         const response = await api.get(`/api/conversations/${id}/messages`);
         setMessages(response.data.messages.map(transformMessage));
         await api.patch(`/api/conversations/${id}/read`);
       } catch (err) {
-        console.error('Error fetching messages:', err);
+        setLoadError(err.request ? 'Cannot connect to server' : 'Failed to load messages');
       } finally {
         setLoading(false);
       }
@@ -282,6 +284,27 @@ const ChatConversation = () => {
       {loading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#7C4DFF" />
+        </View>
+      ) : loadError ? (
+        <View className="flex-1 items-center justify-center px-10">
+          <Ionicons name="cloud-offline-outline" size={56} color="#A1A5C1" />
+          <Text style={{ marginTop: 12, fontSize: 16, fontWeight: '700', color: '#252B5C', textAlign: 'center' }}>
+            {loadError}
+          </Text>
+          <TouchableOpacity
+            onPress={() => {
+              setLoadError(null);
+              setLoading(true);
+              api.get(`/api/conversations/${id}/messages`)
+                .then(r => { setMessages(r.data.messages.map(transformMessage)); })
+                .catch(() => setLoadError('Failed to load messages'))
+                .finally(() => setLoading(false));
+            }}
+            activeOpacity={0.7}
+            style={{ marginTop: 16, backgroundColor: '#7C4DFF', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 }}
+          >
+            <Text style={{ color: '#FFF', fontWeight: '700' }}>Try Again</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <ScrollView

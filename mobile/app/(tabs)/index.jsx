@@ -14,7 +14,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useFocusEffect } from "expo-router";
 import useLocationStore from "../../store/locationStore";
-import { connectSocket } from "../../services/socketService";
+import { getSocket } from "../../services/socketService";
 
 // Import SVG icons
 import LocationIcon from "../../assets/images/home-icons/Location.svg";
@@ -160,22 +160,19 @@ const Home = () => {
   }, [recommended.length]);
 
   // Socket listener for real-time unread count
+  // Socket is connected from _layout.jsx once role is confirmed; just grab the reference.
   useEffect(() => {
-    let sock;
-    const initSocket = async () => {
-      sock = await connectSocket();
-      if (!sock) return;
+    const sock = getSocket();
+    if (!sock) return;
 
-      sock.on('message:new', () => {
-        fetchUnreadCount();
-      });
+    const handleMessageNew = () => {
+      fetchUnreadCount();
     };
-    initSocket();
+
+    sock.on('message:new', handleMessageNew);
 
     return () => {
-      if (sock) {
-        sock.off('message:new');
-      }
+      sock.off('message:new', handleMessageNew);
     };
   }, [fetchUnreadCount]);
 
@@ -230,9 +227,10 @@ const Home = () => {
         </View>
       </TouchableOpacity>
       <View className="flex-row items-center gap-2">
-        <TouchableOpacity 
+        <TouchableOpacity
           className="w-10 h-10 rounded-full bg-cardBackground items-center justify-center border border-border"
           onPress={() => router.push("/(tabs)/notifications")}
+          activeOpacity={0.7}
         >
           <NotificationIcon width={20} height={20} />
           {/* Notification Badge */}
@@ -256,9 +254,10 @@ const Home = () => {
             </View>
           )}
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           className="w-10 h-10 rounded-full bg-cardBackground items-center justify-center border border-border"
           onPress={() => router.push("/(tabs)/chat")}
+          activeOpacity={0.7}
         >
           <ChatIcon width={20} height={20} />
           {/* Chat Badge */}
@@ -339,7 +338,7 @@ const Home = () => {
         {/* Price Tag */}
         <View className="absolute top-3 right-3 bg-white px-3 py-1 rounded-lg">
           <Text className="text-primary font-bold font-poppins-semibold">
-            ${item.price}
+            ৳{item.price}
             <Text className="font-poppins text-gray-800/50">/month</Text>
           </Text>
         </View>
@@ -418,7 +417,7 @@ const Home = () => {
       <Text className="text-textPrimary font-bold font-poppins-bold text-xl">
         {title}
       </Text>
-      <TouchableOpacity onPress={onPress}>
+      <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
         <Text className="text-primary font-poppins-semibold text-sm">See all</Text>
       </TouchableOpacity>
     </View>
@@ -556,38 +555,52 @@ const Home = () => {
           title="Recommended"
           onPress={() => router.push("/(tabs)/recommended")}
         />
-        <FlatList
-          ref={recommendedListRef}
-          data={recommended}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <RecommendedCard item={item} />}
-          contentContainerStyle={{ paddingHorizontal: 20 }}
-          snapToInterval={CARD_WIDTH + 16}
-          decelerationRate="fast"
-          className="mb-6"
-          getItemLayout={(data, index) => ({
-            length: CARD_WIDTH + 16,
-            offset: (CARD_WIDTH + 16) * index,
-            index,
-          })}
-        />
+        {recommended.length === 0 ? (
+          <View style={{ paddingHorizontal: 20, paddingBottom: 24, alignItems: 'center' }}>
+            <Ionicons name="home-outline" size={40} color="#A1A5C1" />
+            <Text style={{ color: '#A1A5C1', fontSize: 13, marginTop: 8 }}>No recommended properties yet</Text>
+          </View>
+        ) : (
+          <FlatList
+            ref={recommendedListRef}
+            data={recommended}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => <RecommendedCard item={item} />}
+            contentContainerStyle={{ paddingHorizontal: 20 }}
+            snapToInterval={CARD_WIDTH + 16}
+            decelerationRate="fast"
+            className="mb-6"
+            getItemLayout={(data, index) => ({
+              length: CARD_WIDTH + 16,
+              offset: (CARD_WIDTH + 16) * index,
+              index,
+            })}
+          />
+        )}
 
         {/* Nearby Section - Single horizontal scrollable row */}
         <SectionHeader
           title="Nearby"
           onPress={() => router.push("/(tabs)/nearby")}
         />
-        <FlatList
-          data={nearby}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 20 }}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <NearbyCard item={item} />}
-          className="mb-6"
-        />
+        {nearby.length === 0 ? (
+          <View style={{ paddingHorizontal: 20, paddingBottom: 24, alignItems: 'center' }}>
+            <Ionicons name="location-outline" size={40} color="#A1A5C1" />
+            <Text style={{ color: '#A1A5C1', fontSize: 13, marginTop: 8 }}>No nearby properties found</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={nearby}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 20 }}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => <NearbyCard item={item} />}
+            className="mb-6"
+          />
+        )}
 
         {/* Top Locations Section */}
         <View className="mt-3">
@@ -595,15 +608,22 @@ const Home = () => {
             title="Top Locations"
             onPress={() => router.push("/(tabs)/topLocations")}
           />
-          <FlatList
-            data={locations}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 20 }}
-            keyExtractor={(item, index) => item.id || String(index)}
-            renderItem={({ item }) => <LocationCard item={item} />}
-            className="mb-6"
-          />
+          {locations.length === 0 ? (
+            <View style={{ paddingHorizontal: 20, paddingBottom: 24, alignItems: 'center' }}>
+              <Ionicons name="map-outline" size={40} color="#A1A5C1" />
+              <Text style={{ color: '#A1A5C1', fontSize: 13, marginTop: 8 }}>No locations available</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={locations}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: 20 }}
+              keyExtractor={(item, index) => item.id || String(index)}
+              renderItem={({ item }) => <LocationCard item={item} />}
+              className="mb-6"
+            />
+          )}
         </View>
 
         {/* Popular for you Section */}
@@ -611,7 +631,12 @@ const Home = () => {
           title="Popular for you"
           onPress={() => router.push("/(tabs)/popular")}
         />
-        {popular.map((item) => (
+        {popular.length === 0 ? (
+          <View style={{ paddingHorizontal: 20, paddingBottom: 24, alignItems: 'center' }}>
+            <Ionicons name="star-outline" size={40} color="#A1A5C1" />
+            <Text style={{ color: '#A1A5C1', fontSize: 13, marginTop: 8 }}>No popular properties yet</Text>
+          </View>
+        ) : popular.map((item) => (
           <PopularCard key={item.id} item={item} />
         ))}
 

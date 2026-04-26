@@ -16,13 +16,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-
-//!api calls - uncomment when connecting backend
-// import api from '../../services/api';
-// const submitReview = async (data) => {
-//   const response = await api.post('/api/reviews', data);
-//   return response.data;
-// };
+import Toast from 'react-native-toast-message';
+import api from '../../services/api';
 
 // Design Tokens
 const COLORS = {
@@ -369,7 +364,7 @@ const WriteReviewScreen = () => {
   const booking = {
     id: params?.bookingId || '1',
     name: params?.propertyName || 'Greenhost Boutique Hotel',
-    location: params?.location || 'Yogyakarta, Indonesia',
+    location: params?.location || 'Khulna, Bangladesh',
     image: params?.image || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400',
     reference: params?.reference || 'HSL-2024-0156',
   };
@@ -416,21 +411,21 @@ const WriteReviewScreen = () => {
 
     setSubmitting(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await api.post('/api/reviews', {
+        bookingId: booking.id,
+        rating,
+        comment: reviewText.trim() || undefined,
+      });
 
-      Alert.alert(
-        'Review Submitted',
-        'Thank you for your feedback! Your review will be visible soon.',
-        [
-          {
-            text: 'OK',
-            onPress: () => router.back(),
-          },
-        ]
-      );
-    } catch (_error) {
-      Alert.alert('Error', 'Failed to submit review. Please try again.');
+      Toast.show({
+        type: 'success',
+        text1: 'Review Submitted!',
+        text2: 'Thank you for your feedback.',
+      });
+      router.back();
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to submit review. Please try again.';
+      Alert.alert('Error', msg);
     } finally {
       setSubmitting(false);
     }

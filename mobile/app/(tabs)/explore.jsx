@@ -9,6 +9,7 @@ import {
   Dimensions,
   Modal,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { useState, useMemo } from "react";
 import { Ionicons } from "@expo/vector-icons";
@@ -56,54 +57,63 @@ const Explore = () => {
   const [houses, setHouses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchHouses = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params = {
+        q: searchQuery,
+        propertyType: selectedCategory !== "all" ? selectedCategory.toUpperCase() : undefined,
+        sortBy: sortBy === "default" ? "newest" : sortBy === "price_low" ? "price_asc" : sortBy === "price_high" ? "price_desc" : "most_popular",
+        minPrice: priceRange.min,
+        maxPrice: priceRange.max,
+      };
+      const [response, favRes] = await Promise.all([
+        api.get('/api/filter', { params }),
+        api.get('/api/houses/favorites').catch(() => ({ data: { houses: [] } })),
+      ]);
+      const transformedHouses = response.data.houses.map(h => ({
+        id: h.id,
+        name: h.name,
+        location: `${h.area}, ${h.city}`,
+        price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
+        priceType: h.listingType === 'RENT' ? 'month' : 'total',
+        rating: h.rating || 4.5,
+        image: h.images?.[0]?.url || 'https://via.placeholder.com/300',
+        type: h.propertyType,
+      }));
+      setHouses(transformedHouses);
+
+      // Set favorited property IDs for heart icon state
+      const favIds = (favRes.data.houses || []).map(h => h.id);
+      setFavorites(favIds);
+    } catch (err) {
+      setError('Failed to load properties. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchHouses = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        console.log('[Explore] Fetching houses...');
-        const params = {
-          q: searchQuery,
-          propertyType: selectedCategory !== "all" ? selectedCategory.toUpperCase() : undefined,
-          sortBy: sortBy === "default" ? "newest" : sortBy === "price_low" ? "price_asc" : sortBy === "price_high" ? "price_desc" : "most_popular",
-          minPrice: priceRange.min,
-          maxPrice: priceRange.max,
-        };
-        const [response, favRes] = await Promise.all([
-          api.get('/api/filter', { params }),
-          api.get('/api/houses/favorites').catch(() => ({ data: { houses: [] } })),
-        ]);
-        console.log('[Explore] Found', response.data.houses?.length || 0, 'houses');
-        const transformedHouses = response.data.houses.map(h => ({
-          id: h.id,
-          name: h.name,
-          location: `${h.area}, ${h.city}`,
-          price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
-          priceType: h.listingType === 'RENT' ? 'month' : 'total',
-          rating: h.rating || 4.5,
-          image: h.images?.[0]?.url || 'https://via.placeholder.com/300',
-          type: h.propertyType,
-        }));
-        setHouses(transformedHouses);
-
-        // Set favorited property IDs for heart icon state
-        const favIds = (favRes.data.houses || []).map(h => h.id);
-        setFavorites(favIds);
-      } catch (err) {
-        console.error('[Explore] Error fetching houses:', err);
-        setError('Failed to load properties. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     const timer = setTimeout(() => {
       fetchHouses();
     }, 500); // Debounce search
 
     return () => clearTimeout(timer);
   }, [selectedCategory, searchQuery, sortBy, priceRange]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await fetchHouses();
+    } catch (_) {
+      // silent fail — data will just be stale
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const filteredProperties = houses;
     
@@ -163,11 +173,12 @@ const Explore = () => {
           <TouchableOpacity
             key={category.id}
             className={`flex-row items-center px-4 py-2.5 rounded-full mr-3 ${
-              selectedCategory === category.id 
-                ? "bg-primary" 
+              selectedCategory === category.id
+                ? "bg-primary"
                 : "bg-cardBackground border border-border"
             }`}
             onPress={() => setSelectedCategory(category.id)}
+            activeOpacity={0.7}
           >
             <Ionicons 
               name={category.icon} 
@@ -238,7 +249,7 @@ const Explore = () => {
         {/* Price tag */}
         <View className="absolute top-2 left-2 bg-white/90 px-2 py-1 rounded-lg">
           <Text className="text-primary font-poppins-bold text-xs">
-            ${item.price}
+            ৳{item.price}
             <Text className="text-textSecondary font-poppins text-xs">/{item.priceType || "month"}</Text>
           </Text>
         </View>
@@ -319,7 +330,7 @@ const Explore = () => {
         </View>
         <View className="flex-row items-center justify-between">
           <Text className="text-primary font-poppins-bold text-base">
-            ${item.price}
+            ৳{item.price}
             <Text className="text-textSecondary font-poppins text-xs">/{item.priceType || "month"}</Text>
           </Text>
           {item.rating && (
@@ -386,7 +397,7 @@ const Explore = () => {
 
           {/* Price Range */}
           <Text className="text-textPrimary font-poppins-semibold text-base mb-3">
-            Price Range ($/month)
+            Price Range (৳/month)
           </Text>
           <View className="flex-row items-center gap-4 mb-6">
             <View className="flex-1 bg-cardBackground rounded-xl px-4 py-3 border border-border">
@@ -477,11 +488,12 @@ const Explore = () => {
           <Ionicons name="cloud-offline-outline" size={64} color="#A1A5C1" />
           <Text className="text-textPrimary font-poppins-bold text-lg mt-4">Connection Error</Text>
           <Text className="text-textSecondary font-poppins text-sm text-center mt-2">{error}</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             className="mt-6 px-6 py-3 bg-primary rounded-xl"
+            activeOpacity={0.7}
             onPress={() => {
               setError(null);
-              setLoading(true);
+              fetchHouses();
             }}
           >
             <Text className="text-white font-poppins-semibold">Retry</Text>
@@ -498,9 +510,28 @@ const Explore = () => {
           columnWrapperStyle={{ justifyContent: "space-between" }}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => <GridCard item={item} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#7B61FF"
+              colors={["#7B61FF"]}
+            />
+          }
         />
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#7B61FF"
+              colors={["#7B61FF"]}
+            />
+          }
+        >
           {filteredProperties.map((item) => (
             <ListCard key={item.id} item={item} />
           ))}

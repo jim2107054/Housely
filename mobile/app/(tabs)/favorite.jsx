@@ -4,6 +4,7 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  RefreshControl,
 } from "react-native";
 import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
@@ -24,34 +25,47 @@ const Favorite = () => {
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchFavorites = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      console.log('[Favorites] Fetching favorites...');
+      const response = await api.get('/api/houses/favorites');
+      const transformedFavorites = response.data.houses.map(h => ({
+        ...h,
+        name: h.name,
+        location: `${h.area}, ${h.city}`,
+        price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
+        priceType: h.listingType === 'RENT' ? 'month' : 'total',
+        image: h.images?.[0]?.url || 'https://via.placeholder.com/150',
+        rating: h.rating || 4.5,
+        isFavorite: true,
+      }));
+      setFavorites(transformedFavorites);
+    } catch (err) {
+      console.error('[Favorites] Error fetching favorites:', err);
+      setError(err.request ? 'Cannot connect to server' : 'Failed to load favorites');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchFavorites = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        console.log('[Favorites] Fetching favorites...');
-        const response = await api.get('/api/houses/favorites');
-        const transformedFavorites = response.data.houses.map(h => ({
-          ...h,
-          name: h.name,
-          location: `${h.area}, ${h.city}`,
-          price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
-          priceType: h.listingType === 'RENT' ? 'month' : 'total',
-          image: h.images?.[0]?.url || 'https://via.placeholder.com/150',
-          rating: h.rating || 4.5,
-          isFavorite: true,
-        }));
-        setFavorites(transformedFavorites);
-      } catch (err) {
-        console.error('[Favorites] Error fetching favorites:', err);
-        setError(err.request ? 'Cannot connect to server' : 'Failed to load favorites');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchFavorites();
   }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await fetchFavorites();
+    } catch (_) {
+      // silent fail — data will just be stale
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const toggleFavorite = async (id) => {
     try {
@@ -151,7 +165,17 @@ const Favorite = () => {
           <ActivityIndicator size="large" color="#6C5CE7" />
         </View>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#7B61FF"
+              colors={["#7B61FF"]}
+            />
+          }
+        >
           {favorites.length > 0 ? (
             favorites.map((item) => (
               <FavoriteCard key={item.id} item={item} />

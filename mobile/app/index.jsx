@@ -11,7 +11,7 @@ const index = () => {
   const slideAnim = useRef(new Animated.Value(50)).current;
 
   const { isSignedIn, isLoaded } = useAuth();
-  const { user } = useAuthStore();
+  const { user, isLoading } = useAuthStore();
 
   useEffect(() => {
     // Parallel animations for a smooth entrance
@@ -36,7 +36,12 @@ const index = () => {
   }, []);
 
   useEffect(() => {
+    // Wait for Clerk to finish loading.
     if (!isLoaded) return;
+
+    // When signed in, also wait for the backend sync to finish so the user's
+    // role is known before we decide where to navigate.
+    if (isSignedIn && isLoading) return;
 
     const timer = setTimeout(() => {
       if (isSignedIn) {
@@ -51,7 +56,7 @@ const index = () => {
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, [isLoaded, isSignedIn, user]);
+  }, [isLoaded, isSignedIn, isLoading, user]);
 
   return (
     <View className="flex-1 bg-white items-center justify-center px-6">

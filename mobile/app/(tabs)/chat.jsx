@@ -109,13 +109,14 @@ const Chat = () => {
       <TouchableOpacity
         onPress={() => router.back()}
         className="w-10 h-10 items-center justify-center"
+        activeOpacity={0.7}
       >
         <Ionicons name="arrow-back" size={24} color="#252B5C" />
       </TouchableOpacity>
       <Text className="flex-1 text-center text-xl font-poppins-bold text-textPrimary">
         Messages
       </Text>
-      <TouchableOpacity className="w-10 h-10 items-center justify-center">
+      <TouchableOpacity className="w-10 h-10 items-center justify-center" activeOpacity={0.7}>
         <Ionicons name="ellipsis-vertical" size={24} color="#252B5C" />
       </TouchableOpacity>
     </View>
@@ -286,6 +287,30 @@ const Chat = () => {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "white" }}>
         <ActivityIndicator size="large" color="#6941C6" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={{ flex: 1, backgroundColor: "white" }}>
+        <Header />
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 40 }}>
+          <Ionicons name="cloud-offline-outline" size={64} color="#A1A5C1" />
+          <Text style={{ marginTop: 12, fontSize: 18, fontWeight: "700", color: "#252B5C", textAlign: "center" }}>
+            Connection Error
+          </Text>
+          <Text style={{ marginTop: 6, fontSize: 14, color: "#A1A5C1", textAlign: "center" }}>
+            {error}
+          </Text>
+          <TouchableOpacity
+            onPress={() => fetchConversations({ silent: false })}
+            activeOpacity={0.7}
+            style={{ marginTop: 16, backgroundColor: "#6941C6", paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 }}
+          >
+            <Text style={{ color: "#FFF", fontWeight: "700" }}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }

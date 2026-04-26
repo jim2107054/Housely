@@ -1,4 +1,4 @@
-import { View, Text, Image, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, Platform } from 'react-native'
+import { View, Text, Image, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, Platform, KeyboardAvoidingView } from 'react-native'
 import React, { useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -37,6 +37,8 @@ const EditProfile = () => {
 
   const router = useRouter()
 
+  const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -52,7 +54,12 @@ const EditProfile = () => {
     });
 
     if (!result.canceled) {
-      handleUploadAvatar(result.assets[0].uri);
+      const asset = result.assets[0];
+      if (asset.fileSize && asset.fileSize > MAX_AVATAR_SIZE_BYTES) {
+        Toast.show({ type: 'error', text1: 'File Too Large', text2: 'Profile picture must be under 5 MB' });
+        return;
+      }
+      handleUploadAvatar(asset.uri);
     }
   };
 
@@ -75,8 +82,14 @@ const EditProfile = () => {
         Toast.show({ type: 'success', text1: 'Avatar Updated' });
       }
     } catch (err) {
-      console.error('Error uploading avatar:', err);
-      Toast.show({ type: 'error', text1: 'Upload Failed', text2: 'Failed to upload profile picture' });
+      const isNetworkError = !err.response;
+      Toast.show({
+        type: 'error',
+        text1: 'Upload Failed',
+        text2: isNetworkError
+          ? 'No internet connection. Please try again.'
+          : err.response?.data?.message || 'Failed to upload profile picture',
+      });
     } finally {
       setUploadingAvatar(false);
     }
@@ -142,6 +155,7 @@ const EditProfile = () => {
         <TouchableOpacity
           onPress={() => router.back()}
           className="absolute left-4 p-2"
+          activeOpacity={0.7}
         >
           <Ionicons name="arrow-back" size={24} color="#000000" />
         </TouchableOpacity>
@@ -150,7 +164,11 @@ const EditProfile = () => {
         </Text>
       </View>
 
-      <ScrollView className="flex-1">
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+      <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
         {/* Profile Image Section */}
         <View className="items-center py-8 px-4">
           <View className="relative">
@@ -158,16 +176,17 @@ const EditProfile = () => {
               source={user?.avatar ? { uri: user.avatar } : require('../../assets/images/profileImage.png')}
               className="w-[100px] h-[100px] rounded-full bg-gray-100"
             />
+            {uploadingAvatar && (
+              <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: 50, justifyContent: 'center', alignItems: 'center' }}>
+                <ActivityIndicator color="#FFFFFF" />
+              </View>
+            )}
             <TouchableOpacity
               className="absolute bottom-0 right-0 bg-[#6C5CE7] rounded-[15px] w-[30px] h-[30px] justify-center items-center border-2 border-white"
               onPress={handlePickImage}
               disabled={uploadingAvatar}
             >
-              {uploadingAvatar ? (
-                <ActivityIndicator size="small" color="white" />
-              ) : (
-                <Ionicons name="camera" size={16} color="#FFFFFF" />
-              )}
+              <Ionicons name="camera" size={16} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
         </View>
@@ -230,6 +249,7 @@ const EditProfile = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }

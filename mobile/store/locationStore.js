@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Location from "expo-location";
 
 const useLocationStore = create((set, get) => ({
   // Default location: Khulna, Bangladesh
@@ -91,6 +92,43 @@ const useLocationStore = create((set, get) => ({
       });
     } catch (error) {
       console.log("Error clearing location:", error);
+    }
+  },
+
+  // Auto-detect GPS location on app start
+  detectGpsLocation: async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        return { success: false };
+      }
+
+      const position = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      const [geocode] = await Location.reverseGeocodeAsync({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      });
+
+      const addressString = geocode
+        ? [geocode.district, geocode.city, geocode.country]
+            .filter(Boolean)
+            .join(", ")
+        : "Current Location";
+
+      const { setLocation } = get();
+      await setLocation(
+        position.coords.latitude,
+        position.coords.longitude,
+        addressString
+      );
+
+      return { success: true };
+    } catch (error) {
+      // Silently fall back to default Khulna location — no crash, no alert
+      return { success: false };
     }
   },
 

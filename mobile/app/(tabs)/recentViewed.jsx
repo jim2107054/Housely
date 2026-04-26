@@ -4,6 +4,7 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
+  RefreshControl,
 } from 'react-native';
 import React, { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -267,31 +268,44 @@ const RecentViewed = () => {
   const router = useRouter();
   const [recentItems, setRecentItems] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchRecentlyViewed = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get('/api/users/me/recent-viewed');
+      const transformedItems = response.data.houses.map(h => ({
+        ...h,
+        name: h.name,
+        location: `${h.area}, ${h.city}`,
+        price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
+        priceType: h.listingType === 'RENT' ? 'month' : 'total',
+        image: h.images?.[0]?.url || 'https://via.placeholder.com/150',
+        rating: h.rating || 4.5,
+        viewedAt: h.viewedAt,
+      }));
+      setRecentItems(transformedItems);
+    } catch (err) {
+      console.error('Error fetching recently viewed:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchRecentlyViewed = async () => {
-      setLoading(true);
-      try {
-        const response = await api.get('/api/users/me/recent-viewed');
-        const transformedItems = response.data.houses.map(h => ({
-          ...h,
-          name: h.name,
-          location: `${h.area}, ${h.city}`,
-          price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
-          priceType: h.listingType === 'RENT' ? 'month' : 'total',
-          image: h.images?.[0]?.url || 'https://via.placeholder.com/150',
-          rating: h.rating || 4.5,
-          viewedAt: h.viewedAt,
-        }));
-        setRecentItems(transformedItems);
-      } catch (err) {
-        console.error('Error fetching recently viewed:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchRecentlyViewed();
   }, []);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await fetchRecentlyViewed();
+    } catch (_) {
+      // silent fail — data will just be stale
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // Group items by time period
   const groupedItems = groupByTimePeriod(recentItems);
@@ -445,6 +459,14 @@ const RecentViewed = () => {
           keyExtractor={(item) => item.key}
           contentContainerStyle={{ paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#7B61FF"
+              colors={["#7B61FF"]}
+            />
+          }
         />
       )}
     </SafeAreaView>
