@@ -70,7 +70,6 @@ const NotificationItem = ({ notification, onPress, onMarkRead }) => {
   return (
     <TouchableOpacity
       onPress={() => {
-        onMarkRead(notification.id);
         onPress(notification);
       }}
       style={{
@@ -166,6 +165,33 @@ const NotificationItem = ({ notification, onPress, onMarkRead }) => {
           {notification.message}
         </Text>
       </View>
+
+      {/* Mark as Read Button */}
+      <TouchableOpacity
+        onPress={(e) => {
+          e.stopPropagation();
+          if (!notification.isRead) {
+            onMarkRead(notification.id);
+          }
+        }}
+        style={{
+          marginLeft: 8,
+          width: 32,
+          height: 32,
+          borderRadius: 10,
+          backgroundColor: notification.isRead ? '#F3F4F6' : COLORS.primaryLight,
+          justifyContent: 'center',
+          alignItems: 'center',
+          alignSelf: 'center',
+        }}
+        activeOpacity={notification.isRead ? 1 : 0.6}
+      >
+        <Ionicons
+          name={notification.isRead ? 'checkmark-done' : 'checkmark'}
+          size={18}
+          color={notification.isRead ? COLORS.textMuted : COLORS.primary}
+        />
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 };
