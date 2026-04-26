@@ -1,4 +1,5 @@
 import prisma from '../../config/prisma.js';
+import { notifyUser } from '../notification/notification.service.js';
 
 // ─── Shared includes ───
 
@@ -84,6 +85,30 @@ export const createBooking = async (userId, data) => {
     },
     include: bookingDetailInclude,
   });
+
+  // Notify the agent about the new booking
+  try {
+    await notifyUser(house.agentId, {
+      type: 'BOOKING_CONFIRMED',
+      title: 'New Booking Request',
+      message: `You have a new booking request for your property.`,
+      data: { bookingId: booking.id, houseId },
+    });
+  } catch (err) {
+    console.error('Failed to send booking notification:', err.message);
+  }
+
+  // Notify the user about their booking
+  try {
+    await notifyUser(userId, {
+      type: 'BOOKING_CONFIRMED',
+      title: 'Booking Submitted',
+      message: `Your booking request has been submitted successfully. Total: ৳${totalAmount.toLocaleString()}.`,
+      data: { bookingId: booking.id, houseId },
+    });
+  } catch (err) {
+    console.error('Failed to send booking notification:', err.message);
+  }
 
   return booking;
 };
@@ -187,6 +212,18 @@ export const cancelBooking = async (userId, bookingId) => {
     include: bookingDetailInclude,
   });
 
+  // Notify the agent about cancellation
+  try {
+    await notifyUser(cancelledBooking.agentId, {
+      type: 'BOOKING_CANCELLED',
+      title: 'Booking Cancelled',
+      message: `A booking for your property has been cancelled by the tenant.`,
+      data: { bookingId },
+    });
+  } catch (err) {
+    console.error('Failed to send cancellation notification:', err.message);
+  }
+
   return cancelledBooking;
 };
 
@@ -261,6 +298,26 @@ export const updateBookingStatus = async (agentId, bookingId, status) => {
     data: { status },
     include: bookingDetailInclude,
   });
+
+  // Notify the user about status change
+  const statusMessages = {
+    CONFIRMED: 'Your booking has been confirmed by the property agent!',
+    COMPLETED: 'Your booking has been marked as completed. Please leave a review!',
+    CANCELLED: 'Your booking has been cancelled by the property agent.',
+  };
+
+  const notifType = status === 'CANCELLED' ? 'BOOKING_CANCELLED' : 'BOOKING_CONFIRMED';
+
+  try {
+    await notifyUser(updatedBooking.userId, {
+      type: notifType,
+      title: `Booking ${status.charAt(0) + status.slice(1).toLowerCase()}`,
+      message: statusMessages[status] || `Your booking status has been updated to ${status}.`,
+      data: { bookingId },
+    });
+  } catch (err) {
+    console.error('Failed to send status update notification:', err.message);
+  }
 
   return updatedBooking;
 };

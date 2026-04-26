@@ -2,7 +2,7 @@ import * as paymentService from './payment.service.js';
 
 export const initiate = async (req, res, next) => {
   try {
-    const userId = req.auth?.userId || req.user?.id; // Depends on auth middleware
+    const userId = req.user.id;
     const result = await paymentService.initiatePayment(userId, req.body);
     res.status(200).json({
       success: true,

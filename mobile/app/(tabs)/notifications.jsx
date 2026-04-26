@@ -53,13 +53,12 @@ const formatTimeAgo = (dateString) => {
 // Get icon config based on notification type
 const getNotificationIcon = (type) => {
   const iconMap = {
-    booking: { name: 'calendar', color: COLORS.success, bg: '#ECFDF5' },
-    message: { name: 'chatbubble-ellipses', color: COLORS.info, bg: '#EFF6FF' },
-    payment: { name: 'card', color: COLORS.warning, bg: '#FFFBEB' },
-    review: { name: 'star', color: COLORS.warning, bg: '#FFFBEB' },
-    reminder: { name: 'time', color: COLORS.primary, bg: COLORS.primaryLight },
-    promo: { name: 'pricetag', color: COLORS.danger, bg: '#FEF2F2' },
-    price_drop: { name: 'trending-down', color: COLORS.success, bg: '#ECFDF5' },
+    BOOKING_CONFIRMED: { name: 'calendar', color: COLORS.success, bg: '#ECFDF5' },
+    BOOKING_CANCELLED: { name: 'calendar-outline', color: COLORS.danger, bg: '#FEF2F2' },
+    PAYMENT_SUCCESS: { name: 'card', color: COLORS.success, bg: '#ECFDF5' },
+    NEW_MESSAGE: { name: 'chatbubble-ellipses', color: COLORS.info, bg: '#EFF6FF' },
+    REVIEW_POSTED: { name: 'star', color: COLORS.warning, bg: '#FFFBEB' },
+    GENERAL: { name: 'notifications', color: COLORS.primary, bg: COLORS.primaryLight },
   };
   return iconMap[type] || { name: 'notifications', color: COLORS.primary, bg: COLORS.primaryLight };
 };
@@ -153,7 +152,7 @@ const NotificationItem = ({ notification, onPress, onMarkRead }) => {
             {notification.title}
           </Text>
           <Text style={{ fontSize: 11, color: COLORS.textMuted, fontWeight: '500' }}>
-            {formatTimeAgo(notification.timestamp)}
+            {formatTimeAgo(notification.createdAt || notification.timestamp)}
           </Text>
         </View>
         <Text
@@ -177,8 +176,8 @@ const FilterPills = ({ activeFilter, setActiveFilter }) => {
     { id: 'all', label: 'All', icon: 'apps' },
     { id: 'unread', label: 'Unread', icon: 'mail-unread' },
     { id: 'booking', label: 'Bookings', icon: 'calendar' },
+    { id: 'payment', label: 'Payments', icon: 'card' },
     { id: 'message', label: 'Messages', icon: 'chatbubbles' },
-    { id: 'promo', label: 'Offers', icon: 'pricetag' },
   ];
 
   return (
@@ -315,6 +314,9 @@ const Notifications = () => {
   const filteredNotifications = notifications.filter((n) => {
     if (activeFilter === 'all') return true;
     if (activeFilter === 'unread') return !n.isRead;
+    if (activeFilter === 'booking') return n.type === 'BOOKING_CONFIRMED' || n.type === 'BOOKING_CANCELLED';
+    if (activeFilter === 'payment') return n.type === 'PAYMENT_SUCCESS';
+    if (activeFilter === 'message') return n.type === 'NEW_MESSAGE';
     return n.type === activeFilter;
   });
 
@@ -344,21 +346,18 @@ const Notifications = () => {
   const handleNotificationPress = (notification) => {
     // Navigate based on notification type
     switch (notification.type) {
-      case 'booking':
-      case 'reminder':
+      case 'BOOKING_CONFIRMED':
+      case 'BOOKING_CANCELLED':
         router.push('/(tabs)/myBooking');
         break;
-      case 'payment':
-        router.push('/(tabs)/paymentHistory');
+      case 'PAYMENT_SUCCESS':
+        router.push('/(tabs)/myBooking');
         break;
-      case 'message':
+      case 'NEW_MESSAGE':
         router.push('/(tabs)/chat');
         break;
-      case 'review':
-      case 'price_drop':
-        if (notification.propertyImage) {
-          router.push('/(tabs)/propertyDetails');
-        }
+      case 'REVIEW_POSTED':
+        router.push('/(tabs)/myBooking');
         break;
       default:
         break;

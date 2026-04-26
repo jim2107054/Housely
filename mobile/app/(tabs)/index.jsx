@@ -29,9 +29,10 @@ const CARD_WIDTH = width * 0.65;
 
 const Home = () => {
   const router = useRouter();
-  const [favorites, setFavorites] = useState(["1"]);
-  const [popularFavorites, setPopularFavorites] = useState(["2"]);
+  const [favorites, setFavorites] = useState([]);
+  const [popularFavorites, setPopularFavorites] = useState([]);
   const [activeLocation, setActiveLocation] = useState("2");
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Real data states
   const [recommended, setRecommended] = useState([]);
@@ -60,7 +61,7 @@ const Home = () => {
         const coords = getCoordinates();
         console.log('[Home] Using coordinates:', coords);
         
-        const [recRes, nearRes, popRes, locRes] = await Promise.all([
+        const [recRes, nearRes, popRes, locRes, favRes, notifRes] = await Promise.all([
           api.get('/api/houses/recommended'),
           api.get('/api/houses/nearby', {
             params: {
@@ -70,6 +71,8 @@ const Home = () => {
           }),
           api.get('/api/houses/popular'),
           api.get('/api/houses/top-locations'),
+          api.get('/api/houses/favorites').catch(() => ({ data: { houses: [] } })),
+          api.get('/api/notifications/unread-count').catch(() => ({ data: { unreadCount: 0 } })),
         ]);
 
         const transformHouse = (h) => ({
@@ -82,6 +85,12 @@ const Home = () => {
           image: h.images?.[0]?.url || 'https://via.placeholder.com/300',
           isFavorite: h.isFavorite || false,
         });
+
+        // Set favorited property IDs for heart icon state
+        const favIds = (favRes.data.houses || []).map(h => h.id);
+        setFavorites(favIds);
+        setPopularFavorites(favIds);
+        setUnreadCount(notifRes.data.unreadCount || 0);
 
         setRecommended(recRes.data.houses.map(transformHouse));
         setNearby(nearRes.data.houses.map(transformHouse));
@@ -139,16 +148,30 @@ const Home = () => {
     }
   }, []);
 
-  const toggleFavorite = (id) => {
-    setFavorites((prev) =>
-      prev.includes(id) ? prev.filter((fId) => fId !== id) : [...prev, id]
-    );
+  const toggleFavorite = async (id) => {
+    try {
+      const response = await api.post(`/api/houses/${id}/favorite`);
+      if (response.data.isFavorite) {
+        setFavorites((prev) => [...prev, id]);
+      } else {
+        setFavorites((prev) => prev.filter((fId) => fId !== id));
+      }
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
+    }
   };
 
-  const togglePopularFavorite = (id) => {
-    setPopularFavorites((prev) =>
-      prev.includes(id) ? prev.filter((fId) => fId !== id) : [...prev, id]
-    );
+  const togglePopularFavorite = async (id) => {
+    try {
+      const response = await api.post(`/api/houses/${id}/favorite`);
+      if (response.data.isFavorite) {
+        setPopularFavorites((prev) => [...prev, id]);
+      } else {
+        setPopularFavorites((prev) => prev.filter((fId) => fId !== id));
+      }
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
+    }
   };
 
   // Header Component
@@ -177,23 +200,25 @@ const Home = () => {
         >
           <NotificationIcon width={20} height={20} />
           {/* Notification Badge */}
-          <View 
-            style={{
-              position: 'absolute',
-              top: 0,
-              right: 0,
-              backgroundColor: '#FF5252',
-              width: 18,
-              height: 18,
-              borderRadius: 9,
-              justifyContent: 'center',
-              alignItems: 'center',
-              borderWidth: 2,
-              borderColor: '#FFFFFF',
-            }}
-          >
-            <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: 'bold' }}>2</Text>
-          </View>
+          {unreadCount > 0 && (
+            <View 
+              style={{
+                position: 'absolute',
+                top: 0,
+                right: 0,
+                backgroundColor: '#FF5252',
+                width: 18,
+                height: 18,
+                borderRadius: 9,
+                justifyContent: 'center',
+                alignItems: 'center',
+                borderWidth: 2,
+                borderColor: '#FFFFFF',
+              }}
+            >
+              <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: 'bold' }}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+            </View>
+          )}
         </TouchableOpacity>
         <TouchableOpacity 
           className="w-10 h-10 rounded-full bg-cardBackground items-center justify-center border border-border"
