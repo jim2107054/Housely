@@ -9,9 +9,9 @@ import {
   Animated,
   ActivityIndicator,
 } from "react-native";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import useLocationStore from "../../store/locationStore";
 
 // Import SVG icons
@@ -49,6 +49,22 @@ const Home = () => {
     // Load saved location on mount
     loadLocation();
   }, []);
+
+  // Refresh unread count every time the home tab is focused
+  useFocusEffect(
+    useCallback(() => {
+      const fetchUnreadCount = async () => {
+        try {
+          const res = await api.get('/api/notifications/unread-count');
+          console.log('[Home] Unread count:', res.data?.unreadCount);
+          setUnreadCount(res.data?.unreadCount ?? 0);
+        } catch (err) {
+          // silently fail
+        }
+      };
+      fetchUnreadCount();
+    }, [])
+  );
 
   useEffect(() => {
     const fetchData = async () => {
@@ -90,7 +106,8 @@ const Home = () => {
         const favIds = (favRes.data.houses || []).map(h => h.id);
         setFavorites(favIds);
         setPopularFavorites(favIds);
-        setUnreadCount(notifRes.data.unreadCount || 0);
+        console.log('[Home] Notification unread response:', JSON.stringify(notifRes.data));
+        setUnreadCount(notifRes.data?.unreadCount ?? 0);
 
         setRecommended(recRes.data.houses.map(transformHouse));
         setNearby(nearRes.data.houses.map(transformHouse));
