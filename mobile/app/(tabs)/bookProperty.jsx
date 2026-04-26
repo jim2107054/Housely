@@ -229,6 +229,7 @@ const BookProperty = () => {
   const [showCheckOutPicker, setShowCheckOutPicker] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [createdBooking, setCreatedBooking] = useState(null);
 
   const formatDate = (date) => {
     if (!date) return null;
@@ -289,6 +290,7 @@ const BookProperty = () => {
       });
 
       if (response.data) {
+        setCreatedBooking(response.data.booking || response.data);
         setShowSuccess(true);
       }
     } catch (err) {
@@ -304,7 +306,7 @@ const BookProperty = () => {
 
   const handleSuccessDismiss = () => {
     setShowSuccess(false);
-    router.push("/(tabs)/myBooking");
+    router.push("/myBooking");
   };
 
   // Get minimum date for checkout (day after check-in)
@@ -712,7 +714,17 @@ const BookProperty = () => {
               Your booking request for {propertyName} has been sent to the agent. You'll be notified once it's confirmed.
             </Text>
             <TouchableOpacity
-              onPress={handleSuccessDismiss}
+              onPress={() => {
+                setShowSuccess(false);
+                router.replace({
+                  pathname: '/paymentWebView',
+                  params: {
+                    bookingId: createdBooking?.id,
+                    amount: createdBooking?.totalAmount,
+                    propertyName: propertyName
+                  }
+                });
+              }}
               style={{
                 backgroundColor: "#7F56D9",
                 borderRadius: 14,
@@ -720,9 +732,25 @@ const BookProperty = () => {
                 paddingHorizontal: 40,
                 width: "100%",
                 alignItems: "center",
+                marginBottom: 12,
               }}
             >
               <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 16 }}>
+                Pay Now
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleSuccessDismiss}
+              style={{
+                backgroundColor: "#F8F5FF",
+                borderRadius: 14,
+                paddingVertical: 14,
+                paddingHorizontal: 40,
+                width: "100%",
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ color: "#7F56D9", fontWeight: "700", fontSize: 16 }}>
                 View My Bookings
               </Text>
             </TouchableOpacity>

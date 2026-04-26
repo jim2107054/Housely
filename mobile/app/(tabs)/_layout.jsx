@@ -118,6 +118,7 @@ const TabLayout = () => {
       <Tabs.Screen name="writeReview" options={{ href: null }} />
       <Tabs.Screen name="settings" options={{ href: null }} />
       <Tabs.Screen name="bookProperty" options={{ href: null }} />
+      <Tabs.Screen name="paymentWebView" options={{ href: null }} />
     </Tabs>
   );
 };

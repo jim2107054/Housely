@@ -485,7 +485,41 @@ const MyBooking = () => {
       <FlatList
         data={filteredBookings}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <BookingCard booking={item} />}
+        renderItem={({ item }) => (
+          <View>
+            <BookingCard booking={item} />
+            {item.rawStatus === 'PENDING' && (
+              <TouchableOpacity
+                onPress={() => router.push({
+                  pathname: '/paymentWebView',
+                  params: { 
+                    bookingId: item.id, 
+                    amount: item.totalAmount,
+                    propertyName: item.house?.name 
+                  }
+                })}
+                style={{
+                  backgroundColor: COLORS.primary,
+                  marginHorizontal: 16,
+                  marginTop: -2,
+                  marginBottom: 12,
+                  paddingVertical: 10,
+                  borderRadius: 10,
+                  alignItems: 'center',
+                  shadowColor: COLORS.primary,
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 6,
+                  elevation: 3,
+                }}
+              >
+                <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 13 }}>
+                  Pay Now ${item.totalAmount?.toLocaleString()}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       />

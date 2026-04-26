@@ -605,13 +605,13 @@ const PropertyDetailsNew = () => {
       <TouchableOpacity
         onPress={() => {
           router.push({
-            pathname: '/(tabs)/bookProperty',
+            pathname: '/bookProperty',
             params: {
               propertyId: property.id,
               propertyName: property.name,
               propertyLocation: property.location,
               propertyImage: property.images?.[0] || '',
-              propertyPrice: property.price,
+              propertyPrice: property.price?.toString(),
               propertyPriceType: property.priceType,
               propertyStatus: property.status,
             },

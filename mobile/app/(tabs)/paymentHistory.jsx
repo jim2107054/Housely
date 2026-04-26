@@ -236,7 +236,7 @@ const PaymentHistory = () => {
     const fetchPayments = async () => {
       setLoading(true);
       try {
-        const response = await api.get('/api/users/me/payment-history');
+        const response = await api.get('/api/payments/my');
         setPayments(response.data.payments || []);
       } catch (err) {
         console.error('Error fetching payments:', err);
