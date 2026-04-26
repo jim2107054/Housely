@@ -5,16 +5,15 @@ import {
   TouchableOpacity,
   FlatList,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 
-// Import data (structured like backend API response)
 import api from '../../services/api';
-import { useEffect } from 'react';
-import { ActivityIndicator } from 'react-native';
 
 
 
@@ -326,42 +325,54 @@ const MyBooking = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchBookings = async () => {
-      setLoading(true);
-      try {
-        const response = await api.get('/api/bookings/my');
-        setBookings(response.data.bookings || []);
-      } catch (err) {
-        console.error('Error fetching bookings:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchBookings();
+  const fetchBookings = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await api.get('/api/bookings/my');
+      setBookings(response.data.bookings || []);
+    } catch (err) {
+      console.error('Error fetching bookings:', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  // Re-fetch whenever this screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchBookings();
+    }, [fetchBookings])
+  );
 
   // Get data based on active tab
   const getBookingData = () => {
+    const formatBookingDate = (dateStr) => {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+    };
+
     const transformedBookings = bookings.map(b => ({
       ...b,
       image: b.house?.images?.[0]?.url || 'https://via.placeholder.com/150',
-      name: b.house?.name,
-      location: `${b.house?.area}, ${b.house?.city}`,
+      name: b.house?.name || 'Property',
+      location: `${b.house?.area || ''}, ${b.house?.city || ''}`,
       price: b.totalAmount,
-      // mapping backend status to frontend badge types if needed
-      displayStatus: b.status === 'PENDING' ? 'waiting_payment' : 
-                     b.status === 'CONFIRMED' ? 'checkin' : 
-                     b.status === 'COMPLETED' ? 'completed' : 'cancelled'
+      dateRange: `${formatBookingDate(b.checkIn)} - ${formatBookingDate(b.checkOut)}`,
+      status: b.status === 'PENDING' ? 'waiting_payment' : 
+              b.status === 'CONFIRMED' ? 'checkin' : 
+              b.status === 'COMPLETED' ? 'completed' : 'cancelled',
+      rawStatus: b.status,
     }));
 
     switch (activeTab) {
       case 'upcoming':
-        return transformedBookings.filter(b => ['PENDING', 'CONFIRMED'].includes(b.status));
+        return transformedBookings.filter(b => ['PENDING', 'CONFIRMED'].includes(b.rawStatus));
       case 'completed':
-        return transformedBookings.filter(b => b.status === 'COMPLETED');
+        return transformedBookings.filter(b => b.rawStatus === 'COMPLETED');
       case 'cancelled':
-        return transformedBookings.filter(b => b.status === 'CANCELLED');
+        return transformedBookings.filter(b => b.rawStatus === 'CANCELLED');
       default:
         return [];
     }
