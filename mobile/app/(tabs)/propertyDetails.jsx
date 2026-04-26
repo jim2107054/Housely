@@ -64,8 +64,15 @@ const PropertyDetailsNew = () => {
       if (!propertyId) return;
       setLoading(true);
       try {
-        const response = await api.get(`/api/houses/${propertyId}`);
-        const h = response.data.house;
+        const [propertyRes, favoritesRes] = await Promise.all([
+          api.get(`/api/houses/${propertyId}`),
+          api.get('/api/houses/favorites').catch(() => ({ data: { houses: [] } })),
+        ]);
+        const h = propertyRes.data.house;
+        
+        // Check if this property is in user's favorites
+        const favHouses = favoritesRes.data.houses || [];
+        setIsFavorite(favHouses.some(fav => fav.id === propertyId));
         
         const facilities = [];
         if (h.publicFacilities) {
@@ -149,7 +156,14 @@ const PropertyDetailsNew = () => {
     startAutoScroll();
   };
 
-  const toggleFavorite = () => setIsFavorite((prev) => !prev);
+  const toggleFavorite = async () => {
+    try {
+      const response = await api.post(`/api/houses/${propertyId}/favorite`);
+      setIsFavorite(response.data.isFavorite);
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
+    }
+  };
 
   const handleShare = async (platform) => {
     const shareMessage = `Check out this property: ${property.name} in ${property.location} - $${property.price}/${property.priceType}`;

@@ -1,5 +1,6 @@
 import prisma from '../../config/prisma.js';
 import crypto from 'crypto';
+import { notifyUser } from '../notification/notification.service.js';
 
 /**
  * Initiate a payment via SSLCommerz (Mocked for now)
@@ -100,6 +101,27 @@ export const handlePaymentCallback = async ({ transactionId, status, payload }) 
         status: bookingStatus,
       },
     });
+  }
+
+  // Notify the user about payment result
+  try {
+    if (status === 'success') {
+      await notifyUser(payment.userId, {
+        type: 'PAYMENT_SUCCESS',
+        title: 'Payment Successful',
+        message: `Your payment of ৳${payment.amount.toLocaleString()} has been completed successfully.`,
+        data: { paymentId: payment.id, bookingId: payment.bookingId, transactionId },
+      });
+    } else {
+      await notifyUser(payment.userId, {
+        type: 'GENERAL',
+        title: 'Payment Failed',
+        message: `Your payment of ৳${payment.amount.toLocaleString()} could not be processed. Please try again.`,
+        data: { paymentId: payment.id, bookingId: payment.bookingId, transactionId },
+      });
+    }
+  } catch (err) {
+    console.error('Failed to send payment notification:', err.message);
   }
 
   return updatedPayment;

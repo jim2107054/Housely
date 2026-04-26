@@ -47,7 +47,7 @@ const Explore = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [favorites, setFavorites] = useState(["1", "4"]);
+  const [favorites, setFavorites] = useState([]);
   const [viewMode, setViewMode] = useState("grid"); // grid or list
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [sortBy, setSortBy] = useState("default");
@@ -70,7 +70,10 @@ const Explore = () => {
           minPrice: priceRange.min,
           maxPrice: priceRange.max,
         };
-        const response = await api.get('/api/filter', { params });
+        const [response, favRes] = await Promise.all([
+          api.get('/api/filter', { params }),
+          api.get('/api/houses/favorites').catch(() => ({ data: { houses: [] } })),
+        ]);
         console.log('[Explore] Found', response.data.houses?.length || 0, 'houses');
         const transformedHouses = response.data.houses.map(h => ({
           id: h.id,
@@ -83,6 +86,10 @@ const Explore = () => {
           type: h.propertyType,
         }));
         setHouses(transformedHouses);
+
+        // Set favorited property IDs for heart icon state
+        const favIds = (favRes.data.houses || []).map(h => h.id);
+        setFavorites(favIds);
       } catch (err) {
         console.error('[Explore] Error fetching houses:', err);
         setError('Failed to load properties. Please try again.');
@@ -102,10 +109,17 @@ const Explore = () => {
     
 
 
-  const toggleFavorite = (id) => {
-    setFavorites((prev) =>
-      prev.includes(id) ? prev.filter((fId) => fId !== id) : [...prev, id]
-    );
+  const toggleFavorite = async (id) => {
+    try {
+      const response = await api.post(`/api/houses/${id}/favorite`);
+      if (response.data.isFavorite) {
+        setFavorites((prev) => [...prev, id]);
+      } else {
+        setFavorites((prev) => prev.filter((fId) => fId !== id));
+      }
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
+    }
   };
 
   // Header with search
