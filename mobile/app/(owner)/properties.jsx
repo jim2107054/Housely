@@ -115,7 +115,7 @@ const OwnerProperties = () => {
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
             <Text style={{ fontSize: 18, fontWeight: "bold", color: COLORS.primary }}>
-              ${item.price}<Text style={{ fontSize: 13, fontWeight: "400", color: COLORS.textSecondary }}>/night</Text>
+              ৳{item.price}<Text style={{ fontSize: 13, fontWeight: "400", color: COLORS.textSecondary }}>/month</Text>
             </Text>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <Ionicons name="star" size={14} color="#FFC107" />

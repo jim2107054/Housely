@@ -174,6 +174,16 @@ npm test -- --coverage
 | PATCH | `/api/notifications/read-all` | Mark all read |
 | POST | `/api/notifications/device-token` | Register FCM token |
 
+### Payments
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/payments/initiate` | Create SSLCommerz hosted checkout session |
+| GET/POST | `/api/payments/sslcommerz/success` | SSLCommerz success callback |
+| GET/POST | `/api/payments/sslcommerz/fail` | SSLCommerz fail callback |
+| GET/POST | `/api/payments/sslcommerz/cancel` | SSLCommerz cancel callback |
+| POST | `/api/payments/sslcommerz/ipn` | SSLCommerz server-to-server IPN |
+| GET | `/api/payments/my` | Current user payment history |
+
 ### Location
 | Method | Endpoint | Description |
 |--------|----------|-------------|

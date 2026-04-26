@@ -117,7 +117,7 @@ const Favorite = () => {
         </View>
         <View className="flex-row items-center justify-between mt-1">
           <Text className="text-primary font-poppins-bold text-sm">
-            ${item.price}<Text className="text-textSecondary font-poppins text-xs">/{item.priceType}</Text>
+            ৳{item.price}<Text className="text-textSecondary font-poppins text-xs">/{item.priceType}</Text>
           </Text>
           <View className="flex-row items-center">
             <Ionicons name="star" size={14} color="#FFC42D" />

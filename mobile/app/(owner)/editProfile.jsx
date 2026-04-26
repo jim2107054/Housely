@@ -107,7 +107,7 @@ const OwnerEditProfile = () => {
       });
 
       if (response.data.success) {
-        setUser(response.data.user);
+        setUser({ ...(user || {}), ...(response.data.user || {}) });
         Toast.show({ type: "success", text1: "Avatar Updated" });
       }
     } catch (err) {
@@ -126,9 +126,20 @@ const OwnerEditProfile = () => {
 
     setLoading(true);
     try {
-      const response = await api.patch("/api/users/me", form);
+      const payload = {
+        name: form.name?.trim(),
+        email: form.email?.trim(),
+      };
+
+      const phoneNumber = form.phoneNumber?.trim();
+      if (phoneNumber) payload.phoneNumber = phoneNumber;
+
+      const bio = form.bio?.trim();
+      if (bio) payload.bio = bio;
+
+      const response = await api.patch("/api/users/me", payload);
       if (response.data.success) {
-        setUser(response.data.user);
+        setUser({ ...(user || {}), ...(response.data.user || {}) });
         Toast.show({ type: "success", text1: "Profile Updated" });
         router.back();
       }

@@ -1,6 +1,13 @@
 import { Server } from 'socket.io';
-import { clerkClient } from '@clerk/express';
+import { createClerkClient } from '@clerk/backend';
 import prisma from '../config/prisma.js';
+import env from '../config/env.js';
+import { notifyUser } from '../modules/notification/notification.service.js';
+
+const clerkClient = createClerkClient({
+  secretKey: process.env.CLERK_SECRET_KEY || env.CLERK_SECRET_KEY,
+  publishableKey: process.env.CLERK_PUBLISHABLE_KEY || env.CLERK_PUBLISHABLE_KEY,
+});
 
 // Store active socket connections by user ID
 const activeConnections = new Map();
@@ -12,25 +19,51 @@ const authenticateSocket = async (socket, next) => {
     const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '');
     
     if (!token) {
+      console.warn('[Socket Auth] No token provided');
       return next(new Error('Authentication required'));
     }
 
     // Verify Clerk session token
-    const payload = await clerkClient.verifyToken(token);
-    const clerkUserId = payload.sub;
+    try {
+      // In Clerk v5+, verifyToken is robust. We add clockSkew to handle minor server time diffs.
+      // We explicitly pass the secretKey from our env config.
+      const secretKey = process.env.CLERK_SECRET_KEY || env.CLERK_SECRET_KEY;
+      
+      const payload = await clerkClient.verifyToken(token, {
+        secretKey,
+      }).catch(async (err) => {
+        // Fallback or retry with clock skew allowance if first attempt fails
+        console.warn('[Socket Auth] verifyToken failed, retrying with skew allowance:', err.message);
+        return await clerkClient.verifyToken(token, {
+          secretKey,
+          clockSkew: 300, // 5 minutes allowance
+        });
+      });
 
-    const user = await prisma.user.findUnique({
-      where: { clerkId: clerkUserId },
-      select: { id: true, username: true, name: true, avatar: true, role: true },
-    });
+      const clerkUserId = payload.sub;
 
-    if (!user) {
-      return next(new Error('User not found — please sync your account'));
+      const user = await prisma.user.findUnique({
+        where: { clerkId: clerkUserId },
+        select: { id: true, username: true, name: true, avatar: true, role: true },
+      });
+
+      if (!user) {
+        console.warn(`[Socket Auth] User not found for clerkId: ${clerkUserId}`);
+        return next(new Error('User not found — please sync your account'));
+      }
+
+      socket.user = user;
+      next();
+    } catch (verifyError) {
+      console.error('[Socket Auth] Token verification failed after retries:', verifyError.message);
+      // Log more details about the token (safely)
+      const isJWT = token && token.startsWith('ey');
+      const tokenPrefix = token ? `${token.substring(0, 10)}...` : 'none';
+      console.error(`[Socket Auth] Token info: isJWT=${isJWT}, length=${token?.length}, prefix=${tokenPrefix}`);
+      return next(new Error('Invalid token'));
     }
-
-    socket.user = user;
-    next();
   } catch (error) {
+    console.error('[Socket Auth] Critical error:', error);
     next(new Error('Invalid token'));
   }
 };
@@ -127,6 +160,20 @@ export const initializeSocket = (server) => {
         io.to(`user:${recipientId}`).emit('message:new', {
           conversationId,
           message,
+        });
+
+        // Create in-app notification for the recipient
+        await notifyUser(recipientId, {
+          type: 'NEW_MESSAGE',
+          title: `New message from ${message.sender.name || message.sender.username}`,
+          message: content.length > 50 ? content.substring(0, 47) + '...' : content,
+          data: { 
+            conversationId, 
+            messageId: message.id,
+            senderId: userId,
+            senderName: message.sender.name,
+            senderAvatar: message.sender.avatar
+          }
         });
       } catch (error) {
         console.error('[Socket] Message send error:', error);

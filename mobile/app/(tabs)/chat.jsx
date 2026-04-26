@@ -7,10 +7,11 @@ import {
   TextInput,
   Animated,
   PanResponder,
+  RefreshControl,
 } from "react-native";
 import { useState, useRef, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 
 import api from "../../services/api";
 import { connectSocket, getSocket } from "../../services/socketService";
@@ -26,54 +27,69 @@ const Chat = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchConversations = async () => {
+  const fetchConversations = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) {
       setLoading(true);
-      setError(null);
-      try {
-        console.log('[Chat] Fetching conversations...');
-        const response = await api.get('/api/conversations');
-        const transformedConversations = response.data.conversations.map(c => {
-          // userId = renter, agentId = owner/agent — pick the other party
-          const otherUser = c.userId === user?.id ? c.agent : c.user;
-          const lastMsg = c.messages?.[0];
-          return {
-            id: c.id,
-            name: otherUser?.name || otherUser?.username || 'Unknown',
-            lastMessage: lastMsg?.content || 'No message yet',
-            time: lastMsg?.createdAt
-              ? new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-              : '',
-            unreadCount: c.unreadCount || 0,
-            image: otherUser?.avatar || 'https://randomuser.me/api/portraits/men/1.jpg',
-            online: true,
-          };
-        });
-        setConversations(transformedConversations);
-      } catch (err) {
-        console.error('[Chat] Error fetching conversations:', err);
-        setError(err.request ? 'Cannot connect to server' : 'Failed to load conversations');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchConversations();
+    }
+    setError(null);
+
+    try {
+      const response = await api.get('/api/conversations');
+      const transformedConversations = (response.data.conversations || []).map((c) => {
+        const otherUser = c.userId === user?.id ? c.agent : c.user;
+        const lastMsg = c.messages?.[0];
+        return {
+          id: c.id,
+          name: otherUser?.name || otherUser?.username || 'Unknown',
+          lastMessage: lastMsg?.content || 'No message yet',
+          time: lastMsg?.createdAt
+            ? new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            : '',
+          unreadCount: c.unreadCount || 0,
+          image: otherUser?.avatar || 'https://randomuser.me/api/portraits/men/1.jpg',
+          online: true,
+        };
+      });
+      setConversations(transformedConversations);
+    } catch (err) {
+      console.error('[Chat] Error fetching conversations:', err);
+      setError(err.request ? 'Cannot connect to server' : 'Failed to load conversations');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    fetchConversations({ silent: false });
 
     // Listen for new messages via socket to refresh conversations list
     let sock;
     const initSocket = async () => {
       sock = await connectSocket();
       if (!sock) return;
-      sock.on('message:new', fetchConversations);
+      sock.on('message:new', () => fetchConversations({ silent: true }));
     };
     initSocket();
 
     return () => {
-      if (sock) sock.off('message:new', fetchConversations);
+      if (sock) sock.off('message:new');
     };
-  }, []);
+  }, [fetchConversations]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchConversations({ silent: true });
+    }, [fetchConversations])
+  );
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchConversations({ silent: true });
+  };
 
   // Filter conversations based on search
   const filteredConversations = conversations.filter(
@@ -278,7 +294,10 @@ const Chat = () => {
     <View className="flex-1 bg-white">
       <Header />
       <SearchBar />
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#6941C6"]} tintColor="#6941C6" />}
+      >
         {filteredConversations.length > 0 ? (
           filteredConversations.map((item) => (
             <ChatCard key={item.id} item={item} />

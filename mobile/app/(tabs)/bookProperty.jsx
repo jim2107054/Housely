@@ -17,6 +17,162 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import api from "../../services/api";
 
+const formatMonthYear = (date) => {
+  if (!date) return null;
+  const d = new Date(date);
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${months[d.getMonth()]} ${d.getFullYear()}`;
+};
+
+const formatMonthYearLong = (date) => {
+  if (!date) return "";
+  const d = new Date(date);
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+  ];
+  return `${months[d.getMonth()]} ${d.getFullYear()}`;
+};
+
+const normalizeToMonthStart = (date) => {
+  const d = new Date(date);
+  return new Date(d.getFullYear(), d.getMonth(), 1, 12, 0, 0);
+};
+
+const addMonths = (date, monthsToAdd) => {
+  const d = new Date(date);
+  return new Date(d.getFullYear(), d.getMonth() + monthsToAdd, 1, 12, 0, 0);
+};
+
+// ─── Month Picker Component ───
+const MonthPicker = ({ visible, onClose, onSelect, selectedDate, minDate, title }) => {
+  const min = normalizeToMonthStart(minDate || new Date());
+  const [viewYear, setViewYear] = useState((selectedDate ? new Date(selectedDate) : min).getFullYear());
+  const monthNames = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+  ];
+
+  const isDisabled = (monthIndex) => {
+    const candidate = new Date(viewYear, monthIndex, 1);
+    return candidate < new Date(min.getFullYear(), min.getMonth(), 1);
+  };
+
+  const isSelected = (monthIndex) => {
+    if (!selectedDate) return false;
+    const selected = new Date(selectedDate);
+    return selected.getFullYear() === viewYear && selected.getMonth() === monthIndex;
+  };
+
+  const canGoPrev = viewYear > min.getFullYear();
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <TouchableOpacity
+        activeOpacity={1}
+        onPress={onClose}
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "rgba(0,0,0,0.5)",
+        }}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          style={{
+            backgroundColor: "#FFF",
+            borderRadius: 24,
+            width: "90%",
+            maxWidth: 380,
+            padding: 20,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 10 },
+            shadowOpacity: 0.15,
+            shadowRadius: 20,
+            elevation: 10,
+          }}
+        >
+          <Text style={{ fontSize: 18, fontWeight: "700", color: "#1A1A1A", textAlign: "center", marginBottom: 16 }}>
+            {title || "Select Month"}
+          </Text>
+
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+            <TouchableOpacity
+              onPress={() => canGoPrev && setViewYear((prev) => prev - 1)}
+              disabled={!canGoPrev}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                backgroundColor: canGoPrev ? "#F8F5FF" : "#F5F5F5",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Ionicons name="chevron-back" size={20} color={canGoPrev ? "#7F56D9" : "#CCC"} />
+            </TouchableOpacity>
+
+            <Text style={{ fontSize: 18, fontWeight: "700", color: "#1A1A1A" }}>{viewYear}</Text>
+
+            <TouchableOpacity
+              onPress={() => setViewYear((prev) => prev + 1)}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                backgroundColor: "#F8F5FF",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Ionicons name="chevron-forward" size={20} color="#7F56D9" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+            {monthNames.map((monthName, monthIndex) => {
+              const disabled = isDisabled(monthIndex);
+              const selected = isSelected(monthIndex);
+
+              return (
+                <TouchableOpacity
+                  key={monthName}
+                  disabled={disabled}
+                  onPress={() => {
+                    const selectedMonth = new Date(viewYear, monthIndex, 1, 12, 0, 0);
+                    onSelect(selectedMonth);
+                    onClose();
+                  }}
+                  style={{
+                    width: "30.5%",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: 12,
+                    paddingVertical: 12,
+                    backgroundColor: selected ? "#7F56D9" : "#F9FAFB",
+                    borderWidth: 1,
+                    borderColor: selected ? "#7F56D9" : "#E5E7EB",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: selected ? "#FFF" : disabled ? "#C7C7C7" : "#1A1A1A",
+                      fontWeight: selected ? "700" : "600",
+                    }}
+                  >
+                    {monthName}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Modal>
+  );
+};
+
 // ─── Simple Calendar Picker Component ───
 const CalendarPicker = ({ visible, onClose, onSelect, selectedDate, minDate, title }) => {
   const today = new Date();
@@ -222,6 +378,8 @@ const BookProperty = () => {
     propertyStatus,
   } = params;
 
+  const isMonthlyBooking = true; // Always month-based as per user request
+
   const [checkIn, setCheckIn] = useState(null);
   const [checkOut, setCheckOut] = useState(null);
   const [notes, setNotes] = useState("");
@@ -232,6 +390,9 @@ const BookProperty = () => {
   const [createdBooking, setCreatedBooking] = useState(null);
 
   const formatDate = (date) => {
+    if (isMonthlyBooking) {
+      return formatMonthYear(date);
+    }
     if (!date) return null;
     const d = new Date(date);
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -239,6 +400,9 @@ const BookProperty = () => {
   };
 
   const formatDateLong = (date) => {
+    if (isMonthlyBooking) {
+      return formatMonthYearLong(date);
+    }
     if (!date) return "";
     const d = new Date(date);
     const months = [
@@ -251,32 +415,58 @@ const BookProperty = () => {
   // Calculate duration and total cost
   const bookingDetails = useMemo(() => {
     if (!checkIn || !checkOut) return null;
+    const price = parseFloat(propertyPrice) || 0;
+    if (isMonthlyBooking) {
+      const checkInDate = new Date(checkIn);
+      const checkOutDate = new Date(checkOut);
+      const months =
+        (checkOutDate.getFullYear() - checkInDate.getFullYear()) * 12 +
+        (checkOutDate.getMonth() - checkInDate.getMonth());
+
+      if (months <= 0) return null;
+      return {
+        months,
+        totalAmount: Math.ceil(price * months),
+      };
+    }
+
     const diffMs = new Date(checkOut) - new Date(checkIn);
     const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-    const price = parseFloat(propertyPrice) || 0;
-    let totalAmount = 0;
-
-    if (propertyPriceType === "month") {
-      const months = days / 30;
-      totalAmount = Math.ceil(price * months);
-    } else {
-      totalAmount = price;
-    }
-
-    return { days, totalAmount };
-  }, [checkIn, checkOut, propertyPrice, propertyPriceType]);
+    return {
+      days,
+      totalAmount: price,
+    };
+  }, [checkIn, checkOut, propertyPrice, isMonthlyBooking]);
 
   const handleCheckInSelect = (date) => {
-    setCheckIn(date);
+    const normalized = isMonthlyBooking ? normalizeToMonthStart(date) : date;
+    setCheckIn(normalized);
     // Reset checkout if it's before the new check-in
-    if (checkOut && date >= checkOut) {
+    if (checkOut && normalized >= checkOut) {
       setCheckOut(null);
     }
+  };
+
+  const handleCheckOutSelect = (date) => {
+    const normalized = isMonthlyBooking ? normalizeToMonthStart(date) : date;
+    if (checkIn && normalized <= checkIn) {
+      Alert.alert(
+        "Invalid Check-out",
+        isMonthlyBooking ? "Check-out month must be after check-in month." : "Check-out date must be after check-in date."
+      );
+      return;
+    }
+    setCheckOut(normalized);
   };
 
   const handleSubmitBooking = async () => {
     if (!checkIn || !checkOut) {
       Alert.alert("Missing Dates", "Please select both check-in and check-out dates.");
+      return;
+    }
+
+    if (isMonthlyBooking && bookingDetails?.months < 1) {
+      Alert.alert("Invalid Duration", "Please select at least 1 full month.");
       return;
     }
 
@@ -312,6 +502,9 @@ const BookProperty = () => {
   // Get minimum date for checkout (day after check-in)
   const getCheckOutMinDate = () => {
     if (!checkIn) return new Date();
+    if (isMonthlyBooking) {
+      return addMonths(normalizeToMonthStart(checkIn), 1);
+    }
     const nextDay = new Date(checkIn);
     nextDay.setDate(nextDay.getDate() + 1);
     return nextDay;
@@ -409,7 +602,7 @@ const BookProperty = () => {
             </View>
             <View style={{ flexDirection: "row", alignItems: "baseline", marginTop: 8 }}>
               <Text style={{ fontSize: 20, fontWeight: "800", color: "#7F56D9" }}>
-                ${parseFloat(propertyPrice || 0).toLocaleString()}
+                ৳{parseFloat(propertyPrice || 0).toLocaleString()}
               </Text>
               <Text style={{ fontSize: 13, color: "#9E9E9E", marginLeft: 2 }}>
                 /{propertyPriceType || "month"}
@@ -421,7 +614,7 @@ const BookProperty = () => {
         {/* Date Selection */}
         <View style={{ marginHorizontal: 20, marginTop: 24 }}>
           <Text style={{ fontSize: 18, fontWeight: "700", color: "#1A1A1A", marginBottom: 16 }}>
-            Select Dates
+            {isMonthlyBooking ? "Select Months" : "Select Dates"}
           </Text>
 
           <View style={{ flexDirection: "row", gap: 12 }}>
@@ -461,7 +654,7 @@ const BookProperty = () => {
                   color: checkIn ? "#1A1A1A" : "#BDBDBD",
                 }}
               >
-                {formatDate(checkIn) || "Select date"}
+                {formatDate(checkIn) || (isMonthlyBooking ? "Select month" : "Select date")}
               </Text>
             </TouchableOpacity>
 
@@ -507,7 +700,7 @@ const BookProperty = () => {
                   color: checkOut ? "#1A1A1A" : "#BDBDBD",
                 }}
               >
-                {formatDate(checkOut) || "Select date"}
+                {formatDate(checkOut) || (isMonthlyBooking ? "Select month" : "Select date")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -577,7 +770,9 @@ const BookProperty = () => {
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                 <Text style={{ fontSize: 14, color: "#6B7280" }}>Duration</Text>
                 <Text style={{ fontSize: 14, fontWeight: "600", color: "#1A1A1A" }}>
-                  {bookingDetails.days} {bookingDetails.days === 1 ? "day" : "days"}
+                  {isMonthlyBooking
+                    ? `${bookingDetails.months} ${bookingDetails.months === 1 ? "month" : "months"}`
+                    : `${bookingDetails.days} ${bookingDetails.days === 1 ? "day" : "days"}`}
                 </Text>
               </View>
 
@@ -586,7 +781,7 @@ const BookProperty = () => {
                   Price ({propertyPriceType === "month" ? "per month" : "total"})
                 </Text>
                 <Text style={{ fontSize: 14, fontWeight: "600", color: "#1A1A1A" }}>
-                  ${parseFloat(propertyPrice || 0).toLocaleString()}
+                  ৳{parseFloat(propertyPrice || 0).toLocaleString()}
                 </Text>
               </View>
 
@@ -595,7 +790,7 @@ const BookProperty = () => {
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                 <Text style={{ fontSize: 16, fontWeight: "700", color: "#1A1A1A" }}>Estimated Total</Text>
                 <Text style={{ fontSize: 20, fontWeight: "800", color: "#7F56D9" }}>
-                  ${bookingDetails.totalAmount.toLocaleString()}
+                  ৳{bookingDetails.totalAmount.toLocaleString()}
                 </Text>
               </View>
             </View>
@@ -652,22 +847,45 @@ const BookProperty = () => {
       </ScrollView>
 
       {/* Calendar Modals */}
-      <CalendarPicker
-        visible={showCheckInPicker}
-        onClose={() => setShowCheckInPicker(false)}
-        onSelect={handleCheckInSelect}
-        selectedDate={checkIn}
-        minDate={new Date()}
-        title="Select Check-in Date"
-      />
-      <CalendarPicker
-        visible={showCheckOutPicker}
-        onClose={() => setShowCheckOutPicker(false)}
-        onSelect={setCheckOut}
-        selectedDate={checkOut}
-        minDate={getCheckOutMinDate()}
-        title="Select Check-out Date"
-      />
+      {isMonthlyBooking ? (
+        <>
+          <MonthPicker
+            visible={showCheckInPicker}
+            onClose={() => setShowCheckInPicker(false)}
+            onSelect={handleCheckInSelect}
+            selectedDate={checkIn}
+            minDate={new Date()}
+            title="Select Check-in Month"
+          />
+          <MonthPicker
+            visible={showCheckOutPicker}
+            onClose={() => setShowCheckOutPicker(false)}
+            onSelect={handleCheckOutSelect}
+            selectedDate={checkOut}
+            minDate={getCheckOutMinDate()}
+            title="Select Check-out Month"
+          />
+        </>
+      ) : (
+        <>
+          <CalendarPicker
+            visible={showCheckInPicker}
+            onClose={() => setShowCheckInPicker(false)}
+            onSelect={handleCheckInSelect}
+            selectedDate={checkIn}
+            minDate={new Date()}
+            title="Select Check-in Date"
+          />
+          <CalendarPicker
+            visible={showCheckOutPicker}
+            onClose={() => setShowCheckOutPicker(false)}
+            onSelect={handleCheckOutSelect}
+            selectedDate={checkOut}
+            minDate={getCheckOutMinDate()}
+            title="Select Check-out Date"
+          />
+        </>
+      )}
 
       {/* Success Modal */}
       <Modal visible={showSuccess} transparent animationType="fade">

@@ -6,6 +6,7 @@ import {
   FlatList,
   ScrollView,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import React, { useState, useCallback } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -324,9 +325,12 @@ const MyBooking = () => {
   const [activeTab, setActiveTab] = useState('upcoming');
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchBookings = useCallback(async () => {
-    setLoading(true);
+  const fetchBookings = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) {
+      setLoading(true);
+    }
     try {
       const response = await api.get('/api/bookings/my');
       setBookings(response.data.bookings || []);
@@ -334,15 +338,21 @@ const MyBooking = () => {
       console.error('Error fetching bookings:', err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
   // Re-fetch whenever this screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      fetchBookings();
+      fetchBookings({ silent: false });
     }, [fetchBookings])
   );
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchBookings({ silent: true });
+  };
 
   // Get data based on active tab
   const getBookingData = () => {
@@ -398,7 +408,10 @@ const MyBooking = () => {
     // Content for completed tab with action rows
     if (activeTab === 'completed') {
       return (
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} tintColor={COLORS.primary} />}
+        >
           {filteredBookings.map((booking) => (
             <View key={booking.id}>
               <BookingCard booking={booking} />
@@ -448,7 +461,10 @@ const MyBooking = () => {
     // Content for cancelled tab with action row
     if (activeTab === 'cancelled') {
       return (
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} tintColor={COLORS.primary} />}
+        >
           {filteredBookings.map((booking) => (
             <View key={booking.id}>
               <BookingCard booking={booking} />
@@ -514,7 +530,7 @@ const MyBooking = () => {
                 }}
               >
                 <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 13 }}>
-                  Pay Now ${item.totalAmount?.toLocaleString()}
+                  Pay Now ৳{item.totalAmount?.toLocaleString()}
                 </Text>
               </TouchableOpacity>
             )}
@@ -522,6 +538,7 @@ const MyBooking = () => {
         )}
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} tintColor={COLORS.primary} />}
       />
     );
   };

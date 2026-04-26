@@ -15,7 +15,7 @@ import * as SecureStore from "expo-secure-store";
 import useAuthStore from "../store/authStore";
 import { useEffect } from "react";
 import { setTokenProvider } from "../services/api";
-import { setSocketTokenProvider } from "../services/socketService";
+import { disconnectSocket, setSocketTokenProvider } from "../services/socketService";
 
 // Clerk token cache backed by expo-secure-store
 const tokenCache = {
@@ -35,8 +35,8 @@ function AppNavigator() {
   const router = useRouter();
   const segments = useSegments();
   const navigationState = useRootNavigationState();
-  const { isSignedIn, isLoaded, getToken } = useAuth();
-  const { user, syncWithBackend, clearUser } = useAuthStore();
+  const { isSignedIn, isLoaded, getToken, signOut } = useAuth();
+  const { user, syncWithBackend, clearUser, setSignOutAction } = useAuthStore();
 
   // Provide Clerk token to the axios instance and socket
   useEffect(() => {
@@ -44,12 +44,17 @@ function AppNavigator() {
     setSocketTokenProvider(getToken);
   }, [getToken]);
 
+  useEffect(() => {
+    setSignOutAction(signOut);
+  }, [setSignOutAction, signOut]);
+
   // On sign-in, sync user profile with backend
   useEffect(() => {
     if (isLoaded && isSignedIn && !user) {
       syncWithBackend();
     }
     if (isLoaded && !isSignedIn) {
+      disconnectSocket();
       clearUser();
     }
   }, [isLoaded, isSignedIn]);

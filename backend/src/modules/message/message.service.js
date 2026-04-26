@@ -1,4 +1,5 @@
 import prisma from '../../config/prisma.js';
+import { notifyUser } from '../notification/notification.service.js';
 
 // ─── Shared includes ───
 
@@ -193,6 +194,21 @@ export const sendMessage = async (userId, conversationId, { content, type = 'tex
       data: { updatedAt: new Date() },
     }),
   ]);
+
+  // Create in-app notification for the recipient
+  const recipientId = conversation.userId === userId ? conversation.agentId : conversation.userId;
+  await notifyUser(recipientId, {
+    type: 'NEW_MESSAGE',
+    title: `New message from ${message.sender.name || message.sender.username}`,
+    message: content.length > 50 ? content.substring(0, 47) + '...' : content,
+    data: { 
+      conversationId, 
+      messageId: message.id,
+      senderId: userId,
+      senderName: message.sender.name,
+      senderAvatar: message.sender.avatar
+    }
+  });
 
   return message;
 };

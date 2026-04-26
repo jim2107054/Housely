@@ -7,12 +7,18 @@ const router = Router();
 // Initiation requires auth
 router.post('/initiate', protect, paymentController.initiate);
 
-// Callback from gateway (public)
+// SSLCommerz callbacks (public)
+router.get('/sslcommerz/success', paymentController.sslCommerzSuccess);
+router.post('/sslcommerz/success', paymentController.sslCommerzSuccess);
+router.get('/sslcommerz/fail', paymentController.sslCommerzFail);
+router.post('/sslcommerz/fail', paymentController.sslCommerzFail);
+router.get('/sslcommerz/cancel', paymentController.sslCommerzCancel);
+router.post('/sslcommerz/cancel', paymentController.sslCommerzCancel);
+router.post('/sslcommerz/ipn', paymentController.sslCommerzIpn);
+
+// Legacy callback support
 router.get('/callback', paymentController.callback);
 router.post('/callback', paymentController.callback);
-
-// Mock gateway page (public)
-router.get('/mock-gateway', paymentController.mockGateway);
 
 // Payment history (auth)
 router.get('/my', protect, paymentController.getHistory);

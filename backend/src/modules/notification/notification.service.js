@@ -74,11 +74,26 @@ export const markAllAsRead = async (userId) => {
 // ─── Get Unread Count ───
 
 export const getUnreadCount = async (userId) => {
-  const count = await prisma.notification.count({
-    where: { userId, isRead: false },
-  });
+  const [notificationCount, chatCount] = await Promise.all([
+    prisma.notification.count({
+      where: { userId, isRead: false },
+    }),
+    prisma.message.count({
+      where: {
+        conversation: {
+          OR: [{ userId }, { agentId: userId }],
+        },
+        senderId: { not: userId },
+        isRead: false,
+      },
+    }),
+  ]);
 
-  return { unreadCount: count };
+  return { 
+    unreadCount: notificationCount + chatCount,
+    notificationCount,
+    chatCount 
+  };
 };
 
 // ─── Delete Notification ───

@@ -75,7 +75,18 @@ export const uploadAvatar = async (userId, avatarUrl) => {
   return prisma.user.update({
     where: { id: userId },
     data: { avatar: avatarUrl },
-    select: { id: true, avatar: true },
+    select: {
+      id: true,
+      username: true,
+      email: true,
+      name: true,
+      phoneNumber: true,
+      dateOfBirth: true,
+      avatar: true,
+      role: true,
+      isVerified: true,
+      createdAt: true,
+    },
   });
 };
 

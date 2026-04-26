@@ -23,10 +23,10 @@ const Maps = () => {
   const params = useLocalSearchParams();
   const webViewRef = useRef(null);
   
-  // Default location (Yogyakarta, Indonesia)
+  // Default location (Khulna, Bangladesh)
   const defaultLocation = {
-    latitude: -7.7956,
-    longitude: 110.3695,
+    latitude: 22.8456,
+    longitude: 89.5403,
   };
 
   const [selectedLocation, setSelectedLocation] = useState({

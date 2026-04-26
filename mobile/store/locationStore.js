@@ -2,10 +2,23 @@ import { create } from "zustand";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const useLocationStore = create((set, get) => ({
+  // Default location: Khulna, Bangladesh
+  defaultLocation: {
+    latitude: 22.8456,
+    longitude: 89.5403,
+    address: "Khulna, Bangladesh",
+    shortName: "Khulna, Bangladesh",
+  },
+
   // Location state
-  selectedLocation: null,
-  locationName: "Select Location",
-  isLocationSet: false,
+  selectedLocation: {
+    latitude: 22.8456,
+    longitude: 89.5403,
+    address: "Khulna, Bangladesh",
+    shortName: "Khulna, Bangladesh",
+  },
+  locationName: "Khulna, Bangladesh",
+  isLocationSet: true,
 
   // Set location from maps screen
   setLocation: async (latitude, longitude, address) => {
@@ -53,6 +66,12 @@ const useLocationStore = create((set, get) => ({
         });
         return locationData;
       }
+      const { defaultLocation } = get();
+      set({
+        selectedLocation: defaultLocation,
+        locationName: defaultLocation.shortName,
+        isLocationSet: true,
+      });
       return null;
     } catch (error) {
       console.log("Error loading location:", error);
@@ -64,10 +83,11 @@ const useLocationStore = create((set, get) => ({
   clearLocation: async () => {
     try {
       await AsyncStorage.removeItem("userLocation");
+      const { defaultLocation } = get();
       set({
-        selectedLocation: null,
-        locationName: "Select Location",
-        isLocationSet: false,
+        selectedLocation: defaultLocation,
+        locationName: defaultLocation.shortName,
+        isLocationSet: true,
       });
     } catch (error) {
       console.log("Error clearing location:", error);
@@ -76,17 +96,17 @@ const useLocationStore = create((set, get) => ({
 
   // Get coordinates for filtering properties
   getCoordinates: () => {
-    const { selectedLocation } = get();
+    const { selectedLocation, defaultLocation } = get();
     if (selectedLocation) {
       return {
         latitude: selectedLocation.latitude,
         longitude: selectedLocation.longitude,
       };
     }
-    // Default to Dhaka, Bangladesh if no location set
+    // Default to Khulna, Bangladesh if no location set
     return {
-      latitude: 23.8103,
-      longitude: 90.4125,
+      latitude: defaultLocation.latitude,
+      longitude: defaultLocation.longitude,
     };
   },
 }));

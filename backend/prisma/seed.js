@@ -5,13 +5,13 @@ const prisma = new PrismaClient();
 
 const OWNER_DATA = [
   {
-    username: 'owner_nadia',
-    name: 'Nadia Rahman',
-    email: 'owner.nadia@housely.dev',
+    username: 'jahidhasan205',
+    name: 'Jahid Hasan',
+    email: 'mdjahid205hasan@gmail.com',
     phoneNumber: '+8801710001001',
     avatar: 'https://picsum.photos/seed/owner-nadia/300/300',
-    city: 'Dhaka',
-    area: 'Gulshan',
+    city: 'Khulna',
+    area: 'Fulbarigate',
   },
   {
     username: 'owner_tanvir',
@@ -19,7 +19,7 @@ const OWNER_DATA = [
     email: 'owner.tanvir@housely.dev',
     phoneNumber: '+8801710001002',
     avatar: 'https://picsum.photos/seed/owner-tanvir/300/300',
-    city: 'Dhaka',
+    city: 'Khulna',
     area: 'Dhanmondi',
   },
   {
@@ -47,7 +47,7 @@ const OWNER_DATA = [
     clerkId: 'user_3Cog6VSKT1YC8jgfmhdCCHEy42N',
     phoneNumber: '+8801710001005',
     avatar: 'https://picsum.photos/seed/owner-shakoyat/300/300',
-    city: 'Dhaka',
+    city: 'Khulna',
     area: 'Mirpur',
   },
 ];
@@ -136,8 +136,8 @@ function createHousePayload(owner, ownerIndex, propertyIndex) {
     address: `${propertyNumber * 7} Road-${propertyNumber}, ${owner.area}`,
     city: owner.city,
     area: owner.area,
-    latitude: 23.70 + ownerIndex * 0.31 + propertyIndex * 0.004,
-    longitude: 90.36 + ownerIndex * 0.29 + propertyIndex * 0.005,
+    latitude: 22.84 + ownerIndex * 0.01 + propertyIndex * 0.004,
+    longitude: 89.54 + ownerIndex * 0.01 + propertyIndex * 0.005,
     bedrooms,
     bathrooms,
     sizeInSqft: sqft,

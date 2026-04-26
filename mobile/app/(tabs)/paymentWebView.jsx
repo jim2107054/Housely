@@ -94,7 +94,7 @@ const PaymentWebView = () => {
           <Text style={{ fontSize: 16, fontWeight: '700', color: '#1A1A1A' }}>Secure Checkout</Text>
           <Text style={{ fontSize: 12, color: '#9E9E9E' }}>Payment for {propertyName}</Text>
         </View>
-        <Text style={{ fontSize: 16, fontWeight: '800', color: '#7B61FF' }}>${amount}</Text>
+        <Text style={{ fontSize: 16, fontWeight: '800', color: '#7B61FF' }}>৳{amount}</Text>
       </View>
 
       {/* WebView */}
@@ -103,6 +103,17 @@ const PaymentWebView = () => {
           source={{ uri: gatewayUrl }}
           onNavigationStateChange={onNavigationStateChange}
           startInLoadingState={true}
+          javaScriptEnabled={true}
+          domStorageEnabled={true}
+          onError={(syntheticEvent) => {
+            const { nativeEvent } = syntheticEvent;
+            console.warn('WebView error: ', nativeEvent);
+            Alert.alert(
+              'Network Error',
+              `Could not load payment page: ${nativeEvent.description || 'Unknown error'}\n\nCheck if the server at ${nativeEvent.url} is reachable.`,
+              [{ text: 'Go Back', onPress: () => router.back() }]
+            );
+          }}
           renderLoading={() => (
             <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center', backgroundColor: '#FFF' }}>
               <ActivityIndicator size="large" color="#7B61FF" />
