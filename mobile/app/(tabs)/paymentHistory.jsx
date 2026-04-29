@@ -12,8 +12,9 @@ import { useRouter } from 'expo-router';
 
 // Import data (structured like backend API response)
 import api from '../../services/api';
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { ActivityIndicator } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 
 
 
@@ -171,7 +172,7 @@ const PaymentCard = ({ payment, onPress }) => {
             color: COLORS.primary,
           }}
         >
-          ${payment.amount}
+          ৳{payment.amount}
         </Text>
       </View>
     </TouchableOpacity>
@@ -202,7 +203,7 @@ const SummaryCard = ({ payments }) => {
         Total Payments
       </Text>
       <Text style={{ color: '#FFFFFF', fontSize: 28, fontWeight: 'bold', marginTop: 4 }}>
-        ${totalPaid.toLocaleString()}
+        ৳{totalPaid.toLocaleString()}
       </Text>
       <View style={{ flexDirection: 'row', marginTop: 16 }}>
         <View style={{ flex: 1 }}>
@@ -218,7 +219,7 @@ const SummaryCard = ({ payments }) => {
             Pending
           </Text>
           <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '600', marginTop: 2 }}>
-            ${pendingAmount.toLocaleString()}
+            ৳{pendingAmount.toLocaleString()}
           </Text>
         </View>
       </View>
@@ -232,20 +233,22 @@ const PaymentHistory = () => {
   const [loading, setLoading] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
 
-  useEffect(() => {
-    const fetchPayments = async () => {
-      setLoading(true);
-      try {
-        const response = await api.get('/api/users/me/payment-history');
-        setPayments(response.data.payments || []);
-      } catch (err) {
-        console.error('Error fetching payments:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPayments();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      const fetchPayments = async () => {
+        setLoading(true);
+        try {
+          const response = await api.get('/api/payments/my');
+          setPayments(response.data.payments || []);
+        } catch (err) {
+          console.error('Error fetching payments:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchPayments();
+    }, [])
+  );
 
   const filteredPayments =
     filterStatus === 'all'

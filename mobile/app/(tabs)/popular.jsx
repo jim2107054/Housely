@@ -4,11 +4,13 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  RefreshControl,
 } from "react-native";
 import { useEffect, useState } from "react";
 import { ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 import LocationIcon from "../../assets/images/home-icons/Location.svg";
 import api from "../../services/api";
 
@@ -18,31 +20,47 @@ const Popular = () => {
   const router = useRouter();
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchPopular = async () => {
-      setLoading(true);
-      try {
-        const response = await api.get('/api/houses/popular');
-        const transformed = response.data.houses.map(h => ({
-          ...h,
-          name: h.name,
-          location: `${h.area}, ${h.city}`,
-          price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
-          priceType: h.listingType === 'RENT' ? 'month' : 'total',
-          image: h.images?.[0]?.url || 'https://via.placeholder.com/150',
-          rating: h.rating || 4.5,
-          isFavorite: h.favorites?.length > 0,
-        }));
-        setProperties(transformed);
-      } catch (err) {
-        console.error('Error fetching popular properties:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPopular();
-  }, []);
+  const fetchPopular = async (silent = false) => {
+    if (!silent) setLoading(true);
+    setError(null);
+    try {
+      const response = await api.get('/api/houses/popular');
+      const transformed = response.data.houses.map(h => ({
+        ...h,
+        name: h.name,
+        location: `${h.area}, ${h.city}`,
+        price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
+        priceType: h.listingType === 'RENT' ? 'month' : 'total',
+        image: h.images?.[0]?.url || 'https://via.placeholder.com/150',
+        rating: h.rating || 4.5,
+        isFavorite: h.favorites?.length > 0,
+      }));
+      setProperties(transformed);
+    } catch (err) {
+      setError(err.request ? 'Cannot connect to server' : 'Failed to load properties');
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchPopular(properties.length > 0);
+    }, [properties.length])
+  );
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    setError(null);
+    try {
+      await fetchPopular();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const toggleFavorite = async (id) => {
     try {
@@ -95,7 +113,7 @@ const Popular = () => {
         </View>
         <View className="flex-row items-center mt-1">
           <Text className="text-textPrimary font-poppins-semibold text-sm">
-            ${item.price}/{item.priceType}
+            ৳{item.price}/{item.priceType}
           </Text>
           <View className="flex-row items-center ml-4">
             <Ionicons name="star" size={14} color="#FFC42D" />
@@ -124,15 +142,46 @@ const Popular = () => {
   return (
     <View className="flex-1 bg-white">
       <Header />
-      {loading ? (
+      {loading && properties.length === 0 ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#6C5CE7" />
         </View>
+      ) : error ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 }}>
+          <Ionicons name="cloud-offline-outline" size={56} color="#C9CBD9" />
+          <Text style={{ marginTop: 12, color: '#252B5C', fontSize: 16, fontWeight: '700', textAlign: 'center' }}>
+            Connection Error
+          </Text>
+          <Text style={{ marginTop: 6, color: '#A1A5C1', fontSize: 13, textAlign: 'center' }}>{error}</Text>
+          <TouchableOpacity
+            onPress={() => fetchPopular()}
+            style={{ marginTop: 16, backgroundColor: '#6C5CE7', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10 }}
+          >
+            <Text style={{ color: '#FFF', fontWeight: '700' }}>Retry</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false}>
-          {properties.map((item) => (
-            <PopularCard key={item.id} item={item} />
-          ))}
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#7B61FF"
+              colors={["#7B61FF"]}
+            />
+          }
+        >
+          {properties.length === 0 ? (
+            <View style={{ paddingTop: 80, alignItems: 'center' }}>
+              <Ionicons name="star-outline" size={48} color="#C9CBD9" />
+              <Text style={{ marginTop: 8, color: '#A1A5C1' }}>No popular properties yet</Text>
+            </View>
+          ) : (
+            properties.map((item) => (
+              <PopularCard key={item.id} item={item} />
+            ))
+          )}
           {/* Bottom spacing */}
           <View className="h-24" />
         </ScrollView>

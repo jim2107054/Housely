@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { useSession, signOut } from "next-auth/react";
+import { useUser, useClerk } from "@clerk/nextjs";
 import { getInitials } from "@/lib/utils";
 import { LogOut } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -22,7 +22,8 @@ interface HeaderProps {
 }
 
 export function Header({ title }: HeaderProps) {
-  const { data: session } = useSession();
+  const { user } = useUser();
+  const { signOut } = useClerk();
 
   const { data: health } = useQuery({
     queryKey: ["system-health"],
@@ -35,7 +36,7 @@ export function Header({ title }: HeaderProps) {
   });
 
   const handleLogout = async () => {
-    await signOut({ callbackUrl: "/login" });
+    await signOut({ redirectUrl: "/login" });
   };
 
   const isSystemHealthy = health?.database === "connected";
@@ -70,16 +71,16 @@ export function Header({ title }: HeaderProps) {
             <button className="flex items-center gap-3 focus:outline-none hover:opacity-80 transition-opacity">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-semibold text-gray-900">
-                  {session?.user?.name || "Admin User"}
+                  {user?.fullName || "Admin User"}
                 </p>
                 <p className="text-xs text-gray-500">Administrator</p>
               </div>
               <Avatar className="w-10 h-10 cursor-pointer ring-2 ring-primary/20">
-                <AvatarImage src={session?.user?.image || undefined} />
+                <AvatarImage src={user?.imageUrl || undefined} />
                 <AvatarFallback className="bg-primary-100 text-primary-700 font-semibold">
                   {getInitials(
-                    session?.user?.name || null,
-                    session?.user?.email?.split("@")[0] || "A"
+                    user?.fullName || null,
+                    user?.emailAddresses?.[0]?.emailAddress?.split("@")[0] || "A"
                   )}
                 </AvatarFallback>
               </Avatar>
@@ -88,9 +89,9 @@ export function Header({ title }: HeaderProps) {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>
               <div>
-                <p className="font-semibold text-gray-900">{session?.user?.name || "Admin User"}</p>
+                <p className="font-semibold text-gray-900">{user?.fullName || "Admin User"}</p>
                 <p className="text-xs text-gray-500 font-normal mt-0.5">
-                  {session?.user?.email}
+                  {user?.emailAddresses?.[0]?.emailAddress}
                 </p>
               </div>
             </DropdownMenuLabel>

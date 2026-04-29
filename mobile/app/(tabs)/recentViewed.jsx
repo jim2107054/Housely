@@ -4,6 +4,7 @@ import {
   TouchableOpacity,
   FlatList,
   Image,
+  RefreshControl,
 } from 'react-native';
 import React, { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,8 +13,9 @@ import { useRouter } from 'expo-router';
 
 // Import data (structured like backend API response)
 import api from '../../services/api';
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { ActivityIndicator } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 
 
 
@@ -162,7 +164,7 @@ const PropertyCard = ({ property, onPress, onRemove }) => {
         {/* Bottom Row - Price & Rating */}
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
           <Text style={{ fontSize: 14, fontWeight: 'bold', color: COLORS.primary }}>
-            ${property.price}
+            ৳{property.price}
             <Text style={{ fontSize: 11, fontWeight: 'normal', color: COLORS.textSecondary }}>/month</Text>
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -267,31 +269,46 @@ const RecentViewed = () => {
   const router = useRouter();
   const [recentItems, setRecentItems] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    const fetchRecentlyViewed = async () => {
-      setLoading(true);
-      try {
-        const response = await api.get('/api/users/me/recent-viewed');
-        const transformedItems = response.data.houses.map(h => ({
-          ...h,
-          name: h.name,
-          location: `${h.area}, ${h.city}`,
-          price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
-          priceType: h.listingType === 'RENT' ? 'month' : 'total',
-          image: h.images?.[0]?.url || 'https://via.placeholder.com/150',
-          rating: h.rating || 4.5,
-          viewedAt: h.viewedAt,
-        }));
-        setRecentItems(transformedItems);
-      } catch (err) {
-        console.error('Error fetching recently viewed:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchRecentlyViewed();
-  }, []);
+  const fetchRecentlyViewed = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get('/api/users/me/recent-viewed');
+      const transformedItems = response.data.houses.map(h => ({
+        ...h,
+        name: h.name,
+        location: `${h.area}, ${h.city}`,
+        price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
+        priceType: h.listingType === 'RENT' ? 'month' : 'total',
+        image: h.images?.[0]?.url || 'https://via.placeholder.com/150',
+        rating: h.rating || 4.5,
+        viewedAt: h.viewedAt,
+      }));
+      setRecentItems(transformedItems);
+    } catch (err) {
+      console.error('Error fetching recently viewed:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchRecentlyViewed();
+    }, [])
+  );
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await fetchRecentlyViewed();
+    } catch (_) {
+      // silent fail — data will just be stale
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // Group items by time period
   const groupedItems = groupByTimePeriod(recentItems);
@@ -445,6 +462,14 @@ const RecentViewed = () => {
           keyExtractor={(item) => item.key}
           contentContainerStyle={{ paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#7B61FF"
+              colors={["#7B61FF"]}
+            />
+          }
         />
       )}
     </SafeAreaView>

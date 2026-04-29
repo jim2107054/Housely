@@ -4,18 +4,19 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
 } from "react-native";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
+import { useAuth } from "@clerk/clerk-expo";
 
 // Import SVG icons
 import LocationIcon from "../../assets/images/home-icons/Location.svg";
 
 // Import data (structured like backend API response)
 import api from "../../services/api";
-import { useEffect } from "react";
-import { ActivityIndicator } from "react-native";
 
 
 
@@ -24,34 +25,52 @@ const Favorite = () => {
   const [favorites, setFavorites] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    const fetchFavorites = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        console.log('[Favorites] Fetching favorites...');
-        const response = await api.get('/api/houses/favorites');
-        const transformedFavorites = response.data.houses.map(h => ({
-          ...h,
-          name: h.name,
-          location: `${h.area}, ${h.city}`,
-          price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
-          priceType: h.listingType === 'RENT' ? 'month' : 'total',
-          image: h.images?.[0]?.url || 'https://via.placeholder.com/150',
-          rating: h.rating || 4.5,
-          isFavorite: true,
-        }));
-        setFavorites(transformedFavorites);
-      } catch (err) {
-        console.error('[Favorites] Error fetching favorites:', err);
-        setError(err.request ? 'Cannot connect to server' : 'Failed to load favorites');
-      } finally {
-        setLoading(false);
+  const fetchFavorites = async (silent = false) => {
+    if (!silent) setLoading(true);
+    setError(null);
+    try {
+      const response = await api.get('/api/houses/favorites');
+      const transformedFavorites = response.data.houses.map(h => ({
+        ...h,
+        name: h.name,
+        location: `${h.area}, ${h.city}`,
+        price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
+        priceType: h.listingType === 'RENT' ? 'month' : 'total',
+        image: h.images?.[0]?.url || 'https://via.placeholder.com/150',
+        rating: h.rating || 4.5,
+        isFavorite: true,
+      }));
+      setFavorites(transformedFavorites);
+    } catch (err) {
+      setError(err.request ? 'Cannot connect to server' : 'Failed to load favorites');
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  };
+
+  const { isSignedIn, isLoaded } = useAuth();
+
+  // Only fetch when the screen is focused AND the user is signed in,
+  // preventing 401 errors when the Clerk token isn't ready yet.
+  useFocusEffect(
+    useCallback(() => {
+      if (isLoaded && isSignedIn) {
+        fetchFavorites(favorites.length > 0);
       }
-    };
-    fetchFavorites();
-  }, []);
+    }, [isLoaded, isSignedIn, favorites.length])
+  );
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    setError(null);
+    try {
+      await fetchFavorites();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const toggleFavorite = async (id) => {
     try {
@@ -60,8 +79,8 @@ const Favorite = () => {
         // If removed, filter out from local state
         setFavorites(prev => prev.filter(f => f.id !== id));
       }
-    } catch (err) {
-      console.error('Error toggling favorite:', err);
+    } catch (_err) {
+      // toggle failure is non-critical
     }
   };
 
@@ -117,7 +136,7 @@ const Favorite = () => {
         </View>
         <View className="flex-row items-center justify-between mt-1">
           <Text className="text-primary font-poppins-bold text-sm">
-            ${item.price}<Text className="text-textSecondary font-poppins text-xs">/{item.priceType}</Text>
+            ৳{item.price}<Text className="text-textSecondary font-poppins text-xs">/{item.priceType}</Text>
           </Text>
           <View className="flex-row items-center">
             <Ionicons name="star" size={14} color="#FFC42D" />
@@ -146,12 +165,36 @@ const Favorite = () => {
   return (
     <View className="flex-1 bg-white">
       <Header />
-      {loading ? (
+      {loading && favorites.length === 0 ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#6C5CE7" />
         </View>
+      ) : error ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 }}>
+          <Ionicons name="cloud-offline-outline" size={56} color="#C9CBD9" />
+          <Text style={{ marginTop: 12, color: '#252B5C', fontSize: 16, fontWeight: '700', textAlign: 'center' }}>
+            Connection Error
+          </Text>
+          <Text style={{ marginTop: 6, color: '#A1A5C1', fontSize: 13, textAlign: 'center' }}>{error}</Text>
+          <TouchableOpacity
+            onPress={() => fetchFavorites()}
+            style={{ marginTop: 16, backgroundColor: '#6C5CE7', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10 }}
+          >
+            <Text style={{ color: '#FFF', fontWeight: '700' }}>Retry</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#7B61FF"
+              colors={["#7B61FF"]}
+            />
+          }
+        >
           {favorites.length > 0 ? (
             favorites.map((item) => (
               <FavoriteCard key={item.id} item={item} />

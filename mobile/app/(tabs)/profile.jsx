@@ -44,7 +44,11 @@ const Profile = () => {
 
   const handleSignOut = async () => {
     try {
-      await logout();
+      const result = await logout();
+      if (!result?.success) {
+        throw new Error(result?.message || 'Failed to logout');
+      }
+
       Toast.show({
         type: 'success',
         text1: 'Logged Out',
@@ -59,7 +63,7 @@ const Profile = () => {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Failed to logout. Please try again.',
+        text2: error?.message || 'Failed to logout. Please try again.',
         position: 'top',
         visibilityTime: 3000,
       });
@@ -91,9 +95,10 @@ const Profile = () => {
         {/* Profile Section */}
         <View className="items-center py-8 px-4">
           {/* Profile Image with Edit Icon */}
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => router.push("(tabs)/editProfile")}
             className="relative mb-4"
+            activeOpacity={0.7}
           >
             <Image
               source={user?.avatar ? { uri: user.avatar } : require('../../assets/images/profileImage.png')}
@@ -122,6 +127,7 @@ const Profile = () => {
             <TouchableOpacity
               key={item.id}
               onPress={item.onPress}
+              activeOpacity={0.7}
               className={`flex-row items-center py-4 ${index < menuItems.length - 1 ? 'border-b border-[#F0F0F0]' : ''}`}
             >
               <View className="w-10 h-10 justify-center items-center">
@@ -139,6 +145,7 @@ const Profile = () => {
         <View className="px-4 mt-6 mb-8">
           <TouchableOpacity
             onPress={handleSignOut}
+            activeOpacity={0.7}
             className="bg-[#FFE5E5] py-4 rounded-xl items-center"
           >
             <Text className="text-base font-semibold text-[#FF5252]">

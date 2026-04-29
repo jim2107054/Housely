@@ -8,8 +8,9 @@ import {
 } from "react-native";
 import { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useCallback } from "react";
 import Toast from "react-native-toast-message";
 import api from "../../services/api";
 
@@ -46,23 +47,25 @@ const OwnerBookings = () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchBookings = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        console.log('[Bookings] Fetching bookings...');
-        const response = await api.get('/api/bookings/agent/all');
-        setBookings(response.data.bookings || []);
-      } catch (err) {
-        console.error('[Bookings] Error fetching agent bookings:', err);
-        setError(err.request ? 'Cannot connect to server' : 'Failed to load bookings');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchBookings();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      const fetchBookings = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+          console.log('[Bookings] Fetching bookings...');
+          const response = await api.get('/api/bookings/agent/all');
+          setBookings(response.data.bookings || []);
+        } catch (err) {
+          console.error('[Bookings] Error fetching agent bookings:', err);
+          setError(err.request ? 'Cannot connect to server' : 'Failed to load bookings');
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchBookings();
+    }, [])
+  );
 
   const filteredBookings = bookings.filter((b) => b.status === activeTab);
 
@@ -135,18 +138,18 @@ const OwnerBookings = () => {
         </View>
 
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: "#F5F5F5" }}>
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
+          <View style={{ flexDirection: "row", alignItems: "center", flex: 1, marginRight: 8 }}>
             <View style={{ backgroundColor: config.bg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}>
               <Text style={{ fontSize: 12, fontWeight: "600", color: config.text }}>{config.label}</Text>
             </View>
             {item.notes && (
-              <Text style={{ fontSize: 12, color: COLORS.textSecondary, marginLeft: 8 }} numberOfLines={1}>
+              <Text style={{ fontSize: 12, color: COLORS.textSecondary, marginLeft: 8, flex: 1 }} numberOfLines={1}>
                 "{item.notes}"
               </Text>
             )}
           </View>
           <Text style={{ fontSize: 18, fontWeight: "bold", color: COLORS.primary }}>
-            ${item.totalAmount}
+            ৳{item.totalAmount?.toLocaleString()}
           </Text>
         </View>
 

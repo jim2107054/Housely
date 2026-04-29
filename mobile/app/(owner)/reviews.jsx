@@ -6,9 +6,10 @@ import {
   FlatList,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api from "../../services/api";
+import { useCallback } from "react";
 import { useEffect, useState } from "react";
 import { ActivityIndicator } from "react-native";
 
@@ -28,20 +29,22 @@ const OwnerReviews = () => {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchReviews = async () => {
-      setLoading(true);
-      try {
-        const response = await api.get('/api/reviews/agent');
-        setReviews(response.data.reviews || []);
-      } catch (err) {
-        console.error('Error fetching agent reviews:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchReviews();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      const fetchReviews = async () => {
+        setLoading(true);
+        try {
+          const response = await api.get('/api/reviews/agent');
+          setReviews(response.data.reviews || []);
+        } catch (err) {
+          console.error('Error fetching agent reviews:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchReviews();
+    }, [])
+  );
 
   const avgRating =
     reviews.length > 0

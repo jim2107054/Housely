@@ -92,7 +92,7 @@ export const getNearby = async (lat, lng, radiusKm = 10, limit = 20) => {
   const latDelta = radiusKm / 111;
   const lngDelta = radiusKm / (111 * Math.cos((lat * Math.PI) / 180));
 
-  return prisma.house.findMany({
+  const houses = await prisma.house.findMany({
     where: {
       status: 'AVAILABLE',
       latitude: { gte: lat - latDelta, lte: lat + latDelta },
@@ -101,6 +101,40 @@ export const getNearby = async (lat, lng, radiusKm = 10, limit = 20) => {
     include: houseListInclude,
     take: limit,
   });
+
+  if (houses.length === 0) {
+    // Fallback for datasets without coordinates so nearby view is still usable.
+    return prisma.house.findMany({
+      where: { status: 'AVAILABLE' },
+      include: houseListInclude,
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+  }
+
+  const toRadians = (deg) => (deg * Math.PI) / 180;
+  const haversineDistanceKm = (lat1, lon1, lat2, lon2) => {
+    const earthRadiusKm = 6371;
+    const dLat = toRadians(lat2 - lat1);
+    const dLon = toRadians(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return earthRadiusKm * c;
+  };
+
+  return houses
+    .map((house) => ({
+      ...house,
+      distanceKm: haversineDistanceKm(lat, lng, house.latitude, house.longitude),
+    }))
+    .sort((a, b) => a.distanceKm - b.distanceKm)
+    .slice(0, limit)
+    .map((house) => ({
+      ...house,
+      distanceKm: Number(house.distanceKm.toFixed(2)),
+    }));
 };
 
 // ─── Top Locations ───
@@ -322,13 +356,23 @@ export const getAgentDashboard = async (agentId) => {
       where: { agentId },
       include: {
         user: { select: { id: true, name: true, avatar: true } },
-        house: { select: { id: true, name: true } },
+        house: { 
+          select: { 
+            id: true, 
+            name: true,
+            images: { take: 1, orderBy: { order: 'asc' } }
+          } 
+        },
       },
       orderBy: { createdAt: 'desc' },
     }),
     prisma.review.findMany({
       where: { house: { agentId } },
-      select: { rating: true },
+      include: {
+        user: { select: { id: true, name: true, avatar: true } },
+        house: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: 'desc' },
     }),
   ]);
 
@@ -373,6 +417,7 @@ export const getAgentDashboard = async (agentId) => {
       pendingPayouts,
     },
     recentBookings: bookings.slice(0, 5),
+    recentReviews: reviews.slice(0, 5),
     transactions: transactions.slice(0, 20),
   };
 };

@@ -7,12 +7,14 @@ import {
   TextInput,
   Animated,
   PanResponder,
+  RefreshControl,
 } from "react-native";
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 
 import api from "../../services/api";
+import { connectSocket, getSocket } from "../../services/socketService";
 import { useEffect } from "react";
 import { ActivityIndicator } from "react-native";
 import useAuthStore from "../../store/authStore";
@@ -25,37 +27,69 @@ const Chat = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchConversations = async () => {
+  const fetchConversations = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) {
       setLoading(true);
-      setError(null);
-      try {
-        console.log('[Chat] Fetching conversations...');
-        const response = await api.get('/api/conversations');
-        const transformedConversations = response.data.conversations.map(c => {
-          const otherUser = c.user1Id === user.id ? c.user2 : c.user1;
-          return {
-            id: c.id,
-            name: otherUser.name || otherUser.username,
-            lastMessage: c.lastMessage?.content || "No message yet",
-            time: c.lastMessageAt ? new Date(c.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "",
-            unreadCount: c.unreadCount || 0,
-            image: otherUser.avatar || "https://randomuser.me/api/portraits/men/1.jpg",
-            online: true,
-          };
-        });
-        setConversations(transformedConversations);
-      } catch (err) {
-        console.error('[Chat] Error fetching conversations:', err);
-        setError(err.request ? 'Cannot connect to server' : 'Failed to load conversations');
-      } finally {
-        setLoading(false);
-      }
+    }
+    setError(null);
+
+    try {
+      const response = await api.get('/api/conversations');
+      const transformedConversations = (response.data.conversations || []).map((c) => {
+        const otherUser = c.userId === user?.id ? c.agent : c.user;
+        const lastMsg = c.messages?.[0];
+        return {
+          id: c.id,
+          name: otherUser?.name || otherUser?.username || 'Unknown',
+          lastMessage: lastMsg?.content || 'No message yet',
+          time: lastMsg?.createdAt
+            ? new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            : '',
+          unreadCount: c.unreadCount || 0,
+          image: otherUser?.avatar || 'https://randomuser.me/api/portraits/men/1.jpg',
+          online: true,
+        };
+      });
+      setConversations(transformedConversations);
+    } catch (err) {
+      console.error('[Chat] Error fetching conversations:', err);
+      setError(err.request ? 'Cannot connect to server' : 'Failed to load conversations');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    fetchConversations({ silent: false });
+
+    // Listen for new messages via socket to refresh conversations list
+    let sock;
+    const initSocket = async () => {
+      sock = await connectSocket();
+      if (!sock) return;
+      sock.on('message:new', () => fetchConversations({ silent: true }));
     };
-    fetchConversations();
-  }, []);
+    initSocket();
+
+    return () => {
+      if (sock) sock.off('message:new');
+    };
+  }, [fetchConversations]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchConversations({ silent: true });
+    }, [fetchConversations])
+  );
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchConversations({ silent: true });
+  };
 
   // Filter conversations based on search
   const filteredConversations = conversations.filter(
@@ -75,13 +109,14 @@ const Chat = () => {
       <TouchableOpacity
         onPress={() => router.back()}
         className="w-10 h-10 items-center justify-center"
+        activeOpacity={0.7}
       >
         <Ionicons name="arrow-back" size={24} color="#252B5C" />
       </TouchableOpacity>
       <Text className="flex-1 text-center text-xl font-poppins-bold text-textPrimary">
         Messages
       </Text>
-      <TouchableOpacity className="w-10 h-10 items-center justify-center">
+      <TouchableOpacity className="w-10 h-10 items-center justify-center" activeOpacity={0.7}>
         <Ionicons name="ellipsis-vertical" size={24} color="#252B5C" />
       </TouchableOpacity>
     </View>
@@ -256,11 +291,38 @@ const Chat = () => {
     );
   }
 
+  if (error) {
+    return (
+      <View style={{ flex: 1, backgroundColor: "white" }}>
+        <Header />
+        <View style={{ flex: 1, justifyContent: "center", alignItems: "center", paddingHorizontal: 40 }}>
+          <Ionicons name="cloud-offline-outline" size={64} color="#A1A5C1" />
+          <Text style={{ marginTop: 12, fontSize: 18, fontWeight: "700", color: "#252B5C", textAlign: "center" }}>
+            Connection Error
+          </Text>
+          <Text style={{ marginTop: 6, fontSize: 14, color: "#A1A5C1", textAlign: "center" }}>
+            {error}
+          </Text>
+          <TouchableOpacity
+            onPress={() => fetchConversations({ silent: false })}
+            activeOpacity={0.7}
+            style={{ marginTop: 16, backgroundColor: "#6941C6", paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 }}
+          >
+            <Text style={{ color: "#FFF", fontWeight: "700" }}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View className="flex-1 bg-white">
       <Header />
       <SearchBar />
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#6941C6"]} tintColor="#6941C6" />}
+      >
         {filteredConversations.length > 0 ? (
           filteredConversations.map((item) => (
             <ChatCard key={item.id} item={item} />

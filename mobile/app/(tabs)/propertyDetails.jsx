@@ -14,13 +14,37 @@ import {
 } from "react-native";
 import { useState, useRef, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { WebView } from "react-native-webview";
+import { VideoView, useVideoPlayer } from "expo-video";
 import api from "../../services/api";
 import { useEffect } from "react";
 
 const { width, height } = Dimensions.get("window");
 const AUTO_SCROLL_INTERVAL = 4000;
+
+// Component for rendering a video slide in the carousel
+const VideoSlide = ({ videoUrl, isActive }) => {
+  const player = useVideoPlayer(videoUrl ? { uri: videoUrl } : null);
+  
+  useEffect(() => {
+    if (!isActive && player) {
+      player.pause();
+    }
+  }, [isActive, player]);
+
+  if (!videoUrl) return null;
+  return (
+    <View style={{ width, height: height * 0.45, backgroundColor: '#000' }}>
+      <VideoView
+        player={player}
+        style={{ width: '100%', height: '100%' }}
+        nativeControls
+        contentFit="contain"
+      />
+    </View>
+  );
+};
 
 const PropertyDetailsNew = () => {
   const router = useRouter();
@@ -37,72 +61,84 @@ const PropertyDetailsNew = () => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
 
-  useEffect(() => {
-    const fetchProperty = async () => {
-      if (!propertyId) return;
-      setLoading(true);
-      try {
-        const response = await api.get(`/api/houses/${propertyId}`);
-        const h = response.data.house;
-        
-        const facilities = [];
-        if (h.publicFacilities) {
-          if (h.publicFacilities.hospitalDistance) facilities.push({ name: "Hospital", distance: h.publicFacilities.hospitalDistance, icon: "medkit" });
-          if (h.publicFacilities.shoppingMallDistance) facilities.push({ name: "Mall", distance: h.publicFacilities.shoppingMallDistance, icon: "cart" });
-          if (h.publicFacilities.mosqueDistance) facilities.push({ name: "Mosque", distance: h.publicFacilities.mosqueDistance, icon: "business" });
-          if (h.publicFacilities.marketDistance) facilities.push({ name: "Market", distance: h.publicFacilities.marketDistance, icon: "basket" });
-        }
-        if (h.hasWifi) facilities.push({ name: "WiFi", icon: "wifi" });
-        if (h.hasParking) facilities.push({ name: "Parking", icon: "car" });
-
-        setProperty({
-          id: h.id,
-          name: h.name,
-          location: `${h.area}, ${h.city}`,
-          price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
-          priceType: h.listingType === 'RENT' ? 'month' : 'total',
-          rating: h.rating || 4.5,
-          images: h.images?.map(img => img.url) || [],
-          bedrooms: h.bedrooms,
-          bathrooms: h.bathrooms,
-          area: h.sizeInSqft,
-          buildYear: h.buildYear,
-          status: h.listingType === 'RENT' ? 'For Rent' : 'For Sale',
-          description: h.description,
-          agent: {
-            name: h.agent?.name || "Unknown Agent",
-            role: h.agent?.role === "AGENT" ? "Real Estate Agent" : "Property Owner",
-            image: h.agent?.avatar || "https://randomuser.me/api/portraits/men/1.jpg",
-            phone: h.agent?.phoneNumber || "+000000000",
-          },
-          facilities,
-          totalReviews: h._count?.reviews || 0,
-          coordinates: {
-            latitude: h.latitude || -8.4095,
-            longitude: h.longitude || 115.1889,
+  useFocusEffect(
+    useCallback(() => {
+      const fetchProperty = async () => {
+        if (!propertyId) return;
+        setLoading(true);
+        try {
+          const [propertyRes, favoritesRes] = await Promise.all([
+            api.get(`/api/houses/${propertyId}`),
+            api.get('/api/houses/favorites').catch(() => ({ data: { houses: [] } })),
+          ]);
+          const h = propertyRes.data.house;
+          
+          // Check if this property is in user's favorites
+          const favHouses = favoritesRes.data.houses || [];
+          setIsFavorite(favHouses.some(fav => fav.id === propertyId));
+          
+          const facilities = [];
+          if (h.publicFacilities) {
+            if (h.publicFacilities.hospitalDistance) facilities.push({ name: "Hospital", distance: h.publicFacilities.hospitalDistance, icon: "medkit" });
+            if (h.publicFacilities.shoppingMallDistance) facilities.push({ name: "Mall", distance: h.publicFacilities.shoppingMallDistance, icon: "cart" });
+            if (h.publicFacilities.mosqueDistance) facilities.push({ name: "Mosque", distance: h.publicFacilities.mosqueDistance, icon: "business" });
+            if (h.publicFacilities.marketDistance) facilities.push({ name: "Market", distance: h.publicFacilities.marketDistance, icon: "basket" });
           }
-        });
-      } catch (err) {
-        console.error('Error fetching property details:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProperty();
-  }, [propertyId]);
+          if (h.hasWifi) facilities.push({ name: "WiFi", icon: "wifi" });
+          if (h.hasParking) facilities.push({ name: "Parking", icon: "car" });
+
+          setProperty({
+            id: h.id,
+            name: h.name,
+            location: `${h.area}, ${h.city}`,
+            price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
+            priceType: h.listingType === 'RENT' ? 'month' : 'total',
+            rating: h.rating || 4.5,
+            images: h.images?.map(img => img.url) || [],
+            bedrooms: h.bedrooms,
+            bathrooms: h.bathrooms,
+            area: h.sizeInSqft,
+            buildYear: h.buildYear,
+            status: h.listingType === 'RENT' ? 'For Rent' : 'For Sale',
+            description: h.description,
+            agent: {
+              id: h.agent?.id,
+              name: h.agent?.name || "Unknown Agent",
+              role: h.agent?.role === "AGENT" ? "Real Estate Agent" : "Property Owner",
+              image: h.agent?.avatar || "https://randomuser.me/api/portraits/men/1.jpg",
+              phone: h.agent?.phoneNumber || "+000000000",
+            },
+            facilities,
+            totalReviews: h._count?.reviews || 0,
+            videoUrl: h.video?.url || null,
+            coordinates: {
+              latitude: h.latitude || -8.4095,
+              longitude: h.longitude || 115.1889,
+            }
+          });
+        } catch (err) {
+          console.error('Error fetching property details:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchProperty();
+    }, [propertyId])
+  );
 
   // Auto-scroll images
   const startAutoScroll = useCallback(() => {
-    if (!property?.images?.length || property.images.length <= 1) return;
+    const mediaCount = (property?.images?.length || 0) + (property?.videoUrl ? 1 : 0);
+    if (mediaCount <= 1) return;
     stopAutoScroll();
     autoScrollTimer.current = setInterval(() => {
       setSelectedImageIndex((prev) => {
-        const next = (prev + 1) % property.images.length;
+        const next = (prev + 1) % mediaCount;
         imageScrollRef.current?.scrollToOffset({ offset: next * width, animated: true });
         return next;
       });
     }, AUTO_SCROLL_INTERVAL);
-  }, [property?.images?.length]);
+  }, [property?.images?.length, property?.videoUrl]);
 
   const stopAutoScroll = useCallback(() => {
     if (autoScrollTimer.current) {
@@ -125,10 +161,17 @@ const PropertyDetailsNew = () => {
     startAutoScroll();
   };
 
-  const toggleFavorite = () => setIsFavorite((prev) => !prev);
+  const toggleFavorite = async () => {
+    try {
+      const response = await api.post(`/api/houses/${propertyId}/favorite`);
+      setIsFavorite(response.data.isFavorite);
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
+    }
+  };
 
   const handleShare = async (platform) => {
-    const shareMessage = `Check out this property: ${property.name} in ${property.location} - $${property.price}/${property.priceType}`;
+    const shareMessage = `Check out this property: ${property.name} in ${property.location} - ৳${property.price}/${property.priceType}`;
     const shareUrl = `https://housely.app/property/${property.id}`;
 
     if (platform === "native") {
@@ -197,13 +240,12 @@ const PropertyDetailsNew = () => {
         {/* Back button */}
         <View style={{ position: 'absolute', top: StatusBar.currentHeight || 40, left: 20, zIndex: 10 }}>
           <TouchableOpacity
-            onPress={() => router.back()}
-            style={{
-              width: 44, height: 44, borderRadius: 14,
-              backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center',
-              elevation: 4,
-            }}
-          >
+          onPress={() => router.back()}
+          style={{
+            width: 36, height: 36, borderRadius: 10,
+            backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center',
+          }}
+        >
             <Ionicons name="arrow-back" size={22} color="#1A1A1A" />
           </TouchableOpacity>
         </View>
@@ -228,118 +270,147 @@ const PropertyDetailsNew = () => {
     </View>
   );
 
-  // ─── Image Carousel ───
-  const HeroCarousel = () => (
-    <View style={{ height: height * 0.45 }}>
-      <FlatList
-        ref={imageScrollRef}
-        data={property.images}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onScrollBeginDrag={onImageScrollBegin}
-        onMomentumScrollEnd={onImageScrollEnd}
-        keyExtractor={(_, i) => String(i)}
-        renderItem={({ item }) => (
-          <View style={{ width }}>
-            <Image source={{ uri: item }} style={{ width, height: height * 0.45 }} resizeMode="cover" />
-            {/* Bottom gradient overlay */}
-            <View style={{
-              position: 'absolute', bottom: 0, left: 0, right: 0, height: 120,
-              backgroundColor: 'transparent',
-            }}>
-              <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.0)' }} />
-              <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.15)' }} />
-              <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)' }} />
-              <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' }} />
+  // ─── Image/Video Carousel ───
+  const HeroCarousel = () => {
+    const media = [
+      ...property.images.map(url => ({ type: 'image', url })),
+      ...(property.videoUrl ? [{ type: 'video', url: property.videoUrl }] : [])
+    ];
+
+    return (
+      <View style={{ height: height * 0.45 }}>
+        <FlatList
+          ref={imageScrollRef}
+          data={media}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onScrollBeginDrag={onImageScrollBegin}
+          onMomentumScrollEnd={onImageScrollEnd}
+          keyExtractor={(_, i) => String(i)}
+          renderItem={({ item, index }) => (
+            <View style={{ width }}>
+              {item.type === 'video' ? (
+                <VideoSlide videoUrl={item.url} isActive={selectedImageIndex === index} />
+              ) : (
+                <View style={{ width, height: height * 0.45 }}>
+                  <Image source={{ uri: item.url }} style={{ width, height: height * 0.45 }} resizeMode="cover" />
+                  {/* Bottom gradient overlay */}
+                  <View style={{
+                    position: 'absolute', bottom: 0, left: 0, right: 0, height: 120,
+                    backgroundColor: 'transparent',
+                  }}>
+                    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.0)' }} />
+                    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.15)' }} />
+                    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.35)' }} />
+                    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' }} />
+                  </View>
+                </View>
+              )}
             </View>
-          </View>
-        )}
-      />
+          )}
+        />
 
-      {/* Pagination Dots */}
-      <View style={{
-        position: 'absolute', bottom: 16, left: 0, right: 0,
-        flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6,
-      }}>
-        {property.images.map((_, index) => (
-          <View
-            key={index}
-            style={{
-              height: 8,
-              width: selectedImageIndex === index ? 28 : 8,
-              borderRadius: 4,
-              backgroundColor: selectedImageIndex === index ? '#FFFFFF' : 'rgba(255,255,255,0.4)',
-            }}
-          />
-        ))}
-      </View>
-
-      {/* Image Counter */}
-      <View style={{
-        position: 'absolute', bottom: 16, right: 20,
-        backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 12,
-        paddingHorizontal: 10, paddingVertical: 4,
-      }}>
-        <Text style={{ color: '#FFF', fontSize: 12, fontWeight: '600' }}>
-          {selectedImageIndex + 1}/{property.images.length}
-        </Text>
-      </View>
-
-      {/* Floating Header */}
-      <View style={{
-        position: 'absolute', top: 0, left: 0, right: 0,
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-        paddingHorizontal: 20, paddingTop: StatusBar.currentHeight || 40,
-      }}>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          style={{
-            width: 44, height: 44, borderRadius: 14,
-            backgroundColor: 'rgba(255,255,255,0.9)',
-            alignItems: 'center', justifyContent: 'center', elevation: 8,
-          }}
-        >
-          <Ionicons name="arrow-back" size={22} color="#1A1A1A" />
-        </TouchableOpacity>
-
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <TouchableOpacity
-            onPress={() => setShowShareModal(true)}
-            style={{
-              width: 44, height: 44, borderRadius: 14,
-              backgroundColor: 'rgba(255,255,255,0.9)',
-              alignItems: 'center', justifyContent: 'center', elevation: 8,
-            }}
-          >
-            <Ionicons name="share-social" size={20} color="#1A1A1A" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={toggleFavorite}
-            style={{
-              width: 44, height: 44, borderRadius: 14,
-              backgroundColor: isFavorite ? '#FF6B6B' : 'rgba(255,255,255,0.9)',
-              alignItems: 'center', justifyContent: 'center', elevation: 8,
-            }}
-          >
-            <Ionicons
-              name={isFavorite ? "heart" : "heart-outline"} size={20}
-              color={isFavorite ? "#FFF" : "#1A1A1A"}
+        {/* Pagination Dots */}
+        <View style={{
+          position: 'absolute', bottom: 16, left: 0, right: 0,
+          flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6,
+        }}>
+          {media.map((_, index) => (
+            <View
+              key={index}
+              style={{
+                height: 8,
+                width: selectedImageIndex === index ? 28 : 8,
+                borderRadius: 4,
+                backgroundColor: selectedImageIndex === index ? '#FFFFFF' : 'rgba(255,255,255,0.4)',
+              }}
             />
-          </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Image Counter */}
+        <View style={{
+          position: 'absolute', bottom: 16, right: 20,
+          backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 12,
+          paddingHorizontal: 10, paddingVertical: 4,
+        }}>
+          <Text style={{ color: '#FFF', fontSize: 12, fontWeight: '600' }}>
+            {selectedImageIndex + 1}/{media.length}
+          </Text>
         </View>
       </View>
+    );
+  };
 
-      {/* Status Badge */}
+  // ─── Floating Header ───
+  const FloatingHeader = () => (
+    <View 
+      pointerEvents="box-none"
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 20,
+      }}
+    >
       <View style={{
-        position: 'absolute', top: (StatusBar.currentHeight || 40) + 56, right: 20,
-        backgroundColor: property.priceType === 'month' ? '#10B981' : '#3B82F6',
-        borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6, elevation: 6,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingTop: StatusBar.currentHeight || 40,
       }}>
-        <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 13 }}>
-          {property.status}
-        </Text>
-      </View>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={{
+              width: 36, height: 36, borderRadius: 10,
+              backgroundColor: 'rgba(255,255,255,0.9)',
+              alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <Ionicons name="arrow-back" size={20} color="#1A1A1A" />
+          </TouchableOpacity>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <TouchableOpacity
+              onPress={() => setShowShareModal(true)}
+              style={{
+                width: 36, height: 36, borderRadius: 10,
+                backgroundColor: 'rgba(255,255,255,0.9)',
+                alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <Ionicons name="share-social" size={18} color="#1A1A1A" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={toggleFavorite}
+              style={{
+                width: 36, height: 36, borderRadius: 10,
+                backgroundColor: isFavorite ? '#FF6B6B' : 'rgba(255,255,255,0.9)',
+                alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <Ionicons
+                name={isFavorite ? "heart" : "heart-outline"} size={18}
+                color={isFavorite ? "#FFF" : "#1A1A1A"}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Status Badge */}
+        <View style={{
+          position: 'absolute', top: (StatusBar.currentHeight || 40) + 56, right: 20,
+          backgroundColor: property.priceType === 'month' ? '#10B981' : '#3B82F6',
+          borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6,
+        }}>
+          <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 13 }}>
+            {property.status}
+          </Text>
+        </View>
     </View>
   );
 
@@ -348,7 +419,7 @@ const PropertyDetailsNew = () => {
     <View style={{
       paddingHorizontal: 20, paddingTop: 24, paddingBottom: 16,
       backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24,
-      marginTop: -24, elevation: 10,
+      marginTop: -24,
     }}>
       {/* Name + Rating row */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
@@ -386,7 +457,7 @@ const PropertyDetailsNew = () => {
           <Text style={{ color: '#9E9E9E', fontSize: 12, marginBottom: 4 }}>Price</Text>
           <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
             <Text style={{ color: '#7F56D9', fontSize: 28, fontWeight: '800' }}>
-              ${property.price?.toLocaleString()}
+              ৳{property.price?.toLocaleString()}
             </Text>
             <Text style={{ color: '#7F56D9', fontSize: 15, fontWeight: '500', opacity: 0.6 }}>
               /{property.priceType}
@@ -470,10 +541,8 @@ const PropertyDetailsNew = () => {
         </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20 }}>
           {property.facilities.map((f, i) => (
-            <View key={i} style={{
-              marginRight: 12, backgroundColor: '#FFF', borderRadius: 16, padding: 14,
+            <View key={i} style={{ marginRight: 12, backgroundColor: '#FFF', borderRadius: 16, padding: 14,
               alignItems: 'center', width: 100, borderWidth: 1, borderColor: '#F0F0F0',
-              elevation: 2,
             }}>
               <View style={{
                 width: 48, height: 48, borderRadius: 14, backgroundColor: '#F8F5FF',
@@ -502,7 +571,7 @@ const PropertyDetailsNew = () => {
       </Text>
       <View style={{
         backgroundColor: '#FFF', borderRadius: 20, padding: 16,
-        borderWidth: 1, borderColor: '#F0F0F0', elevation: 3,
+        borderWidth: 1, borderColor: '#F0F0F0',
       }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
           <Image
@@ -520,10 +589,23 @@ const PropertyDetailsNew = () => {
         </View>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <TouchableOpacity
-            onPress={() => router.push({
-              pathname: "/(tabs)/chatConversation",
-              params: { id: property.id, name: property.agent.name, avatar: property.agent.image }
-            })}
+            onPress={async () => {
+              try {
+                const res = await api.post('/api/conversations', {
+                  agentId: property.agent.id,
+                  houseId: property.id,
+                });
+                const convoId = res.data?.conversation?.id || res.data?.id;
+                if (convoId) {
+                  router.push({
+                    pathname: '/(tabs)/chatConversation',
+                    params: { id: convoId, name: property.agent.name, avatar: property.agent.image },
+                  });
+                }
+              } catch (err) {
+                console.error('Failed to open conversation:', err);
+              }
+            }}
             style={{
               flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
               backgroundColor: '#F8F5FF', borderRadius: 14, paddingVertical: 12,
@@ -536,7 +618,7 @@ const PropertyDetailsNew = () => {
             onPress={callAgent}
             style={{
               flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-              backgroundColor: '#7F56D9', borderRadius: 14, paddingVertical: 12, elevation: 4,
+              backgroundColor: '#7F56D9', borderRadius: 14, paddingVertical: 12,
             }}
           >
             <Ionicons name="call" size={20} color="#FFF" />
@@ -553,7 +635,7 @@ const PropertyDetailsNew = () => {
       <Text style={{ fontSize: 18, fontWeight: '700', color: '#1A1A1A', marginBottom: 12 }}>
         Location
       </Text>
-      <View style={{ borderRadius: 20, overflow: 'hidden', height: 220, elevation: 4 }}>
+      <View style={{ borderRadius: 20, overflow: 'hidden', height: 220 }}>
         <WebView
           source={{ html: getMapHtml() }}
           style={{ flex: 1 }}
@@ -565,16 +647,27 @@ const PropertyDetailsNew = () => {
     </View>
   );
 
-  // ─── Book Button (simplified) ───
-  const BookNowFooter = () => (
-    <View style={{
-      paddingHorizontal: 20, paddingVertical: 14, backgroundColor: '#FFF',
-      borderTopWidth: 1, borderTopColor: '#F0F0F0', elevation: 10,
-    }}>
+  // ─── Book Button (inline, not sticky) ───
+  const BookNowButton = () => (
+    <View style={{ paddingHorizontal: 20, paddingVertical: 20 }}>
       <TouchableOpacity
+        onPress={() => {
+          router.push({
+            pathname: '/bookProperty',
+            params: {
+              propertyId: property.id,
+              propertyName: property.name,
+              propertyLocation: property.location,
+              propertyImage: property.images?.[0] || '',
+              propertyPrice: property.price?.toString(),
+              propertyPriceType: property.priceType,
+              propertyStatus: property.status,
+            },
+          });
+        }}
         style={{
-          backgroundColor: '#7F56D9', borderRadius: 16, paddingVertical: 16,
-          alignItems: 'center', justifyContent: 'center', elevation: 8,
+          backgroundColor: '#7F56D9', borderRadius: 16, paddingVertical: 18,
+          alignItems: 'center', justifyContent: 'center',
         }}
       >
         <Text style={{ color: '#FFF', fontWeight: '800', fontSize: 18 }}>
@@ -642,6 +735,7 @@ const PropertyDetailsNew = () => {
   return (
     <View style={{ flex: 1, backgroundColor: '#FFF' }}>
       <StatusBar barStyle="light-content" />
+      <FloatingHeader />
       <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false}>
         <HeroCarousel />
         <PropertyHeader />
@@ -654,9 +748,8 @@ const PropertyDetailsNew = () => {
         <AgentCard />
         <View style={{ height: 8, backgroundColor: '#F9FAFB' }} />
         <MapSection />
-        <View style={{ height: 100 }} />
+        <BookNowButton />
       </ScrollView>
-      <BookNowFooter />
       <ShareModal />
     </View>
   );

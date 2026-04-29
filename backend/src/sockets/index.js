@@ -1,7 +1,7 @@
 import { Server } from 'socket.io';
-import jwt from 'jsonwebtoken';
+import { verifyToken } from '@clerk/backend';
 import prisma from '../config/prisma.js';
-import { JWT_ACCESS_SECRET } from '../config/env.js';
+import { notifyUser } from '../modules/notification/notification.service.js';
 
 // Store active socket connections by user ID
 const activeConnections = new Map();
@@ -13,22 +13,42 @@ const authenticateSocket = async (socket, next) => {
     const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.replace('Bearer ', '');
     
     if (!token) {
+      console.warn('[Socket Auth] No token provided');
       return next(new Error('Authentication required'));
     }
 
-    const decoded = jwt.verify(token, JWT_ACCESS_SECRET);
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-      select: { id: true, username: true, name: true, avatar: true, role: true },
-    });
+    // Verify Clerk session token using the same clerkClient as the HTTP middleware.
+    // clockSkewInMs tolerates minor clock differences between mobile device and server.
+    try {
+      const payload = await verifyToken(token, {
+        secretKey: process.env.CLERK_SECRET_KEY,
+        clockSkewInMs: 5 * 60 * 1000,
+      });
 
-    if (!user) {
-      return next(new Error('User not found'));
+      const clerkUserId = payload.sub;
+
+      const user = await prisma.user.findUnique({
+        where: { clerkId: clerkUserId },
+        select: { id: true, username: true, name: true, avatar: true, role: true },
+      });
+
+      if (!user) {
+        console.warn(`[Socket Auth] User not found for clerkId: ${clerkUserId}`);
+        return next(new Error('User not found — please sync your account'));
+      }
+
+      socket.user = user;
+      next();
+    } catch (verifyError) {
+      console.error('[Socket Auth] Token verification failed:', verifyError.message);
+      // Log more details about the token (safely)
+      const isJWT = token && token.startsWith('ey');
+      const tokenPrefix = token ? `${token.substring(0, 10)}...` : 'none';
+      console.error(`[Socket Auth] Token info: isJWT=${isJWT}, length=${token?.length}, prefix=${tokenPrefix}`);
+      return next(new Error('Invalid token'));
     }
-
-    socket.user = user;
-    next();
   } catch (error) {
+    console.error('[Socket Auth] Critical error:', error);
     next(new Error('Invalid token'));
   }
 };
@@ -60,7 +80,7 @@ export const initializeSocket = (server) => {
 
     // ─── Message Events ───
 
-    socket.on('conversation:join', async (conversationId) => {
+    socket.on('conversation:join', async ({ conversationId }) => {
       try {
         // Verify user is part of conversation
         const conversation = await prisma.conversation.findFirst({
@@ -79,7 +99,7 @@ export const initializeSocket = (server) => {
       }
     });
 
-    socket.on('conversation:leave', (conversationId) => {
+    socket.on('conversation:leave', ({ conversationId }) => {
       socket.leave(`conversation:${conversationId}`);
       console.log(`[Socket] User ${userId} left conversation ${conversationId}`);
     });
@@ -126,6 +146,20 @@ export const initializeSocket = (server) => {
           conversationId,
           message,
         });
+
+        // Create in-app notification for the recipient
+        await notifyUser(recipientId, {
+          type: 'NEW_MESSAGE',
+          title: `New message from ${message.sender.name || message.sender.username}`,
+          message: content.length > 50 ? content.substring(0, 47) + '...' : content,
+          data: { 
+            conversationId, 
+            messageId: message.id,
+            senderId: userId,
+            senderName: message.sender.name,
+            senderAvatar: message.sender.avatar
+          }
+        });
       } catch (error) {
         console.error('[Socket] Message send error:', error);
         socket.emit('error', { message: 'Failed to send message' });
@@ -153,7 +187,7 @@ export const initializeSocket = (server) => {
       }
     });
 
-    socket.on('typing:start', (conversationId) => {
+    socket.on('typing:start', ({ conversationId }) => {
       socket.to(`conversation:${conversationId}`).emit('typing:start', {
         conversationId,
         userId,
@@ -161,7 +195,7 @@ export const initializeSocket = (server) => {
       });
     });
 
-    socket.on('typing:stop', (conversationId) => {
+    socket.on('typing:stop', ({ conversationId }) => {
       socket.to(`conversation:${conversationId}`).emit('typing:stop', {
         conversationId,
         userId,

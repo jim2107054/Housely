@@ -1,15 +1,23 @@
 "use client";
 
 import { QueryClientProvider } from "@tanstack/react-query";
-import { SessionProvider } from "next-auth/react";
+import { ClerkProvider } from "@clerk/nextjs";
 import { queryClient } from "@/lib/query-client";
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
   return (
-    <SessionProvider>
+    <ClerkProvider
+      publishableKey={publishableKey}
+      signInUrl="/login"
+      signInFallbackRedirectUrl="/dashboard"
+      signUpUrl="/login"
+      signUpFallbackRedirectUrl="/dashboard"
+    >
       <QueryClientProvider client={queryClient}>
         {children}
       </QueryClientProvider>
-    </SessionProvider>
+    </ClerkProvider>
   );
 }

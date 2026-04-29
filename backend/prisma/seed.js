@@ -5,13 +5,13 @@ const prisma = new PrismaClient();
 
 const OWNER_DATA = [
   {
-    username: 'owner_nadia',
-    name: 'Nadia Rahman',
-    email: 'owner.nadia@housely.dev',
+    username: 'jahidhasan205',
+    name: 'Jahid Hasan',
+    email: 'mdjahid205hasan@gmail.com',
     phoneNumber: '+8801710001001',
     avatar: 'https://picsum.photos/seed/owner-nadia/300/300',
-    city: 'Dhaka',
-    area: 'Gulshan',
+    city: 'Khulna',
+    area: 'Fulbarigate',
   },
   {
     username: 'owner_tanvir',
@@ -19,7 +19,7 @@ const OWNER_DATA = [
     email: 'owner.tanvir@housely.dev',
     phoneNumber: '+8801710001002',
     avatar: 'https://picsum.photos/seed/owner-tanvir/300/300',
-    city: 'Dhaka',
+    city: 'Khulna',
     area: 'Dhanmondi',
   },
   {
@@ -39,6 +39,16 @@ const OWNER_DATA = [
     avatar: 'https://picsum.photos/seed/owner-rihan/300/300',
     city: 'Sylhet',
     area: 'Zindabazar',
+  },
+  {
+    username: 'owner_shakoyat',
+    name: 'Shakoyat Sujon',
+    email: 'shakoyatsujon@gmail.com',
+    clerkId: 'user_3Cog6VSKT1YC8jgfmhdCCHEy42N',
+    phoneNumber: '+8801710001005',
+    avatar: 'https://picsum.photos/seed/owner-shakoyat/300/300',
+    city: 'Khulna',
+    area: 'Mirpur',
   },
 ];
 
@@ -70,6 +80,14 @@ const RENTER_DATA = [
     email: 'user.imon@housely.dev',
     phoneNumber: '+8801810002004',
     avatar: 'https://picsum.photos/seed/user-imon/300/300',
+  },
+  {
+    username: 'renter_shujon',
+    name: 'Shujon',
+    email: 'skt104.shujon@gmail.com',
+    clerkId: 'user_3Cog6S8oqFs4zBPOWgrbMX78c1x',
+    phoneNumber: '+8801810002005',
+    avatar: 'https://picsum.photos/seed/user-shujon/300/300',
   },
 ];
 
@@ -118,8 +136,8 @@ function createHousePayload(owner, ownerIndex, propertyIndex) {
     address: `${propertyNumber * 7} Road-${propertyNumber}, ${owner.area}`,
     city: owner.city,
     area: owner.area,
-    latitude: 23.70 + ownerIndex * 0.31 + propertyIndex * 0.004,
-    longitude: 90.36 + ownerIndex * 0.29 + propertyIndex * 0.005,
+    latitude: 22.84 + ownerIndex * 0.01 + propertyIndex * 0.004,
+    longitude: 89.54 + ownerIndex * 0.01 + propertyIndex * 0.005,
     bedrooms,
     bathrooms,
     sizeInSqft: sqft,
@@ -188,7 +206,8 @@ async function main() {
   const adminUser = await prisma.user.create({
     data: {
       username: 'admin',
-      email: 'admin@housely.dev',
+      email: 'mdjahidhasanjim277@gmail.com',
+      clerkId: 'user_3CoWc25a6bn4MvIdmzJKpFiMacp',
       password: adminPassword,
       name: 'Admin',
       phoneNumber: '+8801700000000',
@@ -216,6 +235,7 @@ async function main() {
       data: {
         username: owner.username,
         email: owner.email,
+        clerkId: owner.clerkId ?? undefined,
         password,
         name: owner.name,
         phoneNumber: owner.phoneNumber,
@@ -244,6 +264,7 @@ async function main() {
       data: {
         username: renter.username,
         email: renter.email,
+        clerkId: renter.clerkId ?? undefined,
         password,
         name: renter.name,
         phoneNumber: renter.phoneNumber,
@@ -481,6 +502,7 @@ async function main() {
 
   console.log('\n🎉 Seed completed successfully!');
   console.log('  Default password for all seeded users: password123');
+  console.log('  Admin email: mdjahidhasanjim277@gmail.com | password: admin123');
   console.log('  Owner emails:');
   OWNER_DATA.forEach((o) => console.log(`   - ${o.email}`));
   console.log('  User emails:');

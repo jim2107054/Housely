@@ -38,9 +38,14 @@ const env = {
   FIREBASE_PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY,
   FIREBASE_CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL,
 
+  // SSLCommerz
+  SSLCOMMERZ_STORE_ID: process.env.SSLCOMMERZ_STORE_ID,
+  SSLCOMMERZ_STORE_PASSWORD: process.env.SSLCOMMERZ_STORE_PASSWORD,
+  SSLCOMMERZ_IS_LIVE: process.env.SSLCOMMERZ_IS_LIVE || 'false',
+
   // App
   APP_URL: process.env.APP_URL || 'http://localhost:3000',
-  FRONTEND_DEEP_LINK_BASE: process.env.FRONTEND_DEEP_LINK_BASE || 'housely://house',
+  FRONTEND_DEEP_LINK_BASE: process.env.FRONTEND_DEEP_LINK_BASE || 'housely://payment',
 };
 
 // Named exports for direct import

@@ -11,6 +11,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api from "../../services/api";
+import { useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 
 
 
@@ -38,33 +40,35 @@ const OwnerProperties = () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchProperties = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        console.log('[Properties] Fetching properties...');
-        const response = await api.get('/api/houses/my-houses');
-        const transformedHouses = response.data.houses.map(h => ({
-          ...h,
-          name: h.name,
-          city: h.city,
-          area: h.area,
-          price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
-          rating: h.rating || 4.5,
-          image: h.images?.[0]?.url || 'https://via.placeholder.com/150',
-          status: h.status || 'AVAILABLE',
-        }));
-        setProperties(transformedHouses);
-      } catch (err) {
-        console.error('[Properties] Error fetching agent houses:', err);
-        setError(err.request ? 'Cannot connect to server' : 'Failed to load properties');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProperties();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      const fetchProperties = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+          console.log('[Properties] Fetching properties...');
+          const response = await api.get('/api/houses/my-houses');
+          const transformedHouses = response.data.houses.map(h => ({
+            ...h,
+            name: h.name,
+            city: h.city,
+            area: h.area,
+            price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
+            rating: h.rating || 4.5,
+            image: h.images?.[0]?.url || 'https://via.placeholder.com/150',
+            status: h.status || 'AVAILABLE',
+          }));
+          setProperties(transformedHouses);
+        } catch (err) {
+          console.error('[Properties] Error fetching agent houses:', err);
+          setError(err.request ? 'Cannot connect to server' : 'Failed to load properties');
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchProperties();
+    }, [])
+  );
 
   const renderProperty = ({ item }) => {
     const statusStyle = statusColors[item.status] || statusColors.AVAILABLE;
@@ -115,7 +119,7 @@ const OwnerProperties = () => {
           </View>
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
             <Text style={{ fontSize: 18, fontWeight: "bold", color: COLORS.primary }}>
-              ${item.price}<Text style={{ fontSize: 13, fontWeight: "400", color: COLORS.textSecondary }}>/night</Text>
+              ৳{item.price}<Text style={{ fontSize: 13, fontWeight: "400", color: COLORS.textSecondary }}>/month</Text>
             </Text>
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <Ionicons name="star" size={14} color="#FFC107" />

@@ -6,12 +6,14 @@ import {
   TouchableOpacity,
   Dimensions,
   Alert,
+  ActivityIndicator,
+  FlatList,
 } from "react-native";
-import { useEffect, useState } from "react";
-import { ActivityIndicator } from "react-native";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { VideoView, useVideoPlayer } from "expo-video";
 import Toast from "react-native-toast-message";
 import api from "../../services/api";
 
@@ -28,6 +30,31 @@ const COLORS = {
   danger: "#F44336",
 };
 
+const AUTO_SCROLL_INTERVAL = 4000;
+
+// Component for rendering a video slide in the carousel
+const VideoSlide = ({ videoUrl, isActive }) => {
+  const player = useVideoPlayer(videoUrl ? { uri: videoUrl } : null);
+  
+  useEffect(() => {
+    if (!isActive && player) {
+      player.pause();
+    }
+  }, [isActive, player]);
+
+  if (!videoUrl) return null;
+  return (
+    <View style={{ width, height: 280, backgroundColor: '#000' }}>
+      <VideoView
+        player={player}
+        style={{ width: '100%', height: '100%' }}
+        nativeControls
+        contentFit="contain"
+      />
+    </View>
+  );
+};
+
 const OwnerPropertyDetails = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -36,31 +63,73 @@ const OwnerPropertyDetails = () => {
   const [property, setProperty] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [currentImage, setCurrentImage] = useState(0);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
+  const imageScrollRef = useRef(null);
+  const autoScrollTimer = useRef(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchProperty = async () => {
+        setLoading(true);
+        try {
+          const response = await api.get(`/api/houses/${id}`);
+          const house = response.data.house;
+          setProperty({
+            ...house,
+            price: house.listingType === 'RENT' ? house.rentPerMonth : house.salePrice,
+            rating: house.rating || 4.5,
+            videoUrl: house.video?.url || null,
+            imageUrls: house.images?.map(img => img.url) || [],
+          });
+          
+          // Fetch reviews for this house
+          const reviewsResponse = await api.get(`/api/reviews/house/${id}`);
+          setReviews(reviewsResponse.data.reviews || []);
+        } catch (err) {
+          console.error('Error fetching owner property details:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchProperty();
+    }, [id])
+  );
+
+  // Auto-scroll logic
+  const startAutoScroll = useCallback(() => {
+    const mediaCount = (property?.imageUrls?.length || 0) + (property?.videoUrl ? 1 : 0);
+    if (mediaCount <= 1) return;
+    stopAutoScroll();
+    autoScrollTimer.current = setInterval(() => {
+      setSelectedImageIndex((prev) => {
+        const next = (prev + 1) % mediaCount;
+        imageScrollRef.current?.scrollToOffset({ offset: next * width, animated: true });
+        return next;
+      });
+    }, AUTO_SCROLL_INTERVAL);
+  }, [property?.imageUrls?.length, property?.videoUrl]);
+
+  const stopAutoScroll = useCallback(() => {
+    if (autoScrollTimer.current) {
+      clearInterval(autoScrollTimer.current);
+      autoScrollTimer.current = null;
+    }
+  }, []);
 
   useEffect(() => {
-    const fetchProperty = async () => {
-      setLoading(true);
-      try {
-        const response = await api.get(`/api/houses/${id}`);
-        const house = response.data.house;
-        setProperty({
-          ...house,
-          price: house.listingType === 'RENT' ? house.rentPerMonth : house.salePrice,
-          rating: house.rating || 4.5,
-        });
-        
-        // Fetch reviews for this house
-        const reviewsResponse = await api.get(`/api/reviews/house/${id}`);
-        setReviews(reviewsResponse.data.reviews || []);
-      } catch (err) {
-        console.error('Error fetching owner property details:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProperty();
-  }, [id]);
+    if (property?.imageUrls?.length > 1 || (property?.imageUrls?.length > 0 && property?.videoUrl)) {
+      startAutoScroll();
+    }
+    return () => stopAutoScroll();
+  }, [property?.imageUrls?.length, property?.videoUrl, startAutoScroll, stopAutoScroll]);
+
+  const onImageScrollBegin = () => stopAutoScroll();
+  const onImageScrollEnd = (e) => {
+    const index = Math.round(e.nativeEvent.contentOffset.x / width);
+    setSelectedImageIndex(index);
+    startAutoScroll();
+  };
 
   const handleDelete = () => {
     Alert.alert(
@@ -105,26 +174,34 @@ const OwnerPropertyDetails = () => {
   return (
     <View style={{ flex: 1, backgroundColor: COLORS.background }}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Image Carousel */}
+        {/* Image/Video Carousel */}
         <View style={{ position: "relative" }}>
-          <ScrollView
+          <FlatList
+            ref={imageScrollRef}
+            data={[
+              ...(property.imageUrls || []).map(url => ({ type: 'image', url })),
+              ...(property.videoUrl ? [{ type: 'video', url: property.videoUrl }] : [])
+            ]}
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={(e) => {
-              const idx = Math.round(e.nativeEvent.contentOffset.x / width);
-              setCurrentImage(idx);
-            }}
-          >
-            {property.images?.map((img, index) => (
-              <Image
-                key={index}
-                source={{ uri: img.url }}
-                style={{ width, height: 280 }}
-                resizeMode="cover"
-              />
-            ))}
-          </ScrollView>
+            onScrollBeginDrag={onImageScrollBegin}
+            onMomentumScrollEnd={onImageScrollEnd}
+            keyExtractor={(_, i) => String(i)}
+            renderItem={({ item, index }) => (
+              <View style={{ width }}>
+                {item.type === 'video' ? (
+                  <VideoSlide videoUrl={item.url} isActive={selectedImageIndex === index} />
+                ) : (
+                  <Image
+                    source={{ uri: item.url }}
+                    style={{ width, height: 280 }}
+                    resizeMode="cover"
+                  />
+                )}
+              </View>
+            )}
+          />
 
           {/* Back Button */}
           <TouchableOpacity
@@ -139,13 +216,14 @@ const OwnerPropertyDetails = () => {
               backgroundColor: "rgba(0,0,0,0.4)",
               alignItems: "center",
               justifyContent: "center",
+              zIndex: 10,
             }}
           >
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </TouchableOpacity>
 
-          {/* Image Indicators */}
-          {property.images?.length > 1 && (
+          {/* Indicators */}
+          {((property.imageUrls?.length || 0) + (property.videoUrl ? 1 : 0)) > 1 && (
             <View
               style={{
                 position: "absolute",
@@ -155,14 +233,14 @@ const OwnerPropertyDetails = () => {
                 gap: 6,
               }}
             >
-              {property.images.map((_, i) => (
+              {[...(property.imageUrls || []), ...(property.videoUrl ? [1] : [])].map((_, i) => (
                 <View
                   key={i}
                   style={{
-                    width: currentImage === i ? 20 : 8,
+                    width: selectedImageIndex === i ? 20 : 8,
                     height: 8,
                     borderRadius: 4,
-                    backgroundColor: currentImage === i ? "#fff" : "rgba(255,255,255,0.5)",
+                    backgroundColor: selectedImageIndex === i ? "#fff" : "rgba(255,255,255,0.5)",
                   }}
                 />
               ))}
@@ -211,7 +289,7 @@ const OwnerPropertyDetails = () => {
           </View>
 
           <Text style={{ fontSize: 26, fontWeight: "bold", color: COLORS.primary, marginTop: 16 }}>
-            ${property.price}
+            ৳{property.price}
             <Text style={{ fontSize: 14, fontWeight: "400", color: COLORS.textSecondary }}>
               /{property.listingType === "RENT" ? "month" : "total"}
             </Text>

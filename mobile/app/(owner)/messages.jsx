@@ -5,14 +5,16 @@ import {
   TouchableOpacity,
   TextInput,
   FlatList,
+  RefreshControl,
 } from "react-native";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import api from "../../services/api";
 import useAuthStore from "../../store/authStore";
+import { connectSocket } from "../../services/socketService";
 
 
 
@@ -31,33 +33,67 @@ const OwnerMessages = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchConversations = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) {
+      setLoading(true);
+    }
+    try {
+      const response = await api.get('/api/conversations');
+      const transformed = (response.data.conversations || []).map((c) => {
+        const otherUser = c.userId === user?.id ? c.agent : c.user;
+        const lastMsg = c.messages?.[0];
+        return {
+          id: c.id,
+          name: otherUser?.name || otherUser?.username || 'Unknown User',
+          avatar: otherUser?.avatar || 'https://via.placeholder.com/150',
+          lastMessage: lastMsg?.content || 'No messages yet',
+          timestamp: lastMsg?.createdAt
+            ? new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            : '',
+          unread: c.unreadCount || 0,
+          online: true,
+        };
+      });
+      setConversations(transformed);
+    } catch (err) {
+      console.error('Error fetching owner conversations:', err);
+      setConversations([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
-    const fetchConversations = async () => {
-      setLoading(true);
-      try {
-        const response = await api.get('/api/conversations');
-        const transformed = response.data.conversations.map(c => {
-          const otherParticipant = c.participants.find(p => p.user.id !== user.id)?.user;
-          return {
-            id: c.id,
-            name: otherParticipant?.name || 'Unknown User',
-            avatar: otherParticipant?.avatar || 'https://via.placeholder.com/150',
-            lastMessage: c.lastMessage?.content || 'No messages yet',
-            timestamp: c.lastMessage ? new Date(c.lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
-            unread: c._count?.messages || 0, // Simplified unread
-            online: false,
-          };
-        });
-        setConversations(transformed);
-      } catch (err) {
-        console.error('Error fetching owner conversations:', err);
-      } finally {
-        setLoading(false);
+    fetchConversations({ silent: false });
+
+    let sock;
+    const initSocket = async () => {
+      sock = await connectSocket();
+      if (!sock) return;
+      sock.on('message:new', () => fetchConversations({ silent: true }));
+    };
+
+    initSocket();
+    return () => {
+      if (sock) {
+        sock.off('message:new');
       }
     };
-    fetchConversations();
-  }, []);
+  }, [fetchConversations]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchConversations({ silent: true });
+    }, [fetchConversations])
+  );
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchConversations({ silent: true });
+  };
 
   const filteredConversations = conversations.filter(
     (chat) =>
@@ -70,7 +106,7 @@ const OwnerMessages = () => {
       onPress={() =>
         router.push({
           pathname: "/(owner)/chatConversation",
-          params: { id: item.id, name: item.name },
+              params: { id: item.id, name: item.name, avatar: item.avatar },
         })
       }
       style={{
@@ -191,6 +227,7 @@ const OwnerMessages = () => {
           keyExtractor={(item) => item.id}
           renderItem={renderConversation}
           showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#7B61FF"]} tintColor="#7B61FF" />}
           ListEmptyComponent={
             <View style={{ alignItems: "center", marginTop: 60 }}>
               <Ionicons name="chatbubbles-outline" size={60} color="#E0E0E0" />

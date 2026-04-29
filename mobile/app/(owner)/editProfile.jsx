@@ -73,10 +73,12 @@ const OwnerEditProfile = () => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
+
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Toast.show({ type: "error", text1: "Permission Needed", text2: "Cameral roll permission is required" });
+      Toast.show({ type: "error", text1: "Permission Needed", text2: "Camera roll permission is required" });
       return;
     }
 
@@ -88,7 +90,12 @@ const OwnerEditProfile = () => {
     });
 
     if (!result.canceled) {
-      handleUploadAvatar(result.assets[0].uri);
+      const asset = result.assets[0];
+      if (asset.fileSize && asset.fileSize > MAX_AVATAR_SIZE_BYTES) {
+        Toast.show({ type: "error", text1: "File Too Large", text2: "Profile picture must be under 5 MB" });
+        return;
+      }
+      handleUploadAvatar(asset.uri);
     }
   };
 
@@ -107,12 +114,18 @@ const OwnerEditProfile = () => {
       });
 
       if (response.data.success) {
-        setUser(response.data.user);
+        setUser({ ...(user || {}), ...(response.data.user || {}) });
         Toast.show({ type: "success", text1: "Avatar Updated" });
       }
     } catch (err) {
-      console.error("Error uploading avatar:", err);
-      Toast.show({ type: "error", text1: "Upload Failed", text2: "Failed to upload avatar" });
+      const isNetworkError = !err.response;
+      Toast.show({
+        type: "error",
+        text1: "Upload Failed",
+        text2: isNetworkError
+          ? "No internet connection. Please try again."
+          : err.response?.data?.message || "Failed to upload avatar",
+      });
     } finally {
       setUploadingAvatar(false);
     }
@@ -126,9 +139,20 @@ const OwnerEditProfile = () => {
 
     setLoading(true);
     try {
-      const response = await api.patch("/api/users/me", form);
+      const payload = {
+        name: form.name?.trim(),
+        email: form.email?.trim(),
+      };
+
+      const phoneNumber = form.phoneNumber?.trim();
+      if (phoneNumber) payload.phoneNumber = phoneNumber;
+
+      const bio = form.bio?.trim();
+      if (bio) payload.bio = bio;
+
+      const response = await api.patch("/api/users/me", payload);
       if (response.data.success) {
-        setUser(response.data.user);
+        setUser({ ...(user || {}), ...(response.data.user || {}) });
         Toast.show({ type: "success", text1: "Profile Updated" });
         router.back();
       }
@@ -176,12 +200,17 @@ const OwnerEditProfile = () => {
             <View style={{ position: "relative" }}>
               <Image
                 source={
-                  user?.avatar 
-                    ? { uri: user.avatar } 
+                  user?.avatar
+                    ? { uri: user.avatar }
                     : require("../../assets/images/profile-icons/profile.png")
                 }
                 style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: '#eee' }}
               />
+              {uploadingAvatar && (
+                <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.4)", borderRadius: 50, justifyContent: "center", alignItems: "center" }}>
+                  <ActivityIndicator color="#FFFFFF" />
+                </View>
+              )}
               <TouchableOpacity
                 onPress={handlePickImage}
                 disabled={uploadingAvatar}
@@ -199,11 +228,7 @@ const OwnerEditProfile = () => {
                   borderColor: "#fff",
                 }}
               >
-                {uploadingAvatar ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Ionicons name="camera" size={16} color="#fff" />
-                )}
+                <Ionicons name="camera" size={16} color="#fff" />
               </TouchableOpacity>
             </View>
           </View>

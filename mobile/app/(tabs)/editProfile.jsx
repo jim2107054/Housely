@@ -1,9 +1,10 @@
-import { View, Text, Image, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, Platform } from 'react-native'
+import { View, Text, Image, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, Platform, KeyboardAvoidingView } from 'react-native'
 import React, { useState } from 'react'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
+import DateTimePicker from '@react-native-community/datetimepicker'
 import useAuthStore from '../../store/authStore'
 import api from '../../services/api';
 import Toast from 'react-native-toast-message';
@@ -30,12 +31,19 @@ const EditProfile = () => {
     name: user?.name || '',
     username: user?.username || '',
     email: user?.email || '',
-    dateOfBirth: user?.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString() : ''
-  })
+    dateOfBirth: user?.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString('en-GB') : '',
+  });
+  // Store the actual Date object separately so we can pass ISO string to the API
+  const [dateOfBirthDate, setDateOfBirthDate] = useState(
+    user?.dateOfBirth ? new Date(user.dateOfBirth) : null
+  );
   const [loading, setLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const router = useRouter()
+
+  const MAX_AVATAR_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -52,7 +60,12 @@ const EditProfile = () => {
     });
 
     if (!result.canceled) {
-      handleUploadAvatar(result.assets[0].uri);
+      const asset = result.assets[0];
+      if (asset.fileSize && asset.fileSize > MAX_AVATAR_SIZE_BYTES) {
+        Toast.show({ type: 'error', text1: 'File Too Large', text2: 'Profile picture must be under 5 MB' });
+        return;
+      }
+      handleUploadAvatar(asset.uri);
     }
   };
 
@@ -71,12 +84,18 @@ const EditProfile = () => {
       });
 
       if (response.data.success) {
-        setUser(response.data.user);
+        setUser({ ...(user || {}), ...(response.data.user || {}) });
         Toast.show({ type: 'success', text1: 'Avatar Updated' });
       }
     } catch (err) {
-      console.error('Error uploading avatar:', err);
-      Toast.show({ type: 'error', text1: 'Upload Failed', text2: 'Failed to upload profile picture' });
+      const isNetworkError = !err.response;
+      Toast.show({
+        type: 'error',
+        text1: 'Upload Failed',
+        text2: isNetworkError
+          ? 'No internet connection. Please try again.'
+          : err.response?.data?.message || 'Failed to upload profile picture',
+      });
     } finally {
       setUploadingAvatar(false);
     }
@@ -90,13 +109,28 @@ const EditProfile = () => {
 
     setLoading(true);
     try {
-      const response = await api.patch('/api/users/me', {
-        name: formData.name,
-        username: formData.username,
-        email: formData.email,
-      });
+      const payload = {
+        name: formData.name?.trim(),
+        email: formData.email?.trim(),
+      };
+
+      const username = formData.username?.trim();
+      if (username) {
+        payload.username = username;
+      }
+
+      if (formData.dateOfBirth) {
+        // Basic validation for date string if manual entry was possible, 
+        // but since it's from a date string, we try to parse it.
+        const d = new Date(formData.dateOfBirth);
+        if (!isNaN(d.getTime())) {
+          payload.dateOfBirth = d.toISOString();
+        }
+      }
+
+      const response = await api.patch('/api/users/me', payload);
       if (response.data.success) {
-        setUser(response.data.user);
+        setUser({ ...(user || {}), ...(response.data.user || {}) });
         Toast.show({
           type: 'success',
           text1: 'Profile Updated',
@@ -117,8 +151,28 @@ const EditProfile = () => {
   }
 
   const handleDatePress = () => {
-    console.log('Open date picker')
-  }
+    setShowDatePicker(true);
+  };
+
+  const handleDateChange = (event, selectedDate) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    if (event.type === 'dismissed') {
+      setShowDatePicker(false);
+      return;
+    }
+    if (selectedDate) {
+      setDateOfBirthDate(selectedDate);
+      setFormData(prev => ({
+        ...prev,
+        dateOfBirth: selectedDate.toLocaleDateString('en-GB'),
+      }));
+      if (Platform.OS === 'ios') {
+        setShowDatePicker(false);
+      }
+    }
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -127,6 +181,7 @@ const EditProfile = () => {
         <TouchableOpacity
           onPress={() => router.back()}
           className="absolute left-4 p-2"
+          activeOpacity={0.7}
         >
           <Ionicons name="arrow-back" size={24} color="#000000" />
         </TouchableOpacity>
@@ -135,7 +190,11 @@ const EditProfile = () => {
         </Text>
       </View>
 
-      <ScrollView className="flex-1">
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+      <ScrollView className="flex-1" keyboardShouldPersistTaps="handled">
         {/* Profile Image Section */}
         <View className="items-center py-8 px-4">
           <View className="relative">
@@ -143,16 +202,17 @@ const EditProfile = () => {
               source={user?.avatar ? { uri: user.avatar } : require('../../assets/images/profileImage.png')}
               className="w-[100px] h-[100px] rounded-full bg-gray-100"
             />
+            {uploadingAvatar && (
+              <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: 50, justifyContent: 'center', alignItems: 'center' }}>
+                <ActivityIndicator color="#FFFFFF" />
+              </View>
+            )}
             <TouchableOpacity
               className="absolute bottom-0 right-0 bg-[#6C5CE7] rounded-[15px] w-[30px] h-[30px] justify-center items-center border-2 border-white"
               onPress={handlePickImage}
               disabled={uploadingAvatar}
             >
-              {uploadingAvatar ? (
-                <ActivityIndicator size="small" color="white" />
-              ) : (
-                <Ionicons name="camera" size={16} color="#FFFFFF" />
-              )}
+              <Ionicons name="camera" size={16} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
         </View>
@@ -215,6 +275,17 @@ const EditProfile = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
+
+      {showDatePicker && (
+        <DateTimePicker
+          value={formData.dateOfBirth ? new Date(formData.dateOfBirth) : new Date(2000, 0, 1)}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          maximumDate={new Date()}
+          onChange={handleDateChange}
+        />
+      )}
     </SafeAreaView>
   )
 }

@@ -8,8 +8,9 @@ import {
 import { useEffect, useState } from "react";
 import { ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useCallback } from "react";
 import api from "../../services/api";
 
 
@@ -30,20 +31,22 @@ const OwnerEarnings = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchEarnings = async () => {
-      setLoading(true);
-      try {
-        const response = await api.get('/api/houses/agent/dashboard');
-        setDashboardData(response.data);
-      } catch (err) {
-        console.error('Error fetching dashboard earnings:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchEarnings();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      const fetchEarnings = async () => {
+        setLoading(true);
+        try {
+          const response = await api.get('/api/houses/agent/dashboard');
+          setDashboardData(response.data);
+        } catch (err) {
+          console.error('Error fetching dashboard earnings:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchEarnings();
+    }, [])
+  );
 
   const stats = dashboardData?.stats || {
     totalEarnings: 0,
@@ -53,10 +56,10 @@ const OwnerEarnings = () => {
   };
 
   const summaryCards = [
-    { label: "Total Earnings", value: `$${stats.totalEarnings.toLocaleString()}`, icon: "wallet", color: "#4CAF50", bgColor: "#E8F5E9" },
-    { label: "This Month", value: `$${stats.thisMonthEarnings.toLocaleString()}`, icon: "trending-up", color: "#7B61FF", bgColor: "#F0ECFF" },
-    { label: "Last Month", value: `$${stats.lastMonthEarnings.toLocaleString()}`, icon: "analytics", color: "#2196F3", bgColor: "#E3F2FD" },
-    { label: "Pending Payouts", value: `$${stats.pendingPayouts.toLocaleString()}`, icon: "time", color: "#FF9800", bgColor: "#FFF3E0" },
+    { label: "Total Earnings", value: `৳${stats.totalEarnings.toLocaleString()}`, icon: "wallet", color: "#4CAF50", bgColor: "#E8F5E9" },
+    { label: "This Month", value: `৳${stats.thisMonthEarnings.toLocaleString()}`, icon: "trending-up", color: "#7B61FF", bgColor: "#F0ECFF" },
+    { label: "Last Month", value: `৳${stats.lastMonthEarnings.toLocaleString()}`, icon: "analytics", color: "#2196F3", bgColor: "#E3F2FD" },
+    { label: "Pending Payouts", value: `৳${stats.pendingPayouts.toLocaleString()}`, icon: "time", color: "#FF9800", bgColor: "#FFF3E0" },
   ];
 
   const transactions = dashboardData?.transactions || [];
@@ -100,7 +103,7 @@ const OwnerEarnings = () => {
         </View>
         <View style={{ alignItems: "flex-end" }}>
           <Text style={{ fontSize: 17, fontWeight: "700", color: isCompleted ? COLORS.success : COLORS.warning }}>
-            +${item.amount}
+            +৳{item.amount}
           </Text>
           <Text style={{ fontSize: 11, color: COLORS.textSecondary, marginTop: 2 }}>
             {isCompleted ? "Completed" : "Pending"}

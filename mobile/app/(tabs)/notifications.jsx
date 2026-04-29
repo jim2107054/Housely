@@ -8,8 +8,9 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import api from '../../services/api';
@@ -53,13 +54,12 @@ const formatTimeAgo = (dateString) => {
 // Get icon config based on notification type
 const getNotificationIcon = (type) => {
   const iconMap = {
-    booking: { name: 'calendar', color: COLORS.success, bg: '#ECFDF5' },
-    message: { name: 'chatbubble-ellipses', color: COLORS.info, bg: '#EFF6FF' },
-    payment: { name: 'card', color: COLORS.warning, bg: '#FFFBEB' },
-    review: { name: 'star', color: COLORS.warning, bg: '#FFFBEB' },
-    reminder: { name: 'time', color: COLORS.primary, bg: COLORS.primaryLight },
-    promo: { name: 'pricetag', color: COLORS.danger, bg: '#FEF2F2' },
-    price_drop: { name: 'trending-down', color: COLORS.success, bg: '#ECFDF5' },
+    BOOKING_CONFIRMED: { name: 'calendar', color: COLORS.success, bg: '#ECFDF5' },
+    BOOKING_CANCELLED: { name: 'calendar-outline', color: COLORS.danger, bg: '#FEF2F2' },
+    PAYMENT_SUCCESS: { name: 'card', color: COLORS.success, bg: '#ECFDF5' },
+    NEW_MESSAGE: { name: 'chatbubble-ellipses', color: COLORS.info, bg: '#EFF6FF' },
+    REVIEW_POSTED: { name: 'star', color: COLORS.warning, bg: '#FFFBEB' },
+    GENERAL: { name: 'notifications', color: COLORS.primary, bg: COLORS.primaryLight },
   };
   return iconMap[type] || { name: 'notifications', color: COLORS.primary, bg: COLORS.primaryLight };
 };
@@ -71,7 +71,6 @@ const NotificationItem = ({ notification, onPress, onMarkRead }) => {
   return (
     <TouchableOpacity
       onPress={() => {
-        onMarkRead(notification.id);
         onPress(notification);
       }}
       style={{
@@ -153,7 +152,7 @@ const NotificationItem = ({ notification, onPress, onMarkRead }) => {
             {notification.title}
           </Text>
           <Text style={{ fontSize: 11, color: COLORS.textMuted, fontWeight: '500' }}>
-            {formatTimeAgo(notification.timestamp)}
+            {formatTimeAgo(notification.createdAt || notification.timestamp)}
           </Text>
         </View>
         <Text
@@ -167,6 +166,33 @@ const NotificationItem = ({ notification, onPress, onMarkRead }) => {
           {notification.message}
         </Text>
       </View>
+
+      {/* Mark as Read Button */}
+      <TouchableOpacity
+        onPress={(e) => {
+          e.stopPropagation();
+          if (!notification.isRead) {
+            onMarkRead(notification.id);
+          }
+        }}
+        style={{
+          marginLeft: 8,
+          width: 32,
+          height: 32,
+          borderRadius: 10,
+          backgroundColor: notification.isRead ? '#F3F4F6' : COLORS.primaryLight,
+          justifyContent: 'center',
+          alignItems: 'center',
+          alignSelf: 'center',
+        }}
+        activeOpacity={notification.isRead ? 1 : 0.6}
+      >
+        <Ionicons
+          name={notification.isRead ? 'checkmark-done' : 'checkmark'}
+          size={18}
+          color={notification.isRead ? COLORS.textMuted : COLORS.primary}
+        />
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 };
@@ -177,8 +203,8 @@ const FilterPills = ({ activeFilter, setActiveFilter }) => {
     { id: 'all', label: 'All', icon: 'apps' },
     { id: 'unread', label: 'Unread', icon: 'mail-unread' },
     { id: 'booking', label: 'Bookings', icon: 'calendar' },
+    { id: 'payment', label: 'Payments', icon: 'card' },
     { id: 'message', label: 'Messages', icon: 'chatbubbles' },
-    { id: 'promo', label: 'Offers', icon: 'pricetag' },
   ];
 
   return (
@@ -291,22 +317,27 @@ const Notifications = () => {
   const router = useRouter();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all');
 
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      setLoading(true);
-      try {
-        const response = await api.get('/api/notifications');
-        setNotifications(response.data.notifications || []);
-      } catch (err) {
-        console.error('Error fetching notifications:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchNotifications();
-  }, []);
+  const fetchNotifications = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.get('/api/notifications');
+      setNotifications(response.data.notifications || []);
+    } catch (err) {
+      setError(err.request ? 'Cannot connect to server' : 'Failed to load notifications');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchNotifications();
+    }, [])
+  );
 
   // Get unread count
   const unreadCount = notifications.filter((n) => !n.isRead).length;
@@ -315,6 +346,9 @@ const Notifications = () => {
   const filteredNotifications = notifications.filter((n) => {
     if (activeFilter === 'all') return true;
     if (activeFilter === 'unread') return !n.isRead;
+    if (activeFilter === 'booking') return n.type === 'BOOKING_CONFIRMED' || n.type === 'BOOKING_CANCELLED';
+    if (activeFilter === 'payment') return n.type === 'PAYMENT_SUCCESS';
+    if (activeFilter === 'message') return n.type === 'NEW_MESSAGE';
     return n.type === activeFilter;
   });
 
@@ -344,21 +378,18 @@ const Notifications = () => {
   const handleNotificationPress = (notification) => {
     // Navigate based on notification type
     switch (notification.type) {
-      case 'booking':
-      case 'reminder':
+      case 'BOOKING_CONFIRMED':
+      case 'BOOKING_CANCELLED':
         router.push('/(tabs)/myBooking');
         break;
-      case 'payment':
-        router.push('/(tabs)/paymentHistory');
+      case 'PAYMENT_SUCCESS':
+        router.push('/(tabs)/myBooking');
         break;
-      case 'message':
+      case 'NEW_MESSAGE':
         router.push('/(tabs)/chat');
         break;
-      case 'review':
-      case 'price_drop':
-        if (notification.propertyImage) {
-          router.push('/(tabs)/propertyDetails');
-        }
+      case 'REVIEW_POSTED':
+        router.push('/(tabs)/myBooking');
         break;
       default:
         break;
@@ -456,6 +487,23 @@ const Notifications = () => {
           <Text style={{ marginTop: 12, color: COLORS.textSecondary, fontSize: 14 }}>
             Loading notifications...
           </Text>
+        </View>
+      ) : error ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 }}>
+          <Ionicons name="cloud-offline-outline" size={64} color={COLORS.textMuted} />
+          <Text style={{ marginTop: 12, fontSize: 18, fontWeight: '700', color: COLORS.textPrimary, textAlign: 'center' }}>
+            Connection Error
+          </Text>
+          <Text style={{ marginTop: 6, fontSize: 14, color: COLORS.textSecondary, textAlign: 'center' }}>
+            {error}
+          </Text>
+          <TouchableOpacity
+            onPress={fetchNotifications}
+            activeOpacity={0.7}
+            style={{ marginTop: 16, backgroundColor: COLORS.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 }}
+          >
+            <Text style={{ color: '#FFF', fontWeight: '700' }}>Try Again</Text>
+          </TouchableOpacity>
         </View>
       ) : filteredNotifications.length === 0 ? (
         <EmptyState filter={activeFilter} />
