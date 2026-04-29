@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { VideoView, useVideoPlayer } from "expo-video";
 import Toast from "react-native-toast-message";
@@ -68,31 +68,33 @@ const OwnerPropertyDetails = () => {
   const imageScrollRef = useRef(null);
   const autoScrollTimer = useRef(null);
 
-  useEffect(() => {
-    const fetchProperty = async () => {
-      setLoading(true);
-      try {
-        const response = await api.get(`/api/houses/${id}`);
-        const house = response.data.house;
-        setProperty({
-          ...house,
-          price: house.listingType === 'RENT' ? house.rentPerMonth : house.salePrice,
-          rating: house.rating || 4.5,
-          videoUrl: house.video?.url || null,
-          imageUrls: house.images?.map(img => img.url) || [],
-        });
-        
-        // Fetch reviews for this house
-        const reviewsResponse = await api.get(`/api/reviews/house/${id}`);
-        setReviews(reviewsResponse.data.reviews || []);
-      } catch (err) {
-        console.error('Error fetching owner property details:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProperty();
-  }, [id]);
+  useFocusEffect(
+    useCallback(() => {
+      const fetchProperty = async () => {
+        setLoading(true);
+        try {
+          const response = await api.get(`/api/houses/${id}`);
+          const house = response.data.house;
+          setProperty({
+            ...house,
+            price: house.listingType === 'RENT' ? house.rentPerMonth : house.salePrice,
+            rating: house.rating || 4.5,
+            videoUrl: house.video?.url || null,
+            imageUrls: house.images?.map(img => img.url) || [],
+          });
+          
+          // Fetch reviews for this house
+          const reviewsResponse = await api.get(`/api/reviews/house/${id}`);
+          setReviews(reviewsResponse.data.reviews || []);
+        } catch (err) {
+          console.error('Error fetching owner property details:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchProperty();
+    }, [id])
+  );
 
   // Auto-scroll logic
   const startAutoScroll = useCallback(() => {

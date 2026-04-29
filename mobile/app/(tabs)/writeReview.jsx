@@ -411,10 +411,28 @@ const WriteReviewScreen = () => {
 
     setSubmitting(true);
     try {
+      let media = [];
+
+      if (images.length > 0) {
+        const formData = new FormData();
+        images.forEach((img) => {
+          formData.append('images', {
+            uri: Platform.OS === 'android' ? img.uri : img.uri.replace('file://', ''),
+            type: 'image/jpeg',
+            name: `review_${Date.now()}.jpg`,
+          });
+        });
+        const uploadRes = await api.post('/api/reviews/upload-images', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        media = uploadRes.data.data?.media || uploadRes.data.media || [];
+      }
+
       await api.post('/api/reviews', {
         bookingId: booking.id,
         rating,
         comment: reviewText.trim() || undefined,
+        ...(media.length > 0 && { media }),
       });
 
       Toast.show({

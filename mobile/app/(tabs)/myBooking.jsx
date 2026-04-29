@@ -705,7 +705,7 @@ const MyBooking = () => {
                 <ActionRow
                   icon="call-outline"
                   label="Call Agent"
-                  onPress={() => console.log('Call Agent pressed')}
+                  onPress={() => Alert.alert('Coming Soon', 'Call Agent feature will be available in a future update.')}
                   isLast={true}
                 />
               </View>
@@ -756,7 +756,7 @@ const MyBooking = () => {
                 <ActionRow
                   icon="call-outline"
                   label="Call Agent"
-                  onPress={() => console.log('Call Agent pressed')}
+                  onPress={() => Alert.alert('Coming Soon', 'Call Agent feature will be available in a future update.')}
                   isLast={true}
                 />
               </View>

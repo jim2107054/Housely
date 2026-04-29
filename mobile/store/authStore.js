@@ -60,6 +60,9 @@ const useAuthStore = create((set) => ({
 
   // ─── Clear Error ─────────────────────────────────────────────────────────────
   clearError: () => set({ error: null }),
+
+  // ─── Loading State ───────────────────────────────────────────────────────────
+  setLoading: (isLoading) => set({ isLoading }),
 }));
 
 export default useAuthStore;

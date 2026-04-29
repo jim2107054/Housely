@@ -15,8 +15,8 @@ const io = initializeSocket(server);
 app.set('io', io);
 
 if (env.NODE_ENV !== 'production') {
-  server.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
     console.log(`🔌 Socket.IO initialized`);
     console.log(`📋 Environment: ${env.NODE_ENV}`);
   });

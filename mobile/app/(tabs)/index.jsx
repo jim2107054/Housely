@@ -135,8 +135,8 @@ const Home = () => {
   useFocusEffect(
     useCallback(() => {
       fetchUnreadCount();
-      fetchData({ silent: false });
-    }, [fetchData, fetchUnreadCount])
+      fetchData({ silent: recommended.length > 0 });
+    }, [fetchData, fetchUnreadCount, recommended.length])
   );
 
   useEffect(() => {

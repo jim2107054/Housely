@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { useState, useRef, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { WebView } from "react-native-webview";
 import { VideoView, useVideoPlayer } from "expo-video";
 import api from "../../services/api";
@@ -61,68 +61,70 @@ const PropertyDetailsNew = () => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
 
-  useEffect(() => {
-    const fetchProperty = async () => {
-      if (!propertyId) return;
-      setLoading(true);
-      try {
-        const [propertyRes, favoritesRes] = await Promise.all([
-          api.get(`/api/houses/${propertyId}`),
-          api.get('/api/houses/favorites').catch(() => ({ data: { houses: [] } })),
-        ]);
-        const h = propertyRes.data.house;
-        
-        // Check if this property is in user's favorites
-        const favHouses = favoritesRes.data.houses || [];
-        setIsFavorite(favHouses.some(fav => fav.id === propertyId));
-        
-        const facilities = [];
-        if (h.publicFacilities) {
-          if (h.publicFacilities.hospitalDistance) facilities.push({ name: "Hospital", distance: h.publicFacilities.hospitalDistance, icon: "medkit" });
-          if (h.publicFacilities.shoppingMallDistance) facilities.push({ name: "Mall", distance: h.publicFacilities.shoppingMallDistance, icon: "cart" });
-          if (h.publicFacilities.mosqueDistance) facilities.push({ name: "Mosque", distance: h.publicFacilities.mosqueDistance, icon: "business" });
-          if (h.publicFacilities.marketDistance) facilities.push({ name: "Market", distance: h.publicFacilities.marketDistance, icon: "basket" });
-        }
-        if (h.hasWifi) facilities.push({ name: "WiFi", icon: "wifi" });
-        if (h.hasParking) facilities.push({ name: "Parking", icon: "car" });
-
-        setProperty({
-          id: h.id,
-          name: h.name,
-          location: `${h.area}, ${h.city}`,
-          price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
-          priceType: h.listingType === 'RENT' ? 'month' : 'total',
-          rating: h.rating || 4.5,
-          images: h.images?.map(img => img.url) || [],
-          bedrooms: h.bedrooms,
-          bathrooms: h.bathrooms,
-          area: h.sizeInSqft,
-          buildYear: h.buildYear,
-          status: h.listingType === 'RENT' ? 'For Rent' : 'For Sale',
-          description: h.description,
-          agent: {
-            id: h.agent?.id,
-            name: h.agent?.name || "Unknown Agent",
-            role: h.agent?.role === "AGENT" ? "Real Estate Agent" : "Property Owner",
-            image: h.agent?.avatar || "https://randomuser.me/api/portraits/men/1.jpg",
-            phone: h.agent?.phoneNumber || "+000000000",
-          },
-          facilities,
-          totalReviews: h._count?.reviews || 0,
-          videoUrl: h.video?.url || null,
-          coordinates: {
-            latitude: h.latitude || -8.4095,
-            longitude: h.longitude || 115.1889,
+  useFocusEffect(
+    useCallback(() => {
+      const fetchProperty = async () => {
+        if (!propertyId) return;
+        setLoading(true);
+        try {
+          const [propertyRes, favoritesRes] = await Promise.all([
+            api.get(`/api/houses/${propertyId}`),
+            api.get('/api/houses/favorites').catch(() => ({ data: { houses: [] } })),
+          ]);
+          const h = propertyRes.data.house;
+          
+          // Check if this property is in user's favorites
+          const favHouses = favoritesRes.data.houses || [];
+          setIsFavorite(favHouses.some(fav => fav.id === propertyId));
+          
+          const facilities = [];
+          if (h.publicFacilities) {
+            if (h.publicFacilities.hospitalDistance) facilities.push({ name: "Hospital", distance: h.publicFacilities.hospitalDistance, icon: "medkit" });
+            if (h.publicFacilities.shoppingMallDistance) facilities.push({ name: "Mall", distance: h.publicFacilities.shoppingMallDistance, icon: "cart" });
+            if (h.publicFacilities.mosqueDistance) facilities.push({ name: "Mosque", distance: h.publicFacilities.mosqueDistance, icon: "business" });
+            if (h.publicFacilities.marketDistance) facilities.push({ name: "Market", distance: h.publicFacilities.marketDistance, icon: "basket" });
           }
-        });
-      } catch (err) {
-        console.error('Error fetching property details:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProperty();
-  }, [propertyId]);
+          if (h.hasWifi) facilities.push({ name: "WiFi", icon: "wifi" });
+          if (h.hasParking) facilities.push({ name: "Parking", icon: "car" });
+
+          setProperty({
+            id: h.id,
+            name: h.name,
+            location: `${h.area}, ${h.city}`,
+            price: h.listingType === 'RENT' ? h.rentPerMonth : h.salePrice,
+            priceType: h.listingType === 'RENT' ? 'month' : 'total',
+            rating: h.rating || 4.5,
+            images: h.images?.map(img => img.url) || [],
+            bedrooms: h.bedrooms,
+            bathrooms: h.bathrooms,
+            area: h.sizeInSqft,
+            buildYear: h.buildYear,
+            status: h.listingType === 'RENT' ? 'For Rent' : 'For Sale',
+            description: h.description,
+            agent: {
+              id: h.agent?.id,
+              name: h.agent?.name || "Unknown Agent",
+              role: h.agent?.role === "AGENT" ? "Real Estate Agent" : "Property Owner",
+              image: h.agent?.avatar || "https://randomuser.me/api/portraits/men/1.jpg",
+              phone: h.agent?.phoneNumber || "+000000000",
+            },
+            facilities,
+            totalReviews: h._count?.reviews || 0,
+            videoUrl: h.video?.url || null,
+            coordinates: {
+              latitude: h.latitude || -8.4095,
+              longitude: h.longitude || 115.1889,
+            }
+          });
+        } catch (err) {
+          console.error('Error fetching property details:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchProperty();
+    }, [propertyId])
+  );
 
   // Auto-scroll images
   const startAutoScroll = useCallback(() => {

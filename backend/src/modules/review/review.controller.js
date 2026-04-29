@@ -1,5 +1,41 @@
 import * as reviewService from './review.service.js';
 import { success } from '../../utils/response.js';
+import env from '../../config/env.js';
+
+export const uploadReviewImages = async (req, res, next) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ success: false, message: 'No files uploaded' });
+    }
+
+    let uploadFile;
+    if (env.CLOUDINARY_CLOUD_NAME) {
+      const { v2: cloudinary } = await import('cloudinary');
+      cloudinary.config({
+        cloud_name: env.CLOUDINARY_CLOUD_NAME,
+        api_key: env.CLOUDINARY_API_KEY,
+        api_secret: env.CLOUDINARY_API_SECRET,
+      });
+      uploadFile = (file) =>
+        new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            { folder: 'housely/reviews' },
+            (error, result) => (error ? reject(error) : resolve(result.secure_url)),
+          );
+          stream.end(file.buffer);
+        });
+    } else {
+      uploadFile = (file) =>
+        Promise.resolve(`data:${file.mimetype};base64,${file.buffer.toString('base64')}`);
+    }
+
+    const urls = await Promise.all(req.files.map(uploadFile));
+    const media = urls.map((url) => ({ url, type: 'image' }));
+    return success(res, { media }, 'Images uploaded successfully');
+  } catch (err) {
+    next(err);
+  }
+};
 
 export const createReview = async (req, res, next) => {
   try {

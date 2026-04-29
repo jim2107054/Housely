@@ -292,6 +292,11 @@ const AddProperty = () => {
       } else {
         await api.post('/api/houses', payload);
         Toast.show({ type: "success", text1: "Property Added", text2: "Your listing is now live" });
+        setForm({
+          name: "", description: "", propertyType: "APARTMENT", listingType: "RENT", address: "", city: "", area: "", rentPerMonth: "", salePrice: "", bedrooms: "1", bathrooms: "1", sizeInSqft: "", buildYear: "2024", hasWifi: false, hasWater: true,
+        });
+        setImages([]);
+        setVideo(null);
       }
       router.back();
     } catch (err) {

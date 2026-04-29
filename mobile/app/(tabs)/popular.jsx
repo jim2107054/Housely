@@ -9,7 +9,8 @@ import {
 import { useEffect, useState } from "react";
 import { ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 import LocationIcon from "../../assets/images/home-icons/Location.svg";
 import api from "../../services/api";
 
@@ -20,9 +21,11 @@ const Popular = () => {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
 
-  const fetchPopular = async () => {
-    setLoading(true);
+  const fetchPopular = async (silent = false) => {
+    if (!silent) setLoading(true);
+    setError(null);
     try {
       const response = await api.get('/api/houses/popular');
       const transformed = response.data.houses.map(h => ({
@@ -37,22 +40,23 @@ const Popular = () => {
       }));
       setProperties(transformed);
     } catch (err) {
-      console.error('Error fetching popular properties:', err);
+      setError(err.request ? 'Cannot connect to server' : 'Failed to load properties');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchPopular();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchPopular(properties.length > 0);
+    }, [properties.length])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
+    setError(null);
     try {
       await fetchPopular();
-    } catch (_) {
-      // silent fail — data will just be stale
     } finally {
       setRefreshing(false);
     }
@@ -138,9 +142,23 @@ const Popular = () => {
   return (
     <View className="flex-1 bg-white">
       <Header />
-      {loading ? (
+      {loading && properties.length === 0 ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#6C5CE7" />
+        </View>
+      ) : error ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 }}>
+          <Ionicons name="cloud-offline-outline" size={56} color="#C9CBD9" />
+          <Text style={{ marginTop: 12, color: '#252B5C', fontSize: 16, fontWeight: '700', textAlign: 'center' }}>
+            Connection Error
+          </Text>
+          <Text style={{ marginTop: 6, color: '#A1A5C1', fontSize: 13, textAlign: 'center' }}>{error}</Text>
+          <TouchableOpacity
+            onPress={() => fetchPopular()}
+            style={{ marginTop: 16, backgroundColor: '#6C5CE7', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10 }}
+          >
+            <Text style={{ color: '#FFF', fontWeight: '700' }}>Retry</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <ScrollView
@@ -154,9 +172,16 @@ const Popular = () => {
             />
           }
         >
-          {properties.map((item) => (
-            <PopularCard key={item.id} item={item} />
-          ))}
+          {properties.length === 0 ? (
+            <View style={{ paddingTop: 80, alignItems: 'center' }}>
+              <Ionicons name="star-outline" size={48} color="#C9CBD9" />
+              <Text style={{ marginTop: 8, color: '#A1A5C1' }}>No popular properties yet</Text>
+            </View>
+          ) : (
+            properties.map((item) => (
+              <PopularCard key={item.id} item={item} />
+            ))
+          )}
           {/* Bottom spacing */}
           <View className="h-24" />
         </ScrollView>

@@ -13,8 +13,9 @@ import { useRouter } from 'expo-router';
 
 // Import data (structured like backend API response)
 import api from '../../services/api';
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { ActivityIndicator } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 
 
 
@@ -292,9 +293,11 @@ const RecentViewed = () => {
     }
   };
 
-  useEffect(() => {
-    fetchRecentlyViewed();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchRecentlyViewed();
+    }, [])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);

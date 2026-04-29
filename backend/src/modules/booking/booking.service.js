@@ -226,13 +226,16 @@ export const cancelBooking = async (userId, bookingId) => {
     throw Object.assign(new Error('Cannot cancel a completed booking'), { statusCode: 400 });
   }
 
-  // Check cancellation policy (e.g., 24 hours before check-in)
-  const now = new Date();
-  const checkIn = new Date(booking.checkIn);
-  const hoursUntilCheckIn = (checkIn - now) / (1000 * 60 * 60);
+  // 24-hour cancellation policy only applies to CONFIRMED bookings.
+  // PENDING (unpaid) bookings can always be cancelled freely.
+  if (booking.status === 'CONFIRMED') {
+    const now = new Date();
+    const checkIn = new Date(booking.checkIn);
+    const hoursUntilCheckIn = (checkIn - now) / (1000 * 60 * 60);
 
-  if (hoursUntilCheckIn < 24) {
-    throw Object.assign(new Error('Cannot cancel booking less than 24 hours before check-in'), { statusCode: 400 });
+    if (hoursUntilCheckIn < 24) {
+      throw Object.assign(new Error('Cannot cancel a confirmed booking less than 24 hours before check-in'), { statusCode: 400 });
+    }
   }
 
   const cancelledBooking = await prisma.booking.update({

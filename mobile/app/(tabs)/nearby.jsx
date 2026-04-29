@@ -22,11 +22,13 @@ const Nearby = () => {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
 
   const fetchNearby = useCallback(async ({ silent = false } = {}) => {
     if (!silent) {
       setLoading(true);
     }
+    setError(null);
     try {
       const coords = getCoordinates();
       const response = await api.get('/api/houses/nearby', {
@@ -47,7 +49,7 @@ const Nearby = () => {
       }));
       setProperties(transformed);
     } catch (err) {
-      console.error('Error fetching nearby properties:', err);
+      setError(err.request ? 'Cannot connect to server' : 'Failed to load nearby properties');
       setProperties([]);
     } finally {
       setLoading(false);
@@ -76,8 +78,8 @@ const Nearby = () => {
       setProperties(prev => prev.map(p => 
         p.id === id ? { ...p, isFavorite: response.data.isFavorite } : p
       ));
-    } catch (err) {
-      console.error('Error toggling favorite:', err);
+    } catch (_err) {
+      // toggle failure is non-critical; state reverts on next fetch
     }
   };
 
@@ -163,6 +165,20 @@ const Nearby = () => {
       {loading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#6C5CE7" />
+        </View>
+      ) : error ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40 }}>
+          <Ionicons name="cloud-offline-outline" size={56} color="#C9CBD9" />
+          <Text style={{ marginTop: 12, color: '#252B5C', fontSize: 16, fontWeight: '700', textAlign: 'center' }}>
+            Connection Error
+          </Text>
+          <Text style={{ marginTop: 6, color: '#A1A5C1', fontSize: 13, textAlign: 'center' }}>{error}</Text>
+          <TouchableOpacity
+            onPress={() => fetchNearby({ silent: false })}
+            style={{ marginTop: 16, backgroundColor: '#6C5CE7', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 10 }}
+          >
+            <Text style={{ color: '#FFF', fontWeight: '700' }}>Retry</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <FlatList

@@ -41,7 +41,7 @@ const index = () => {
 
     // When signed in, also wait for the backend sync to finish so the user's
     // role is known before we decide where to navigate.
-    if (isSignedIn && isLoading) return;
+    if (isSignedIn && (isLoading || !user)) return;
 
     const timer = setTimeout(() => {
       if (isSignedIn) {

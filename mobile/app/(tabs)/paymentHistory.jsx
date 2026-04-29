@@ -12,8 +12,9 @@ import { useRouter } from 'expo-router';
 
 // Import data (structured like backend API response)
 import api from '../../services/api';
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { ActivityIndicator } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 
 
 
@@ -232,20 +233,22 @@ const PaymentHistory = () => {
   const [loading, setLoading] = useState(false);
   const [filterStatus, setFilterStatus] = useState('all');
 
-  useEffect(() => {
-    const fetchPayments = async () => {
-      setLoading(true);
-      try {
-        const response = await api.get('/api/payments/my');
-        setPayments(response.data.payments || []);
-      } catch (err) {
-        console.error('Error fetching payments:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPayments();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      const fetchPayments = async () => {
+        setLoading(true);
+        try {
+          const response = await api.get('/api/payments/my');
+          setPayments(response.data.payments || []);
+        } catch (err) {
+          console.error('Error fetching payments:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchPayments();
+    }, [])
+  );
 
   const filteredPayments =
     filterStatus === 'all'

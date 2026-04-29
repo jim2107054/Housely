@@ -1,13 +1,7 @@
 import { Server } from 'socket.io';
-import { createClerkClient } from '@clerk/backend';
+import { verifyToken } from '@clerk/backend';
 import prisma from '../config/prisma.js';
-import env from '../config/env.js';
 import { notifyUser } from '../modules/notification/notification.service.js';
-
-const clerkClient = createClerkClient({
-  secretKey: process.env.CLERK_SECRET_KEY || env.CLERK_SECRET_KEY,
-  publishableKey: process.env.CLERK_PUBLISHABLE_KEY || env.CLERK_PUBLISHABLE_KEY,
-});
 
 // Store active socket connections by user ID
 const activeConnections = new Map();
@@ -23,21 +17,12 @@ const authenticateSocket = async (socket, next) => {
       return next(new Error('Authentication required'));
     }
 
-    // Verify Clerk session token
+    // Verify Clerk session token using the same clerkClient as the HTTP middleware.
+    // clockSkewInMs tolerates minor clock differences between mobile device and server.
     try {
-      // In Clerk v5+, verifyToken is robust. We add clockSkew to handle minor server time diffs.
-      // We explicitly pass the secretKey from our env config.
-      const secretKey = process.env.CLERK_SECRET_KEY || env.CLERK_SECRET_KEY;
-      
-      const payload = await clerkClient.verifyToken(token, {
-        secretKey,
-      }).catch(async (err) => {
-        // Fallback or retry with clock skew allowance if first attempt fails
-        console.warn('[Socket Auth] verifyToken failed, retrying with skew allowance:', err.message);
-        return await clerkClient.verifyToken(token, {
-          secretKey,
-          clockSkew: 300, // 5 minutes allowance
-        });
+      const payload = await verifyToken(token, {
+        secretKey: process.env.CLERK_SECRET_KEY,
+        clockSkewInMs: 5 * 60 * 1000,
       });
 
       const clerkUserId = payload.sub;
@@ -55,7 +40,7 @@ const authenticateSocket = async (socket, next) => {
       socket.user = user;
       next();
     } catch (verifyError) {
-      console.error('[Socket Auth] Token verification failed after retries:', verifyError.message);
+      console.error('[Socket Auth] Token verification failed:', verifyError.message);
       // Log more details about the token (safely)
       const isJWT = token && token.startsWith('ey');
       const tokenPrefix = token ? `${token.substring(0, 10)}...` : 'none';

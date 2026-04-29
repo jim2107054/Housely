@@ -8,8 +8,9 @@ import {
 import { useEffect, useState } from "react";
 import { ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useCallback } from "react";
 import api from "../../services/api";
 
 
@@ -30,20 +31,22 @@ const OwnerEarnings = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchEarnings = async () => {
-      setLoading(true);
-      try {
-        const response = await api.get('/api/houses/agent/dashboard');
-        setDashboardData(response.data);
-      } catch (err) {
-        console.error('Error fetching dashboard earnings:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchEarnings();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      const fetchEarnings = async () => {
+        setLoading(true);
+        try {
+          const response = await api.get('/api/houses/agent/dashboard');
+          setDashboardData(response.data);
+        } catch (err) {
+          console.error('Error fetching dashboard earnings:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchEarnings();
+    }, [])
+  );
 
   const stats = dashboardData?.stats || {
     totalEarnings: 0,

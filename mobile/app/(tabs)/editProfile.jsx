@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
+import DateTimePicker from '@react-native-community/datetimepicker'
 import useAuthStore from '../../store/authStore'
 import api from '../../services/api';
 import Toast from 'react-native-toast-message';
@@ -30,10 +31,15 @@ const EditProfile = () => {
     name: user?.name || '',
     username: user?.username || '',
     email: user?.email || '',
-    dateOfBirth: user?.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString() : ''
-  })
+    dateOfBirth: user?.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString('en-GB') : '',
+  });
+  // Store the actual Date object separately so we can pass ISO string to the API
+  const [dateOfBirthDate, setDateOfBirthDate] = useState(
+    user?.dateOfBirth ? new Date(user.dateOfBirth) : null
+  );
   const [loading, setLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const router = useRouter()
 
@@ -145,8 +151,28 @@ const EditProfile = () => {
   }
 
   const handleDatePress = () => {
-    console.log('Open date picker')
-  }
+    setShowDatePicker(true);
+  };
+
+  const handleDateChange = (event, selectedDate) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    if (event.type === 'dismissed') {
+      setShowDatePicker(false);
+      return;
+    }
+    if (selectedDate) {
+      setDateOfBirthDate(selectedDate);
+      setFormData(prev => ({
+        ...prev,
+        dateOfBirth: selectedDate.toLocaleDateString('en-GB'),
+      }));
+      if (Platform.OS === 'ios') {
+        setShowDatePicker(false);
+      }
+    }
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -250,6 +276,16 @@ const EditProfile = () => {
         </View>
       </ScrollView>
       </KeyboardAvoidingView>
+
+      {showDatePicker && (
+        <DateTimePicker
+          value={formData.dateOfBirth ? new Date(formData.dateOfBirth) : new Date(2000, 0, 1)}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          maximumDate={new Date()}
+          onChange={handleDateChange}
+        />
+      )}
     </SafeAreaView>
   )
 }

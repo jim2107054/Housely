@@ -52,9 +52,13 @@ function AppNavigator() {
     setSignOutAction(signOut);
   }, [setSignOutAction, signOut]);
 
-  // On sign-in, sync user profile with backend
+  // On sign-in, sync user profile with backend.
+  // Guard against double-sync: login's finishSignIn calls syncWithBackend({ role })
+  // first, which sets isLoading=true synchronously before the re-render that
+  // triggers this effect. Skipping when isLoading prevents a concurrent roleless
+  // sync from overwriting the role-aware one and causing wrong navigation.
   useEffect(() => {
-    if (isLoaded && isSignedIn && !user) {
+    if (isLoaded && isSignedIn && !user && !isLoading) {
       syncWithBackend();
     }
     if (isLoaded && !isSignedIn) {
@@ -84,7 +88,7 @@ function AppNavigator() {
 
     // While a signed-in user's profile is being fetched from the backend,
     // do not navigate — wait until syncWithBackend resolves so the role is known.
-    if (isSignedIn && isLoading) return;
+    if (isSignedIn && (isLoading || !user)) return;
 
     const inAuthScreen = segments[0] === "(auth)";
     const inOwnerScreen = segments[0] === "(owner)";
@@ -112,7 +116,7 @@ function AppNavigator() {
   // Show a neutral loading screen while Clerk is initialising or while
   // syncWithBackend is resolving the signed-in user's role from the backend.
   // This prevents any navigation from firing with an incomplete user object.
-  if (!isLoaded || (isSignedIn && isLoading)) {
+  if (!isLoaded || (isSignedIn && (isLoading || !user))) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#ffffff" }}>
         <ActivityIndicator size="large" color="#000000" />

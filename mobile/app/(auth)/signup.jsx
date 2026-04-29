@@ -29,7 +29,7 @@ const Signup = () => {
   const inputRefs = useRef([]);
 
   const { signUp, setActive, isLoaded } = useSignUp();
-  const { syncWithBackend } = useAuthStore();
+  const { syncWithBackend, setLoading } = useAuthStore();
   const router = useRouter();
   const params = useLocalSearchParams();
   const role = params.role || "USER";
@@ -83,6 +83,7 @@ const Signup = () => {
     try {
       const result = await signUp.attemptEmailAddressVerification({ code: otpCode });
       if (result.status === "complete") {
+        setLoading(true); // prevent _layout.jsx from running parameterless sync
         await setActive({ session: result.createdSessionId });
         await syncWithBackend({ username: userName.trim(), role });
         Toast.show({ type: "success", text1: "Account Created!", text2: "Welcome to Housely", position: "top", visibilityTime: 2000 });

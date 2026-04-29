@@ -8,8 +8,9 @@ import {
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import api from '../../services/api';
@@ -332,9 +333,11 @@ const Notifications = () => {
     }
   };
 
-  useEffect(() => {
-    fetchNotifications();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchNotifications();
+    }, [])
+  );
 
   // Get unread count
   const unreadCount = notifications.filter((n) => !n.isRead).length;

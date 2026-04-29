@@ -496,7 +496,7 @@ const BookProperty = () => {
 
   const handleSuccessDismiss = () => {
     setShowSuccess(false);
-    router.push("/myBooking");
+    router.replace("/(tabs)/myBooking");
   };
 
   // Get minimum date for checkout (day after check-in)

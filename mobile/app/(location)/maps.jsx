@@ -66,8 +66,7 @@ const Maps = () => {
       );
       const data = await response.json();
       setSearchResults(data);
-    } catch (error) {
-      console.log("Search error:", error);
+    } catch (_error) {
       setSearchResults([]);
     } finally {
       setIsSearching(false);
@@ -125,8 +124,7 @@ const Maps = () => {
       );
       const data = await response.json();
       return data.display_name || "Selected location";
-    } catch (error) {
-      console.log("Reverse geocode error:", error);
+    } catch (_error) {
       return "Selected location";
     }
   };
@@ -146,8 +144,8 @@ const Maps = () => {
       } else if (data.type === "mapReady") {
         setMapReady(true);
       }
-    } catch (error) {
-      console.log("WebView message error:", error);
+    } catch (_error) {
+      // ignore malformed messages
     }
   };
 

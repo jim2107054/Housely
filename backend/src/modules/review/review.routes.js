@@ -2,6 +2,7 @@ import { Router } from 'express';
 import * as reviewController from './review.controller.js';
 import { validate } from '../../middlewares/validate.js';
 import { protect } from '../../middlewares/auth.js';
+import { upload } from '../../middlewares/upload.js';
 import {
   createReviewSchema,
   reviewIdSchema,
@@ -10,6 +11,9 @@ import {
 } from './review.validation.js';
 
 const router = Router();
+
+// Upload images for a review (returns media array with URLs)
+router.post('/upload-images', protect, upload.array('images', 5), reviewController.uploadReviewImages);
 
 // Create review (requires auth)
 router.post('/', protect, validate(createReviewSchema), reviewController.createReview);

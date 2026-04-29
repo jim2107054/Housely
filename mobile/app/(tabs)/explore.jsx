@@ -13,7 +13,8 @@ import {
 } from "react-native";
 import { useState, useMemo } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // Import SVG icons
@@ -29,12 +30,14 @@ const CARD_WIDTH = (width - 52) / 2; // Two cards per row with gaps
 
 
 
+// IDs must match the PropertyType enum in the backend schema
 const categories = [
   { id: "all", name: "All", icon: "apps" },
-  { id: "house", name: "House", icon: "home" },
-  { id: "apartment", name: "Apartment", icon: "business" },
-  { id: "villa", name: "Villa", icon: "leaf" },
-  { id: "hotel", name: "Hotel", icon: "bed" },
+  { id: "APARTMENT", name: "Apartment", icon: "business" },
+  { id: "VILLA", name: "Villa", icon: "leaf" },
+  { id: "HOTEL", name: "Hotel", icon: "bed" },
+  { id: "STUDIO", name: "Studio", icon: "home" },
+  { id: "DUPLEX", name: "Duplex", icon: "layers-outline" },
 ];
 
 const sortOptions = [
@@ -59,17 +62,20 @@ const Explore = () => {
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchHouses = async () => {
-    setLoading(true);
+  const fetchHouses = async (silent = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const params = {
-        q: searchQuery,
-        propertyType: selectedCategory !== "all" ? selectedCategory.toUpperCase() : undefined,
+        // IDs are already valid PropertyType enum values; "all" → omit filter
+        propertyType: selectedCategory !== "all" ? selectedCategory : undefined,
         sortBy: sortBy === "default" ? "newest" : sortBy === "price_low" ? "price_asc" : sortBy === "price_high" ? "price_desc" : "most_popular",
-        minPrice: priceRange.min,
-        maxPrice: priceRange.max,
       };
+      if (searchQuery) params.q = searchQuery;
+      // Only send price constraints when the user has actually changed them
+      if (priceRange.min > 0) params.minPrice = priceRange.min;
+      if (priceRange.max < 100000) params.maxPrice = priceRange.max;
+
       const [response, favRes] = await Promise.all([
         api.get('/api/filter', { params }),
         api.get('/api/houses/favorites').catch(() => ({ data: { houses: [] } })),
@@ -92,17 +98,19 @@ const Explore = () => {
     } catch (err) {
       setError('Failed to load properties. Please try again.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchHouses();
-    }, 500); // Debounce search
+  useFocusEffect(
+    useCallback(() => {
+      const timer = setTimeout(() => {
+        fetchHouses(houses.length > 0);
+      }, 500); // Debounce search
 
-    return () => clearTimeout(timer);
-  }, [selectedCategory, searchQuery, sortBy, priceRange]);
+      return () => clearTimeout(timer);
+    }, [selectedCategory, searchQuery, sortBy, priceRange])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -478,7 +486,7 @@ const Explore = () => {
       <CategoryFilter />
       <ResultsBar />
       
-      {loading ? (
+      {loading && houses.length === 0 ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#6941C6" />
           <Text className="text-textSecondary font-poppins mt-3">Loading properties...</Text>

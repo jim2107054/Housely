@@ -356,13 +356,23 @@ export const getAgentDashboard = async (agentId) => {
       where: { agentId },
       include: {
         user: { select: { id: true, name: true, avatar: true } },
-        house: { select: { id: true, name: true } },
+        house: { 
+          select: { 
+            id: true, 
+            name: true,
+            images: { take: 1, orderBy: { order: 'asc' } }
+          } 
+        },
       },
       orderBy: { createdAt: 'desc' },
     }),
     prisma.review.findMany({
       where: { house: { agentId } },
-      select: { rating: true },
+      include: {
+        user: { select: { id: true, name: true, avatar: true } },
+        house: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: 'desc' },
     }),
   ]);
 
@@ -407,6 +417,7 @@ export const getAgentDashboard = async (agentId) => {
       pendingPayouts,
     },
     recentBookings: bookings.slice(0, 5),
+    recentReviews: reviews.slice(0, 5),
     transactions: transactions.slice(0, 20),
   };
 };

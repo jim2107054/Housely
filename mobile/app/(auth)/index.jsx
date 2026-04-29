@@ -29,7 +29,7 @@ const Login = () => {
   const [secondFactorStrategy, setSecondFactorStrategy] = useState("email_code");
 
   const { signIn, setActive, isLoaded } = useSignIn();
-  const { syncWithBackend } = useAuthStore();
+  const { syncWithBackend, setLoading } = useAuthStore();
   const router = useRouter();
   const params = useLocalSearchParams();
   const role = params.role || "USER";
@@ -40,6 +40,7 @@ const Login = () => {
     );
 
   const finishSignIn = async (result) => {
+    setLoading(true); // prevent _layout.jsx from running parameterless sync
     await setActive({ session: result.createdSessionId });
     await syncWithBackend({ role });
     Toast.show({
@@ -49,9 +50,8 @@ const Login = () => {
       position: "top",
       visibilityTime: 2000,
     });
-    setTimeout(() => {
-      router.replace(role === "AGENT" ? "/(owner)" : "/(tabs)");
-    }, 500);
+    // Navigation is handled automatically by the _layout.jsx guard
+    // which checks user.role after syncWithBackend sets the user in the store.
   };
 
   const handleLogin = async () => {

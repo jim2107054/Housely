@@ -25,7 +25,16 @@ export const connectSocket = async () => {
     socket = null;
   }
 
-  const initialToken = _getToken ? await _getToken() : null;
+  // Allow a brief moment for Clerk's token to fully propagate after sign-in
+  // before we try to use it for the socket handshake.
+  let initialToken;
+  try {
+    initialToken = _getToken ? await _getToken() : null;
+  } catch {
+    console.warn('[Socket] Failed to get auth token — socket not connected');
+    return null;
+  }
+
   if (!initialToken) {
     console.warn('[Socket] No auth token available — socket not connected');
     return null;
@@ -40,9 +49,9 @@ export const connectSocket = async () => {
     },
     transports: ['websocket'],
     reconnection: true,
-    reconnectionAttempts: 5,
-    reconnectionDelay: 1000,
-    timeout: 10000,
+    reconnectionAttempts: 10,
+    reconnectionDelay: 2000,
+    timeout: 15000,
   });
 
   socket.on('connect', () => {

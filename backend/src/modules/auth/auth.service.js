@@ -24,14 +24,23 @@ export const syncUser = async (clerkUser, body = {}) => {
   const role = body.role ?? 'USER';
 
   // Upsert: update if clerkId exists, create otherwise
+  // When a role is explicitly provided (e.g. owner login sends role="AGENT"),
+  // we update it so the user can switch between USER and AGENT roles.
+  const updateData = {
+    email,
+    name: name ?? undefined,
+    avatar: avatar ?? undefined,
+    isVerified,
+  };
+
+  // Only overwrite the role when the client explicitly sends one
+  if (body.role) {
+    updateData.role = role;
+  }
+
   const user = await prisma.user.upsert({
     where: { clerkId },
-    update: {
-      email,
-      name: name ?? undefined,
-      avatar: avatar ?? undefined,
-      isVerified,
-    },
+    update: updateData,
     create: {
       clerkId,
       email,
