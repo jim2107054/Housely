@@ -95,15 +95,23 @@ Finding and booking residential properties in Bangladesh is fragmented across in
 
 ```
 Housely/
+├── .env.example                  # Root environment variable template
+├── .gitignore                    # Root gitignore
+├── package.json                  # Workspace scripts
+├── Housely_API_Collection.postman_collection.json  # Full API Postman collection
+├── housely_mermaid_diagrams.md   # Architecture & design diagrams
+├── README.md                     # This file
+│
 ├── backend/                  # Express REST API + Socket.IO server
 │   ├── server.js             # HTTP server entry point; bootstraps Socket.IO
 │   ├── vercel.json           # Vercel serverless deployment config
 │   ├── docker-compose.yml    # Local dev: PostgreSQL + Redis containers
 │   ├── jest.config.js        # Jest test configuration
+│   ├── .env.example          # Backend environment variable template
 │   ├── prisma/
 │   │   ├── schema.prisma     # Complete data model (16 models, 5 enums)
-│   │   ├── seed.js           # Database seed script
-│   │   └── migrations/       # Prisma migration history
+│   │   ├── seed.js           # Database seed script (test data)
+│   │   └── sync-clerk.js     # Clerk user sync utility
 │   ├── __tests__/
 │   │   └── api.test.js       # Integration tests (Supertest)
 │   └── src/
@@ -127,6 +135,7 @@ Housely/
 │       │   ├── house/        # Listing CRUD, favorites, views, recommendations
 │       │   ├── filter/       # Advanced property search with pagination
 │       │   ├── booking/      # Booking lifecycle management
+│       │   ├── payment/      # SSLCommerz payment gateway integration
 │       │   ├── review/       # Post-booking reviews with media
 │       │   ├── message/      # Conversations + messages (REST layer)
 │       │   ├── notification/ # In-app notifications + device token management
